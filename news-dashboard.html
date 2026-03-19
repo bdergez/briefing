@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Points & Miles Dashboard</title>
+  <style>
+    :root {
+      --bg: #f0f2f5;
+      --card-bg: #ffffff;
+      --text: #1a1a2e;
+      --subtext: #555770;
+      --border: #e2e4ea;
+      --accent: #4f46e5;
+      --accent-light: #eef2ff;
+      --tag-bg: #f1f5f9;
+      --shadow: 0 2px 8px rgba(0,0,0,0.07);
+      --shadow-hover: 0 6px 20px rgba(0,0,0,0.12);
+      --header-bg: #1a1a2e;
+      --header-text: #fff;
+    }
+    [data-theme="dark"] {
+      --bg: #12131c;
+      --card-bg: #1e1f2e;
+      --text: #e8eaf6;
+      --subtext: #9899b0;
+      --border: #2e2f45;
+      --accent: #818cf8;
+      --accent-light: #1e1f40;
+      --tag-bg: #252638;
+      --shadow: 0 2px 8px rgba(0,0,0,0.3);
+      --shadow-hover: 0 6px 20px rgba(0,0,0,0.4);
+      --header-bg: #0e0f1a;
+      --header-text: #e8eaf6;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      transition: background 0.3s, color 0.3s;
+      min-height: 100vh;
+    }
+
+    header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+    }
+    .logo { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+    .logo span { color: #818cf8; }
+    .tagline { font-size: 12px; opacity: 0.5; margin-top: 2px; }
+    .header-right { display: flex; align-items: center; gap: 12px; }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 16px; border-radius: 8px; border: none;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-ghost {
+      background: rgba(255,255,255,0.1); color: var(--header-text);
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,0.18); }
+
+    .refresh-time { font-size: 11px; opacity: 0.45; }
+
+    .main { max-width: 1400px; margin: 0 auto; padding: 28px 24px; }
+
+    /* STATUS ROW */
+    .source-status {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;
+    }
+    .src-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 12px; border-radius: 20px;
+      font-size: 12px; font-weight: 600; color: #fff;
+      cursor: pointer; transition: opacity 0.2s;
+      border: 2px solid transparent;
+      user-select: none;
+    }
+    .src-pill.inactive { opacity: 0.3; }
+    .src-pill .pill-count {
+      background: rgba(0,0,0,0.2); border-radius: 20px;
+      padding: 1px 7px; font-size: 11px;
+    }
+    .src-pill.loading::after { content: ' ⏳'; }
+    .src-pill.error::after { content: ' ✗'; }
+    .src-pill.ok::after { content: ''; }
+
+    /* STATS BAR */
+    .stats-bar { display: flex; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+    .stat {
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px 18px;
+      display: flex; flex-direction: column; gap: 2px; min-width: 90px;
+    }
+    .stat-num { font-size: 22px; font-weight: 800; color: var(--accent); }
+    .stat-label { font-size: 11px; color: var(--subtext); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* FILTER BAR */
+    .filter-bar {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 24px; flex-wrap: wrap;
+    }
+    .filter-label { font-size: 12px; font-weight: 600; color: var(--subtext); text-transform: uppercase; letter-spacing: 0.5px; margin-right: 4px; }
+    .filter-btn {
+      padding: 7px 16px; border-radius: 20px;
+      border: 1.5px solid var(--border);
+      background: var(--card-bg); color: var(--text);
+      font-size: 13px; font-weight: 500; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    .search-wrap { margin-left: auto; position: relative; }
+    .search-wrap input {
+      padding: 8px 14px 8px 36px;
+      border-radius: 8px; border: 1.5px solid var(--border);
+      background: var(--card-bg); color: var(--text);
+      font-size: 13px; width: 220px; outline: none;
+      transition: border-color 0.2s;
+    }
+    .search-wrap input:focus { border-color: var(--accent); }
+    .search-icon {
+      position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
+      color: var(--subtext); font-size: 14px; pointer-events: none;
+    }
+
+    /* GRID */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 16px;
+    }
+
+    /* CARD */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px 20px;
+      box-shadow: var(--shadow);
+      transition: box-shadow 0.2s, transform 0.2s;
+      display: flex; flex-direction: column; gap: 10px;
+      animation: fadeIn 0.3s ease;
+    }
+    .card:hover { box-shadow: var(--shadow-hover); transform: translateY(-2px); }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    .card-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .source-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 700; color: #fff;
+    }
+    .category-tag {
+      padding: 3px 10px; border-radius: 20px;
+      background: var(--tag-bg); color: var(--subtext);
+      font-size: 11px; font-weight: 600;
+    }
+    .card-date { font-size: 11px; color: var(--subtext); margin-left: auto; }
+
+    .card-title { font-size: 15px; font-weight: 700; line-height: 1.4; }
+    .card-title a { color: var(--text); text-decoration: none; transition: color 0.15s; }
+    .card-title a:hover { color: var(--accent); }
+
+    .card-desc {
+      font-size: 13px; color: var(--subtext); line-height: 1.55;
+      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .card-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: auto; padding-top: 6px;
+    }
+    .read-link {
+      font-size: 12px; font-weight: 600; color: var(--accent);
+      text-decoration: none;
+    }
+    .read-link:hover { text-decoration: underline; }
+
+    /* LOADING */
+    .loading-wrap { grid-column: 1/-1; display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 60px 0; }
+    .spinner {
+      width: 38px; height: 38px; border-radius: 50%;
+      border: 3px solid var(--border); border-top-color: var(--accent);
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { font-size: 14px; color: var(--subtext); text-align: center; }
+    .loading-sub { font-size: 12px; color: var(--subtext); opacity: 0.6; text-align: center; max-width: 420px; }
+
+    .empty-msg { grid-column: 1/-1; text-align: center; padding: 60px; color: var(--subtext); font-size: 15px; }
+
+    /* DEBUG */
+    .debug-box {
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px; margin-bottom: 20px;
+      font-size: 12px; color: var(--subtext); display: none;
+    }
+    .debug-box h4 { font-size: 13px; color: var(--text); margin-bottom: 8px; }
+    .debug-box ul { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+    .debug-box li { display: flex; align-items: center; gap: 8px; }
+    .debug-ok { color: #22c55e; }
+    .debug-err { color: #ef4444; }
+
+    /* ── REDDIT DIGEST ─────────────────────────────────────────── */
+    .reddit-digest {
+      margin-top: 48px;
+      border-top: 2px solid var(--border);
+      padding-top: 32px;
+    }
+    .digest-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
+    }
+    .digest-title {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .digest-title h2 {
+      font-size: 18px; font-weight: 800; color: var(--text);
+    }
+    .reddit-badge {
+      background: #ff4500; color: #fff;
+      padding: 3px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 700;
+    }
+    .digest-meta { font-size: 12px; color: var(--subtext); }
+
+    .digest-grid {
+      display: flex; flex-direction: column; gap: 16px;
+    }
+
+    .digest-post {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-left: 4px solid #ff4500;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      animation: fadeIn 0.3s ease;
+    }
+    .digest-post-header {
+      padding: 16px 20px 12px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .digest-post-meta {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+    .post-flair {
+      padding: 2px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 700;
+      background: #ff450022; color: #ff4500;
+      border: 1px solid #ff450033;
+    }
+    .post-score {
+      font-size: 11px; color: var(--subtext);
+      display: flex; align-items: center; gap: 4px;
+    }
+    .post-time { font-size: 11px; color: var(--subtext); margin-left: auto; }
+    .digest-post-title {
+      font-size: 15px; font-weight: 700; line-height: 1.4;
+    }
+    .digest-post-title a {
+      color: var(--text); text-decoration: none; transition: color 0.15s;
+    }
+    .digest-post-title a:hover { color: #ff4500; }
+
+    .digest-selftext {
+      font-size: 13px; color: var(--subtext); line-height: 1.6;
+      padding: 0 20px 12px;
+    }
+
+    .digest-comments {
+      border-top: 1px solid var(--border);
+      padding: 12px 20px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .digest-comments-label {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.5px; color: var(--subtext); margin-bottom: 2px;
+    }
+    .digest-comment {
+      display: flex; gap: 10px; align-items: flex-start;
+    }
+    .comment-score-badge {
+      background: var(--tag-bg); color: var(--subtext);
+      font-size: 10px; font-weight: 700;
+      padding: 2px 7px; border-radius: 20px;
+      white-space: nowrap; margin-top: 2px;
+    }
+    .comment-body {
+      font-size: 13px; color: var(--text); line-height: 1.5;
+      flex: 1;
+      display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .comment-author {
+      font-size: 11px; color: var(--subtext); font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .digest-post-footer {
+      padding: 10px 20px 14px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .thread-link {
+      font-size: 12px; font-weight: 600; color: #ff4500;
+      text-decoration: none;
+    }
+    .thread-link:hover { text-decoration: underline; }
+    .comment-count { font-size: 12px; color: var(--subtext); }
+
+    .digest-loading {
+      text-align: center; padding: 40px;
+      color: var(--subtext); font-size: 14px;
+      display: flex; flex-direction: column; align-items: center; gap: 12px;
+    }
+    .digest-error {
+      text-align: center; padding: 30px;
+      color: var(--subtext); font-size: 14px;
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 14px;
+    }
+
+    /* ── TAB BAR ───────────────────────────────────────────────── */
+    .tab-bar {
+      display: flex; gap: 4px;
+      border-bottom: 2px solid var(--border);
+      margin-bottom: 24px;
+    }
+    .tab-btn {
+      padding: 10px 22px; border: none; background: none;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      color: var(--subtext); border-bottom: 3px solid transparent;
+      margin-bottom: -2px; transition: all 0.2s; border-radius: 6px 6px 0 0;
+    }
+    .tab-btn:hover { color: var(--text); background: var(--tag-bg); }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    /* ── TOPIC LIST (Reddit digest) ────────────────────────────── */
+    .topic-list {
+      border-top: 1px solid var(--border);
+      padding: 14px 20px;
+      display: flex; flex-direction: column; gap: 0;
+    }
+    .topic-list-label {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.5px; color: var(--subtext); margin-bottom: 10px;
+    }
+    .topic-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .topic-item:last-child { border-bottom: none; }
+    .topic-votes {
+      min-width: 36px; text-align: center;
+      background: var(--tag-bg); color: var(--subtext);
+      font-size: 10px; font-weight: 700; border-radius: 6px;
+      padding: 3px 5px; margin-top: 2px;
+    }
+    .topic-content { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+    .topic-author { font-size: 11px; color: var(--subtext); font-weight: 600; }
+    .topic-text {
+      font-size: 13px; color: var(--text); line-height: 1.5;
+    }
+    .topic-link {
+      font-size: 11px; color: var(--accent); text-decoration: none;
+      font-weight: 600; align-self: flex-start; margin-top: 2px;
+    }
+    .topic-link:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">Points &amp; Miles <span>Dash</span></div>
+    <div class="tagline">Your personalized rewards &amp; travel news hub</div>
+  </div>
+  <div class="header-right">
+    <span class="refresh-time" id="refreshTime">Not loaded</span>
+    <button class="btn btn-primary" id="refreshBtn" onclick="loadAll()">⟳ Refresh</button>
+    <button class="btn btn-ghost" onclick="toggleTheme()">🌓 Theme</button>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- TAB BAR -->
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tab-news"   onclick="switchTab('news')">📰 News Feed</button>
+    <button class="tab-btn"        id="tab-reddit" onclick="switchTab('reddit')">🤝 r/churning Digest</button>
+  </div>
+
+  <!-- ══ PANEL: NEWS FEED ══ -->
+  <div id="panel-news">
+
+    <!-- SOURCE STATUS PILLS -->
+    <div class="source-status" id="sourcePills"></div>
+
+    <!-- STATS -->
+    <div class="stats-bar" id="statsBar" style="display:none">
+      <div class="stat"><div class="stat-num" id="statTotal">0</div><div class="stat-label">Articles</div></div>
+      <div class="stat"><div class="stat-num" id="statSources">0</div><div class="stat-label">Sources</div></div>
+      <div class="stat"><div class="stat-num" id="statCategories">0</div><div class="stat-label">Categories</div></div>
+    </div>
+
+    <!-- DEBUG (shown if errors) -->
+    <div class="debug-box" id="debugBox">
+      <h4>🔍 Source Load Status</h4>
+      <ul id="debugList"></ul>
+    </div>
+
+    <!-- FILTER BAR -->
+    <div class="filter-bar">
+      <span class="filter-label">Category:</span>
+      <button class="filter-btn active" onclick="setCategory('all',this)">All</button>
+      <button class="filter-btn" onclick="setCategory('credit-cards',this)">💳 Credit Cards</button>
+      <button class="filter-btn" onclick="setCategory('bank-bonuses',this)">🏦 Bank Bonuses</button>
+      <button class="filter-btn" onclick="setCategory('points-miles',this)">✈️ Points &amp; Miles</button>
+      <button class="filter-btn" onclick="setCategory('travel',this)">🌍 Travel Deals</button>
+      <button class="filter-btn" onclick="setCategory('news',this)">📰 News</button>
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Search articles…" oninput="renderCards()" />
+      </div>
+    </div>
+
+    <!-- CARDS GRID -->
+    <div class="grid" id="cardGrid">
+      <div class="loading-wrap">
+        <div class="spinner"></div>
+        <div class="loading-text">Loading your dashboard…</div>
+        <div class="loading-sub">Fetching articles from sources via RSS</div>
+      </div>
+    </div>
+
+  </div><!-- /panel-news -->
+
+  <!-- ══ PANEL: REDDIT DIGEST ══ -->
+  <div id="panel-reddit" style="display:none">
+
+    <div class="digest-header">
+      <div class="digest-title">
+        <span style="font-size:22px">🤝</span>
+        <h2>r/churning Daily Digest</h2>
+        <span class="reddit-badge">Last 72 hours</span>
+      </div>
+      <div class="digest-meta" id="digestMeta">Loading threads…</div>
+    </div>
+    <div class="digest-grid" id="digestGrid">
+      <div class="digest-loading">
+        <div class="spinner"></div>
+        Fetching threads and discussion topics…
+      </div>
+    </div>
+
+  </div><!-- /panel-reddit -->
+
+</div>
+
+<script>
+// ─── CONFIG ──────────────────────────────────────────────────────────────
+const SOURCES = [
+  { id:'doc',    name:'Doctor of Credit',    short:'DoC',    color:'#e53e3e', emoji:'🩺', url:'https://www.doctorofcredit.com', rss:'https://www.doctorofcredit.com/feed/' },
+  { id:'fm',     name:'FrequentMiler',       short:'FM',     color:'#2b6cb0', emoji:'🧮', url:'https://frequentmiler.com',       rss:'https://frequentmiler.com/feed/' },
+  { id:'omaat',  name:'One Mile at a Time',  short:'OMAAT',  color:'#6b46c1', emoji:'🛫', url:'https://onemileatatime.com',      rss:'https://onemileatatime.com/feed/' },
+  { id:'vftw',   name:'View From The Wing',  short:'VFTW',   color:'#2f855a', emoji:'🪟', url:'https://viewfromthewing.com',     rss:'https://viewfromthewing.com/feed/' },
+  { id:'tpg',    name:'The Points Guy',      short:'TPG',    color:'#c05621', emoji:'👑', url:'https://thepointsguy.com',        rss:'https://thepointsguy.com/feed/' },
+];
+
+// CORS proxies — tried in order until one works
+const PROXIES = [
+  url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+  url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+];
+
+const CATEGORIES = {
+  'credit-cards': { label:'💳 Credit Cards', kw:['credit card','card bonus','sign-up bonus','signup bonus','annual fee','welcome offer','welcome bonus','card review','amex','chase','citi','capital one','barclays','us bank','discover','ink','sapphire','platinum card','gold card','venture','freedom','preferred','reserve','business card','approval','credit pull','hard pull','application rule','5/24','2/90','card offer'] },
+  'bank-bonuses': { label:'🏦 Bank Bonuses', kw:['bank bonus','checking bonus','savings bonus','bank account','direct deposit','checking account','savings account','money market','cd rate','high yield','bank offer','bank deal','brokerage bonus'] },
+  'points-miles': { label:'✈️ Points & Miles', kw:['points','miles','award','redemption','transfer partner','transfer bonus','loyalty','frequent flyer','mileage','mileage plan','skymiles','saver award','award chart','cpp','cents per point','sweet spot','hyatt','marriott','hilton','ihg','bonvoy','honors','oneworld','star alliance','skyteam','alaska','united','delta','american airlines','british airways','air canada','aeroplan'] },
+  'travel':       { label:'🌍 Travel Deals',  kw:['flight deal','fare sale','error fare','mistake fare','sale','hotel deal','travel deal','cheap flight','discount','flash sale','business class','first class','lounge','priority pass','global entry','tsa precheck','trip report','cruise','upgrade'] },
+};
+
+function categorize(title, desc) {
+  const t = (title + ' ' + (desc||'')).toLowerCase();
+  for (const [cat, d] of Object.entries(CATEGORIES)) {
+    if (d.kw.some(k => t.includes(k))) return cat;
+  }
+  return 'news';
+}
+
+// ─── STATE ───────────────────────────────────────────────────────────────
+let allArticles = [];
+let activeCategory = 'all';
+let activeSources = new Set(SOURCES.map(s => s.id));
+let sourceState = {}; // { id: 'loading'|'ok'|'error' }
+let debugLog = [];
+
+// ─── FETCH ───────────────────────────────────────────────────────────────
+async function fetchWithProxy(rssUrl) {
+  for (const makeProxy of PROXIES) {
+    try {
+      const proxyUrl = makeProxy(rssUrl);
+      const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(12000) });
+      if (!res.ok) continue;
+
+      // allorigins returns { contents: "...", status: {...} }
+      const text = await res.text();
+      let xmlText;
+      try {
+        const json = JSON.parse(text);
+        xmlText = json.contents || json.data || text;
+      } catch {
+        xmlText = text; // plain XML (corsproxy.io, codetabs)
+      }
+
+      if (xmlText && xmlText.includes('<item')) return xmlText;
+    } catch (e) {
+      // try next proxy
+    }
+  }
+  return null;
+}
+
+function parseRSS(xmlText, source) {
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xmlText, 'application/xml');
+    const items = Array.from(doc.querySelectorAll('item'));
+
+    return items.slice(0, 15).map(item => {
+      const title = item.querySelector('title')?.textContent?.trim() || '';
+      const link  = item.querySelector('link')?.textContent?.trim()
+                 || item.querySelector('guid')?.textContent?.trim()
+                 || source.url;
+      const pubDateStr = item.querySelector('pubDate')?.textContent?.trim()
+                      || item.querySelector('published')?.textContent?.trim()
+                      || item.querySelector('updated')?.textContent?.trim() || '';
+      const rawDesc = item.querySelector('description')?.textContent?.trim()
+                    || item.querySelector('summary')?.textContent?.trim()
+                    || item.querySelector('content')?.textContent?.trim() || '';
+
+      // strip HTML from description
+      const tmpDiv = document.createElement('div');
+      tmpDiv.innerHTML = rawDesc;
+      const cleanDesc = tmpDiv.textContent.replace(/\s+/g,' ').trim().slice(0, 280);
+
+      const pubDate = pubDateStr ? new Date(pubDateStr) : null;
+
+      return {
+        sourceId:    source.id,
+        sourceName:  source.name,
+        sourceShort: source.short,
+        sourceColor: source.color,
+        sourceEmoji: source.emoji,
+        sourceUrl:   source.url,
+        title:       title.replace(/&amp;/g,'&').replace(/&#8217;/g,"'").replace(/&#8216;/g,"'").replace(/&lt;/g,'<').replace(/&gt;/g,'>'),
+        url:         link,
+        desc:        cleanDesc,
+        date:        pubDate && !isNaN(pubDate) ? pubDate : null,
+        category:    categorize(title, cleanDesc),
+      };
+    });
+  } catch(e) {
+    return [];
+  }
+}
+
+async function fetchSource(source) {
+  setPillState(source.id, 'loading');
+  debugLog.push({ id: source.id, name: source.name, status: 'loading', msg: 'Fetching…' });
+  updateDebug();
+
+  // All sources use RSS via CORS proxy
+  const xml = await fetchWithProxy(source.rss);
+
+  if (!xml) {
+    setPillState(source.id, 'error');
+    updateDebugEntry(source.id, 'error', 'All proxies failed');
+    return [];
+  }
+
+  const articles = parseRSS(xml, source);
+  if (articles.length === 0) {
+    setPillState(source.id, 'error');
+    updateDebugEntry(source.id, 'error', 'Fetched but 0 articles parsed');
+    return [];
+  }
+
+  setPillState(source.id, 'ok', articles.length);
+  updateDebugEntry(source.id, 'ok', `${articles.length} articles loaded`);
+  return articles;
+}
+
+// ─── LOAD ALL ────────────────────────────────────────────────────────────
+async function loadAll() {
+  allArticles = [];
+  debugLog = [];
+  document.getElementById('statsBar').style.display = 'none';
+  document.getElementById('debugBox').style.display = 'none';
+  document.getElementById('refreshBtn').disabled = true;
+  document.getElementById('refreshTime').textContent = 'Loading…';
+  document.getElementById('cardGrid').innerHTML = `
+    <div class="loading-wrap">
+      <div class="spinner"></div>
+      <div class="loading-text" id="loadingText">Fetching articles from ${SOURCES.length} sources…</div>
+      <div class="loading-sub">Using RSS feeds with CORS proxy — may take 10–20 seconds</div>
+    </div>`;
+  document.getElementById('digestGrid').innerHTML = `<div class="digest-loading"><div class="spinner"></div>Fetching r/churning threads…</div>`;
+  document.getElementById('digestMeta').textContent = 'Loading…';
+
+  buildPills();
+
+  // Fetch blog sources + Reddit digest in parallel
+  const [results] = await Promise.all([
+    Promise.allSettled(SOURCES.map(s => fetchSource(s))),
+    loadRedditDigest(),
+  ]);
+  results.forEach(r => { if (r.status === 'fulfilled') allArticles.push(...r.value); });
+
+  // Sort newest first
+  allArticles.sort((a, b) => {
+    if (a.date && b.date) return b.date - a.date;
+    if (a.date) return -1;
+    if (b.date) return 1;
+    return 0;
+  });
+
+  const uniqueSrc = new Set(allArticles.map(a => a.sourceId)).size;
+  const uniqueCat = new Set(allArticles.map(a => a.category)).size;
+
+  document.getElementById('statTotal').textContent = allArticles.length;
+  document.getElementById('statSources').textContent = uniqueSrc;
+  document.getElementById('statCategories').textContent = uniqueCat;
+  document.getElementById('statsBar').style.display = 'flex';
+  document.getElementById('refreshTime').textContent = 'Updated ' + new Date().toLocaleTimeString();
+  document.getElementById('refreshBtn').disabled = false;
+
+  const hasErrors = debugLog.some(d => d.status === 'error');
+  if (hasErrors) {
+    document.getElementById('debugBox').style.display = 'block';
+    updateDebug();
+  }
+
+  renderCards();
+}
+
+// ─── SOURCE PILLS ────────────────────────────────────────────────────────
+function buildPills() {
+  const wrap = document.getElementById('sourcePills');
+  wrap.innerHTML = '';
+  SOURCES.forEach(src => {
+    sourceState[src.id] = 'loading';
+    const pill = document.createElement('span');
+    pill.className = 'src-pill loading';
+    pill.id = `pill-${src.id}`;
+    pill.style.background = src.color;
+    pill.dataset.srcId = src.id;
+    pill.innerHTML = `${src.emoji} ${src.short} <span class="pill-count" id="pillcount-${src.id}">…</span>`;
+    pill.title = `Toggle ${src.name}`;
+    pill.onclick = () => toggleSource(src.id);
+    wrap.appendChild(pill);
+  });
+}
+
+function setPillState(id, state, count) {
+  sourceState[id] = state;
+  const pill = document.getElementById(`pill-${id}`);
+  const cnt  = document.getElementById(`pillcount-${id}`);
+  if (!pill) return;
+  pill.className = `src-pill ${state}`;
+  if (!activeSources.has(id)) pill.classList.add('inactive');
+  if (state === 'ok' && count != null) cnt.textContent = count;
+  if (state === 'error') cnt.textContent = '✗';
+  if (state === 'loading') cnt.textContent = '⏳';
+}
+
+function toggleSource(id) {
+  if (activeSources.has(id)) activeSources.delete(id);
+  else activeSources.add(id);
+  const pill = document.getElementById(`pill-${id}`);
+  if (pill) pill.classList.toggle('inactive', !activeSources.has(id));
+  renderCards();
+}
+
+// ─── DEBUG ───────────────────────────────────────────────────────────────
+function updateDebug() {
+  const list = document.getElementById('debugList');
+  list.innerHTML = debugLog.map(d => `
+    <li>
+      <span class="${d.status === 'ok' ? 'debug-ok' : d.status === 'error' ? 'debug-err' : ''}">${d.status === 'ok' ? '✓' : d.status === 'error' ? '✗' : '⏳'}</span>
+      <strong>${d.name}</strong> — ${d.msg}
+    </li>`).join('');
+}
+
+function updateDebugEntry(id, status, msg) {
+  const entry = debugLog.find(d => d.id === id);
+  if (entry) { entry.status = status; entry.msg = msg; }
+  updateDebug();
+}
+
+// ─── FILTER / RENDER ─────────────────────────────────────────────────────
+function setCategory(cat, btn) {
+  activeCategory = cat;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCards();
+}
+
+function renderCards() {
+  const search = (document.getElementById('searchInput').value || '').toLowerCase();
+  const grid = document.getElementById('cardGrid');
+
+  const filtered = allArticles.filter(a => {
+    if (!activeSources.has(a.sourceId)) return false;
+    if (activeCategory !== 'all' && a.category !== activeCategory) return false;
+    if (search && !a.title.toLowerCase().includes(search) && !a.desc.toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    if (allArticles.length === 0) {
+      grid.innerHTML = `<div class="empty-msg">⏳ Still loading… or all sources failed to load.<br><small>Check the status above for details.</small></div>`;
+    } else {
+      grid.innerHTML = `<div class="empty-msg">No articles match the current filters.</div>`;
+    }
+    return;
+  }
+
+  grid.innerHTML = filtered.map(a => cardHTML(a)).join('');
+}
+
+function cardHTML(a) {
+  const catLabel = a.category === 'news' ? '📰 News' : (CATEGORIES[a.category]?.label || a.category);
+  const dateStr  = a.date ? fmtDate(a.date) : '';
+  const desc     = a.desc ? `<div class="card-desc">${esc(a.desc)}</div>` : '';
+
+  return `
+  <div class="card">
+    <div class="card-meta">
+      <span class="source-badge" style="background:${a.sourceColor}">${a.sourceShort}</span>
+      <span class="category-tag">${catLabel}</span>
+      <span class="card-date">${dateStr}</span>
+    </div>
+    <div class="card-title"><a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.title)}</a></div>
+    ${desc}
+    <div class="card-footer">
+      <a class="read-link" href="${esc(a.url)}" target="_blank" rel="noopener">Read article →</a>
+      <span style="font-size:11px;color:var(--subtext)">${esc(a.sourceName)}</span>
+    </div>
+  </div>`;
+}
+
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmtDate(d) {
+  const diff = (Date.now() - d) / 1000;
+  if (diff < 60)    return 'just now';
+  if (diff < 3600)  return Math.floor(diff/60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+  if (diff < 172800) return 'Yesterday';
+  return d.toLocaleDateString(undefined, { month:'short', day:'numeric' });
+}
+
+// ─── TAB SWITCHING ───────────────────────────────────────────────────────
+function switchTab(name) {
+  document.getElementById('panel-news').style.display   = name === 'news'   ? '' : 'none';
+  document.getElementById('panel-reddit').style.display = name === 'reddit' ? '' : 'none';
+  document.getElementById('tab-news').classList.toggle('active',   name === 'news');
+  document.getElementById('tab-reddit').classList.toggle('active', name === 'reddit');
+}
+
+// ─── REDDIT DAILY DIGEST ─────────────────────────────────────────────────
+
+async function loadRedditDigest() {
+  const grid = document.getElementById('digestGrid');
+  const meta = document.getElementById('digestMeta');
+
+  // 1. Fetch latest posts, filter to last 24h
+  let posts = [];
+  try {
+    const res = await fetch(
+      'https://www.reddit.com/r/churning/new.json?limit=100&raw_json=1',
+      { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(15000) }
+    );
+    const data = await res.json();
+    const cutoff = Date.now() / 1000 - 259200; // 72 hours
+    posts = (data?.data?.children || [])
+      .map(c => c.data)
+      .filter(p => p.created_utc >= cutoff)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 30);
+  } catch (e) {
+    grid.innerHTML = `<div class="digest-error">⚠️ Could not reach Reddit. Try refreshing.</div>`;
+    meta.textContent = 'Failed to load';
+    return;
+  }
+
+  if (posts.length === 0) {
+    grid.innerHTML = `<div class="digest-error">No posts in the last 24 hours.</div>`;
+    meta.textContent = '0 posts found';
+    return;
+  }
+
+  meta.textContent = `${posts.length} threads · fetching discussions…`;
+
+  // 2. Render skeleton cards so titles appear immediately
+  grid.innerHTML = posts.map(p => digestPostHTML(p, null)).join('');
+
+  // 3. Fetch top comments for each post sequentially (throttled)
+  let loaded = 0;
+  for (let i = 0; i < posts.length; i++) {
+    const p = posts[i];
+    try {
+      const res = await fetch(
+        `https://www.reddit.com/r/churning/comments/${p.id}.json?limit=15&sort=top&raw_json=1&depth=1`,
+        { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(12000) }
+      );
+      const data = await res.json();
+      const topics = (data[1]?.data?.children || [])
+        .map(c => c.data)
+        .filter(c =>
+          c.body &&
+          c.body !== '[deleted]' &&
+          c.body !== '[removed]' &&
+          c.author !== 'AutoModerator' &&
+          c.score > 0 &&
+          c.body.length > 20
+        )
+        .slice(0, 8); // up to 8 discussion topics
+
+      const card = document.getElementById(`digest-post-${p.id}`);
+      if (card) card.outerHTML = digestPostHTML(p, topics);
+      loaded++;
+    } catch (e) {
+      // leave skeleton title visible if comments fail
+    }
+    meta.textContent = `${posts.length} threads · loading discussions (${i+1}/${posts.length})…`;
+    if (i < posts.length - 1) await new Promise(r => setTimeout(r, 250));
+  }
+
+  meta.textContent = `${posts.length} threads · ${loaded} with discussion topics`;
+}
+
+function digestPostHTML(p, topics) {
+  const flair    = p.link_flair_text ? `<span class="post-flair">${esc(p.link_flair_text)}</span>` : '';
+  const timeAgo  = fmtDate(new Date(p.created_utc * 1000));
+  const permalink = `https://www.reddit.com${p.permalink}`;
+
+  // OP body text (skip short/boilerplate)
+  let selftext = '';
+  if (p.selftext && p.selftext.length > 40 && !p.selftext.startsWith('*For') && !p.selftext.startsWith('Welcome')) {
+    const clean = p.selftext.replace(/\n+/g, ' ').trim().slice(0, 350);
+    selftext = `<div class="digest-selftext">${esc(clean)}${p.selftext.length > 350 ? '…' : ''}</div>`;
+  }
+
+  // Topic list from comments
+  let topicsHTML = '';
+  if (topics === null) {
+    // skeleton
+    topicsHTML = `
+      <div class="topic-list">
+        <div class="topic-list-label">Discussion Topics</div>
+        <div style="font-size:12px;color:var(--subtext);padding:6px 0;display:flex;align-items:center;gap:8px">
+          <div class="spinner" style="width:14px;height:14px;border-width:2px"></div> Loading discussion…
+        </div>
+      </div>`;
+  } else if (topics.length > 0) {
+    const items = topics.map(c => {
+      // Extract first meaningful sentence as the topic headline
+      const rawBody  = c.body.replace(/\*\*/g,'').replace(/\*/g,'').replace(/\n+/g,' ').trim();
+      const headline = rawBody.split(/[.!?]/)[0].trim().slice(0, 120);
+      const preview  = rawBody.slice(0, 260);
+      // Direct comment link: reddit.com/r/churning/comments/POST/SLUG/COMMENT_ID/
+      const commentUrl = `https://www.reddit.com/r/churning/comments/${p.id}/_/${c.id}/?context=1`;
+
+      return `
+        <div class="topic-item">
+          <div class="topic-votes">↑${c.score}</div>
+          <div class="topic-content">
+            <div class="topic-author">u/${esc(c.author)}</div>
+            <div class="topic-text"><strong>${esc(headline)}${rawBody.length > 120 ? '…' : ''}</strong><br>
+              <span style="color:var(--subtext);font-size:12px">${esc(preview)}${rawBody.length > 260 ? '…' : ''}</span>
+            </div>
+            <a class="topic-link" href="${esc(commentUrl)}" target="_blank" rel="noopener">↗ Jump to this comment</a>
+          </div>
+        </div>`;
+    }).join('');
+
+    topicsHTML = `
+      <div class="topic-list">
+        <div class="topic-list-label">💬 Discussion Topics (${topics.length})</div>
+        ${items}
+      </div>`;
+  }
+
+  return `
+  <div class="digest-post" id="digest-post-${p.id}">
+    <div class="digest-post-header">
+      <div class="digest-post-meta">
+        ${flair}
+        <span class="post-score">↑ ${p.score}</span>
+        <span class="post-time">${timeAgo}</span>
+      </div>
+      <div class="digest-post-title">
+        <a href="${esc(permalink)}" target="_blank" rel="noopener">${esc(p.title)}</a>
+      </div>
+    </div>
+    ${selftext}
+    ${topicsHTML}
+    <div class="digest-post-footer">
+      <a class="thread-link" href="${esc(permalink)}" target="_blank" rel="noopener">Open full thread →</a>
+      <span class="comment-count">💬 ${p.num_comments} comments</span>
+    </div>
+  </div>`;
+}
+
+// ─── THEME ───────────────────────────────────────────────────────────────
+function toggleTheme() {
+  const html = document.documentElement;
+  html.dataset.theme = html.dataset.theme === 'dark' ? '' : 'dark';
+  try { localStorage.setItem('pmDashTheme', html.dataset.theme); } catch{}
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────
+(function init() {
+  try {
+    const saved = localStorage.getItem('pmDashTheme');
+    if (saved === 'dark') document.documentElement.dataset.theme = 'dark';
+  } catch{}
+  loadAll();
+})();
+</script>
+</body>
+</html>
