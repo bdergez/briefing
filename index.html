@@ -631,28 +631,31 @@ async function loadAll() {
 
   buildPills();
 
-  // Fetch blog sources + Reddit digest in parallel
-  const [results] = await Promise.all([
-    Promise.allSettled(SOURCES.map(s => fetchSource(s))),
-    loadRedditDigest(),
-  ]);
-  results.forEach(r => { if (r.status === 'fulfilled') allArticles.push(...r.value); });
+  // Fetch each blog source independently and render as soon as it arrives
+  const sourcePromises = SOURCES.map(s =>
+    fetchSource(s).then(articles => {
+      allArticles.push(...articles);
+      allArticles.sort((a, b) => {
+        if (a.date && b.date) return b.date - a.date;
+        if (a.date) return -1;
+        if (b.date) return 1;
+        return 0;
+      });
+      // Update stats and re-render immediately when each source lands
+      document.getElementById('statTotal').textContent = allArticles.length;
+      document.getElementById('statSources').textContent = new Set(allArticles.map(a => a.sourceId)).size;
+      document.getElementById('statCategories').textContent = new Set(allArticles.map(a => a.category)).size;
+      document.getElementById('statsBar').style.display = 'flex';
+      renderCards();
+    })
+  );
 
-  // Sort newest first
-  allArticles.sort((a, b) => {
-    if (a.date && b.date) return b.date - a.date;
-    if (a.date) return -1;
-    if (b.date) return 1;
-    return 0;
-  });
+  // Start Reddit digest independently (doesn't block news feed)
+  loadRedditDigest();
 
-  const uniqueSrc = new Set(allArticles.map(a => a.sourceId)).size;
-  const uniqueCat = new Set(allArticles.map(a => a.category)).size;
+  // Wait for all blog sources to finish
+  await Promise.allSettled(sourcePromises);
 
-  document.getElementById('statTotal').textContent = allArticles.length;
-  document.getElementById('statSources').textContent = uniqueSrc;
-  document.getElementById('statCategories').textContent = uniqueCat;
-  document.getElementById('statsBar').style.display = 'flex';
   document.getElementById('refreshTime').textContent = 'Updated ' + new Date().toLocaleTimeString();
   document.getElementById('refreshBtn').disabled = false;
 
@@ -661,8 +664,6 @@ async function loadAll() {
     document.getElementById('debugBox').style.display = 'block';
     updateDebug();
   }
-
-  renderCards();
 }
 
 // ─── SOURCE PILLS ────────────────────────────────────────────────────────
@@ -869,46 +870,59 @@ async function loadRedditDigest() {
 
   meta.textContent = `${posts.length} threads · fetching discussions…`;
 
-  // 2. Render skeleton cards so titles appear immediately
+  // 2. Render skeleton cards immediately so titles show up right away
   grid.innerHTML = posts.map(p => digestPostHTML(p, null)).join('');
 
-  // 3. Fetch top comments for each post sequentially (throttled)
-  let loaded = 0;
-  for (let i = 0; i < posts.length; i++) {
-    const p = posts[i];
+  // 3. Fetch all thread comments in parallel with a hard 20s overall deadline
+  async function fetchComments(p) {
+    const commentUrl = `https://www.reddit.com/r/churning/comments/${p.id}.json?limit=15&sort=top&raw_json=1&depth=1`;
+    let data = null;
+    // Direct only — no slow proxy fallback for comments (proxy adds too much latency)
     try {
-      const commentUrl = `https://www.reddit.com/r/churning/comments/${p.id}.json?limit=15&sort=top&raw_json=1&depth=1`;
-      let data = null;
-      // Try direct, then proxy fallback
-      for (const fetcher of [
-        () => fetchWithTimeout(commentUrl, { headers: { Accept: 'application/json' } }, 12000).then(r => r.ok ? r.json() : Promise.reject()),
-        () => fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(commentUrl)}`, {}, 15000).then(r => r.json()).then(w => JSON.parse(w.contents)),
-      ]) {
-        try { data = await fetcher(); break; } catch(e) { /* try next */ }
-      }
-      if (!data) throw new Error('All fetchers failed');
-      const topics = (data[1]?.data?.children || [])
-        .map(c => c.data)
-        .filter(c =>
-          c.body &&
-          c.body !== '[deleted]' &&
-          c.body !== '[removed]' &&
-          c.author !== 'AutoModerator' &&
-          c.score > 0 &&
-          c.body.length > 20
-        )
-        .slice(0, 8); // up to 8 discussion topics
+      const res = await fetchWithTimeout(commentUrl, { headers: { Accept: 'application/json' } }, 8000);
+      if (res.ok) data = await res.json();
+    } catch(e) { /* timeout or network error */ }
 
-      const card = document.getElementById(`digest-post-${p.id}`);
-      if (card) card.outerHTML = digestPostHTML(p, topics);
-      loaded++;
-    } catch (e) {
-      // leave skeleton title visible if comments fail
-    }
-    meta.textContent = `${posts.length} threads · loading discussions (${i+1}/${posts.length})…`;
-    if (i < posts.length - 1) await new Promise(r => setTimeout(r, 250));
+    const topics = data
+      ? (data[1]?.data?.children || [])
+          .map(c => c.data)
+          .filter(c =>
+            c.body &&
+            c.body !== '[deleted]' &&
+            c.body !== '[removed]' &&
+            c.author !== 'AutoModerator' &&
+            c.score > 0 &&
+            c.body.length > 20
+          )
+          .slice(0, 8)
+      : [];
+
+    const card = document.getElementById(`digest-post-${p.id}`);
+    if (card) card.outerHTML = digestPostHTML(p, topics);
+    return topics.length > 0;
   }
 
+  // Race: all comment fetches vs. a 20-second hard deadline
+  const HARD_DEADLINE = 20000;
+  const deadline = new Promise(resolve => setTimeout(resolve, HARD_DEADLINE));
+
+  const commentResults = await Promise.race([
+    Promise.allSettled(posts.map(p => fetchComments(p))),
+    deadline.then(() => null),
+  ]);
+
+  // If deadline fired first, clear any remaining spinners
+  document.querySelectorAll('[id^="digest-post-"]').forEach(card => {
+    if (card.innerHTML.includes('Loading discussion')) {
+      const postId = card.id.replace('digest-post-', '');
+      const post = posts.find(p => p.id === postId);
+      if (post) card.outerHTML = digestPostHTML(post, []);
+    }
+  });
+
+  const loaded = commentResults
+    ? commentResults.filter(r => r.status === 'fulfilled' && r.value).length
+    : '?';
   meta.textContent = `${posts.length} threads · ${loaded} with discussion topics`;
 }
 
