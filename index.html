@@ -521,7 +521,7 @@ async function fetchWithProxy(rssUrl) {
   for (const makeProxy of PROXIES) {
     try {
       const proxyUrl = makeProxy(rssUrl);
-      const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(12000) });
+      const res = await fetchWithTimeout(proxyUrl, {}, 12000);
       if (!res.ok) continue;
 
       // allorigins returns { contents: "...", status: {...} }
@@ -793,34 +793,76 @@ function switchTab(name) {
   document.getElementById('tab-reddit').classList.toggle('active', name === 'reddit');
 }
 
+// ─── HELPERS ─────────────────────────────────────────────────────────────
+
+// Mobile-safe fetch with timeout (AbortSignal.timeout not supported on all mobile browsers)
+function fetchWithTimeout(url, options = {}, ms = 15000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  return fetch(url, { ...options, signal: controller.signal })
+    .finally(() => clearTimeout(timer));
+}
+
 // ─── REDDIT DAILY DIGEST ─────────────────────────────────────────────────
 
 async function loadRedditDigest() {
   const grid = document.getElementById('digestGrid');
   const meta = document.getElementById('digestMeta');
 
-  // 1. Fetch latest posts, filter to last 24h
+  const REDDIT_URL = 'https://www.reddit.com/r/churning/new.json?limit=100&raw_json=1';
+
+  // Try direct first, then CORS proxies as fallback (needed for some mobile browsers)
+  const STRATEGIES = [
+    async () => {
+      const res = await fetchWithTimeout(REDDIT_URL, { headers: { Accept: 'application/json' } }, 15000);
+      if (!res.ok) throw new Error('Bad status: ' + res.status);
+      return res.json();
+    },
+    async () => {
+      // allorigins proxy wraps response in { contents: "json string" }
+      const res = await fetchWithTimeout(
+        `https://api.allorigins.win/get?url=${encodeURIComponent(REDDIT_URL)}`, {}, 18000
+      );
+      if (!res.ok) throw new Error('Proxy error');
+      const wrapper = await res.json();
+      return JSON.parse(wrapper.contents);
+    },
+    async () => {
+      const res = await fetchWithTimeout(
+        `https://corsproxy.io/?${encodeURIComponent(REDDIT_URL)}`, {}, 18000
+      );
+      if (!res.ok) throw new Error('Proxy error');
+      return res.json();
+    },
+  ];
+
   let posts = [];
-  try {
-    const res = await fetch(
-      'https://www.reddit.com/r/churning/new.json?limit=100&raw_json=1',
-      { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(15000) }
-    );
-    const data = await res.json();
-    const cutoff = Date.now() / 1000 - 259200; // 72 hours
-    posts = (data?.data?.children || [])
-      .map(c => c.data)
-      .filter(p => p.created_utc >= cutoff)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 30);
-  } catch (e) {
-    grid.innerHTML = `<div class="digest-error">⚠️ Could not reach Reddit. Try refreshing.</div>`;
+  let allFailed = true;
+
+  for (const strategy of STRATEGIES) {
+    try {
+      const data = await strategy();
+      const children = data?.data?.children || [];
+      if (children.length === 0) continue;
+      const cutoff = Date.now() / 1000 - 259200; // 72 hours
+      posts = children
+        .map(c => c.data)
+        .filter(p => p.created_utc >= cutoff)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 30);
+      allFailed = false;
+      break;
+    } catch (e) { /* try next */ }
+  }
+
+  if (allFailed) {
+    grid.innerHTML = `<div class="digest-error">⚠️ Could not reach Reddit. Check your connection and try refreshing.</div>`;
     meta.textContent = 'Failed to load';
     return;
   }
 
   if (posts.length === 0) {
-    grid.innerHTML = `<div class="digest-error">No posts in the last 24 hours.</div>`;
+    grid.innerHTML = `<div class="digest-error">No posts found in the last 72 hours.</div>`;
     meta.textContent = '0 posts found';
     return;
   }
@@ -835,11 +877,16 @@ async function loadRedditDigest() {
   for (let i = 0; i < posts.length; i++) {
     const p = posts[i];
     try {
-      const res = await fetch(
-        `https://www.reddit.com/r/churning/comments/${p.id}.json?limit=15&sort=top&raw_json=1&depth=1`,
-        { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(12000) }
-      );
-      const data = await res.json();
+      const commentUrl = `https://www.reddit.com/r/churning/comments/${p.id}.json?limit=15&sort=top&raw_json=1&depth=1`;
+      let data = null;
+      // Try direct, then proxy fallback
+      for (const fetcher of [
+        () => fetchWithTimeout(commentUrl, { headers: { Accept: 'application/json' } }, 12000).then(r => r.ok ? r.json() : Promise.reject()),
+        () => fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(commentUrl)}`, {}, 15000).then(r => r.json()).then(w => JSON.parse(w.contents)),
+      ]) {
+        try { data = await fetcher(); break; } catch(e) { /* try next */ }
+      }
+      if (!data) throw new Error('All fetchers failed');
       const topics = (data[1]?.data?.children || [])
         .map(c => c.data)
         .filter(c =>
