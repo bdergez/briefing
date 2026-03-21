@@ -386,6 +386,91 @@
       font-weight: 600; align-self: flex-start; margin-top: 2px;
     }
     .topic-link:hover { text-decoration: underline; }
+
+    /* ── MOBILE ─────────────────────────────────────────────────── */
+    @media (max-width: 640px) {
+
+      /* Header: compact, no tagline */
+      header {
+        padding: 0 16px;
+        height: 54px;
+      }
+      .logo { font-size: 18px; }
+      .tagline { display: none; }
+      .refresh-time { display: none; }
+      .btn { padding: 7px 12px; font-size: 12px; }
+
+      /* Main padding */
+      .main { padding: 16px 12px; }
+
+      /* Tabs: fill full width, bigger tap targets */
+      .tab-bar { gap: 0; }
+      .tab-btn {
+        flex: 1; text-align: center;
+        padding: 12px 8px; font-size: 13px;
+      }
+
+      /* Source pills: smaller, wrap tightly */
+      .src-pill { padding: 4px 10px; font-size: 11px; }
+
+      /* Stats: compact row */
+      .stats-bar { gap: 8px; }
+      .stat { padding: 8px 12px; min-width: 70px; }
+      .stat-num { font-size: 18px; }
+      .stat-label { font-size: 10px; }
+
+      /* Filter bar: horizontal scroll instead of wrapping */
+      .filter-bar {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        gap: 8px;
+        padding-bottom: 6px;
+        margin-bottom: 16px;
+        /* hide scrollbar visually */
+        scrollbar-width: none;
+      }
+      .filter-bar::-webkit-scrollbar { display: none; }
+      .filter-label { white-space: nowrap; }
+      .filter-btn { white-space: nowrap; flex-shrink: 0; padding: 7px 14px; }
+
+      /* Search: full width below filters */
+      .search-wrap {
+        margin-left: 0;
+        width: 100%;
+        order: 99; /* push to its own row */
+        flex-basis: 100%;
+      }
+      .search-wrap input { width: 100%; }
+
+      /* Cards: single column, full width */
+      .grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .card { padding: 14px 16px; }
+      .card-title { font-size: 14px; }
+      .card-desc { font-size: 12px; }
+
+      /* Reddit digest */
+      .digest-header { flex-direction: column; align-items: flex-start; gap: 6px; }
+      .digest-title h2 { font-size: 16px; }
+      .digest-post-header { padding: 14px 14px 10px; }
+      .digest-post-title { font-size: 14px; }
+      .digest-selftext { padding: 0 14px 10px; font-size: 12px; }
+      .topic-list { padding: 12px 14px; }
+      .topic-text { font-size: 12px; }
+      .digest-post-footer { padding: 10px 14px 12px; }
+
+      /* Touch-friendly tap targets */
+      .read-link, .thread-link, .topic-link {
+        padding: 4px 0;
+        display: inline-block;
+        min-height: 32px;
+        line-height: 32px;
+      }
+      .card:hover { transform: none; } /* disable hover lift on touch */
+    }
   </style>
 </head>
 <body>
