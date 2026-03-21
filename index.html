@@ -1176,13 +1176,6 @@ function digestPostHTML(p, topics) {
   const timeAgo  = fmtDate(new Date(p.created_utc * 1000));
   const permalink = `https://www.reddit.com${p.permalink}`;
 
-  // OP body text (skip short/boilerplate)
-  let selftext = '';
-  if (p.selftext && p.selftext.length > 40 && !p.selftext.startsWith('*For') && !p.selftext.startsWith('Welcome')) {
-    const clean = p.selftext.replace(/\n+/g, ' ').trim().slice(0, 350);
-    selftext = `<div class="digest-selftext">${esc(clean)}${p.selftext.length > 350 ? '…' : ''}</div>`;
-  }
-
   // Topic list from comments
   let topicsHTML = '';
   if (topics === null) {
@@ -1235,7 +1228,6 @@ function digestPostHTML(p, topics) {
         <a href="${esc(permalink)}" target="_blank" rel="noopener">${esc(p.title)}</a>
       </div>
     </div>
-    ${selftext}
     ${topicsHTML}
     <div class="digest-post-footer">
       <a class="thread-link" href="${esc(permalink)}" target="_blank" rel="noopener">Open full thread →</a>
