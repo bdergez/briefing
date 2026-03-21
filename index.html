@@ -3,6 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1a1a2e" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="P&M Dash" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon.svg" />
   <title>Points & Miles Dashboard</title>
   <style>
     :root {
@@ -462,6 +468,25 @@
     }
     .sub-view-all:hover { background: var(--tag-bg); }
 
+    /* ── NEW BADGE ──────────────────────────────────────────────── */
+    .new-badge {
+      display: inline-block; background: #22c55e; color: #fff;
+      font-size: 9px; font-weight: 800; padding: 1px 5px;
+      border-radius: 20px; vertical-align: middle;
+      margin-left: 4px; letter-spacing: 0.3px; text-transform: uppercase;
+    }
+    .tab-new-dot {
+      display: inline-block; width: 7px; height: 7px;
+      background: #22c55e; border-radius: 50%; margin-left: 5px;
+      vertical-align: middle;
+    }
+    .refresh-dot {
+      display: inline-block; width: 7px; height: 7px;
+      background: #818cf8; border-radius: 50%;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
     /* ── MOBILE ─────────────────────────────────────────────────── */
     @media (max-width: 640px) {
 
@@ -594,6 +619,7 @@
     <div class="filter-bar">
       <span class="filter-label">Category:</span>
       <button class="filter-btn active" onclick="setCategory('all',this)">All</button>
+      <button class="filter-btn" onclick="setCategory('new',this)" id="filterNew">🆕 New</button>
       <button class="filter-btn" onclick="setCategory('credit-cards',this)">💳 Credit Cards</button>
       <button class="filter-btn" onclick="setCategory('bank-bonuses',this)">🏦 Bank Bonuses</button>
       <button class="filter-btn" onclick="setCategory('points-miles',this)">✈️ Points &amp; Miles</button>
@@ -1324,17 +1350,143 @@ function toggleSub(id) {
 // ─── THEME ───────────────────────────────────────────────────────────────
 function toggleTheme() {
   const html = document.documentElement;
-  html.dataset.theme = html.dataset.theme === 'dark' ? '' : 'dark';
-  try { localStorage.setItem('pmDashTheme', html.dataset.theme); } catch{}
+  const isDark = html.dataset.theme === 'dark';
+  html.dataset.theme = isDark ? '' : 'dark';
+  try { localStorage.setItem('pmDashTheme', isDark ? 'light' : 'dark'); } catch{}
+}
+
+// ─── LAST VISIT / NEW TRACKING ───────────────────────────────────────────
+let lastVisitTime = 0;
+
+function saveLastVisit() {
+  try { localStorage.setItem('pmDashLastVisit', Date.now().toString()); } catch{}
+}
+
+function loadLastVisit() {
+  try {
+    const v = localStorage.getItem('pmDashLastVisit');
+    lastVisitTime = v ? parseInt(v) : 0;
+  } catch{}
+}
+
+function countNewArticles() {
+  return allArticles.filter(a => a.date && a.date.getTime() > lastVisitTime).length;
+}
+
+function updateNewBadge() {
+  const count = countNewArticles();
+  const tab = document.getElementById('tab-news');
+  if (!tab) return;
+  const existing = tab.querySelector('.tab-new-dot');
+  if (count > 0 && !existing) {
+    tab.innerHTML = `📰 News Feed <span class="tab-new-dot" title="${count} new articles"></span>`;
+  } else if (count === 0 && existing) {
+    tab.textContent = '📰 News Feed';
+  }
+  // Update "New" filter button label
+  const filterNew = document.getElementById('filterNew');
+  if (filterNew) filterNew.textContent = count > 0 ? `🆕 New (${count})` : '🆕 New';
+}
+
+// ─── AUTO-REFRESH ─────────────────────────────────────────────────────────
+let autoRefreshTimer = null;
+
+function scheduleAutoRefresh() {
+  if (autoRefreshTimer) clearTimeout(autoRefreshTimer);
+  autoRefreshTimer = setTimeout(async () => {
+    if (!document.hidden) {
+      // Show pulsing dot while refreshing silently
+      const rt = document.getElementById('refreshTime');
+      if (rt) rt.innerHTML = `<span class="refresh-dot"></span> Refreshing…`;
+      await loadAll();
+    }
+    scheduleAutoRefresh(); // schedule next
+  }, 30 * 60 * 1000); // 30 minutes
+}
+
+// ─── RENDER (updated to support "new" filter) ────────────────────────────
+function renderCards() {
+  const search = (document.getElementById('searchInput').value || '').toLowerCase();
+  const grid = document.getElementById('cardGrid');
+
+  const filtered = allArticles.filter(a => {
+    if (!activeSources.has(a.sourceId)) return false;
+    if (activeCategory === 'new') return a.date && a.date.getTime() > lastVisitTime;
+    if (activeCategory !== 'all' && a.category !== activeCategory) return false;
+    if (search && !a.title.toLowerCase().includes(search) && !(a.desc||'').toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    if (allArticles.length === 0) {
+      grid.innerHTML = `<div class="empty-msg">⏳ Still loading… or all sources failed.<br><small>Check the status pills above.</small></div>`;
+    } else {
+      grid.innerHTML = `<div class="empty-msg">No articles match the current filters.</div>`;
+    }
+    return;
+  }
+
+  grid.innerHTML = filtered.map(a => {
+    const isNew = a.date && a.date.getTime() > lastVisitTime;
+    const catLabel = a.category === 'news' ? '📰 News' : (CATEGORIES[a.category]?.label || a.category);
+    const dateStr  = a.date ? fmtDate(a.date) : '';
+    const desc     = a.desc ? `<div class="card-desc">${esc(a.desc)}</div>` : '';
+    return `
+    <div class="card">
+      <div class="card-meta">
+        <span class="source-badge" style="background:${a.sourceColor}">${a.sourceShort}</span>
+        <span class="category-tag">${catLabel}</span>
+        ${isNew ? '<span class="new-badge">New</span>' : ''}
+        <span class="card-date">${dateStr}</span>
+      </div>
+      <div class="card-title"><a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.title)}</a></div>
+      ${desc}
+      <div class="card-footer">
+        <a class="read-link" href="${esc(a.url)}" target="_blank" rel="noopener">Read article →</a>
+        <span style="font-size:11px;color:var(--subtext)">${esc(a.sourceName)}</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  updateNewBadge();
+}
+
+// ─── PWA SERVICE WORKER ───────────────────────────────────────────────────
+function registerSW() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/briefing/service-worker.js')
+      .catch(e => console.log('SW registration skipped:', e.message));
+  }
 }
 
 // ─── INIT ────────────────────────────────────────────────────────────────
 (function init() {
+  // 1. Theme: use saved preference, or fall back to system preference
   try {
     const saved = localStorage.getItem('pmDashTheme');
-    if (saved === 'dark') document.documentElement.dataset.theme = 'dark';
+    if (saved) {
+      document.documentElement.dataset.theme = saved;
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      document.documentElement.dataset.theme = 'dark';
+    }
+    // Auto-update if system theme changes and user hasn't overridden
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+      if (!localStorage.getItem('pmDashTheme')) {
+        document.documentElement.dataset.theme = e.matches ? 'dark' : '';
+      }
+    });
   } catch{}
+
+  // 2. Load last visit time, then save new visit timestamp
+  loadLastVisit();
+  saveLastVisit();
+
+  // 3. Register service worker for PWA
+  registerSW();
+
+  // 4. Load content and start auto-refresh
   loadAll();
+  scheduleAutoRefresh();
 })();
 </script>
 </body>
