@@ -1042,7 +1042,7 @@ async function loadRedditDigest() {
   // Try direct first, then CORS proxies as fallback (needed for some mobile browsers)
   const STRATEGIES = [
     async () => {
-      const res = await fetchWithTimeout(REDDIT_URL, { headers: { Accept: 'application/json' } }, 15000);
+      const res = await fetchWithTimeout(REDDIT_URL, { headers: { Accept: 'application/json' }, credentials: 'omit' }, 15000);
       if (!res.ok) throw new Error('Bad status: ' + res.status);
       return res.json();
     },
@@ -1100,15 +1100,32 @@ async function loadRedditDigest() {
   // 2. Render skeleton cards immediately so titles show up right away
   grid.innerHTML = posts.map(p => digestPostHTML(p, null)).join('');
 
-  // 3. Fetch all thread comments in parallel with a hard 20s overall deadline
+  // 3. Fetch all thread comments in parallel with a hard 30s overall deadline
   async function fetchComments(p) {
     const commentUrl = `https://www.reddit.com/r/churning/comments/${p.id}.json?limit=15&sort=top&raw_json=1&depth=1`;
     let data = null;
-    // Direct only — no slow proxy fallback for comments (proxy adds too much latency)
-    try {
-      const res = await fetchWithTimeout(commentUrl, { headers: { Accept: 'application/json' } }, 8000);
-      if (res.ok) data = await res.json();
-    } catch(e) { /* timeout or network error */ }
+    // Try direct first, then CORS proxies for iOS/WebKit ITP compatibility
+    const commentStrategies = [
+      async () => {
+        const res = await fetchWithTimeout(commentUrl, { headers: { Accept: 'application/json' }, credentials: 'omit' }, 8000);
+        if (!res.ok) throw new Error();
+        return res.json();
+      },
+      async () => {
+        const res = await fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(commentUrl)}`, {}, 12000);
+        if (!res.ok) throw new Error();
+        const w = await res.json();
+        return JSON.parse(w.contents);
+      },
+      async () => {
+        const res = await fetchWithTimeout(`https://corsproxy.io/?${encodeURIComponent(commentUrl)}`, {}, 12000);
+        if (!res.ok) throw new Error();
+        return res.json();
+      },
+    ];
+    for (const s of commentStrategies) {
+      try { data = await s(); break; } catch(e) { /* try next */ }
+    }
 
     const topics = data
       ? (data[1]?.data?.children || [])
@@ -1129,8 +1146,8 @@ async function loadRedditDigest() {
     return topics.length > 0;
   }
 
-  // Race: all comment fetches vs. a 20-second hard deadline
-  const HARD_DEADLINE = 20000;
+  // Race: all comment fetches vs. a 30-second hard deadline (proxies need extra time on iOS)
+  const HARD_DEADLINE = 30000;
   const deadline = new Promise(resolve => setTimeout(resolve, HARD_DEADLINE));
 
   const commentResults = await Promise.race([
@@ -1231,8 +1248,12 @@ function digestPostHTML(p, topics) {
 async function fetchSubreddit(subId) {
   const url = `https://www.reddit.com/r/${subId}/hot.json?limit=15&raw_json=1`;
   const strategies = [
-    () => fetchWithTimeout(url, { headers: { Accept: 'application/json' } }, 10000).then(r => r.ok ? r.json() : Promise.reject()),
+    // Direct — credentials:omit helps bypass iOS ITP blocking
+    () => fetchWithTimeout(url, { headers: { Accept: 'application/json' }, credentials: 'omit' }, 10000).then(r => r.ok ? r.json() : Promise.reject()),
+    // allorigins proxy fallback
     () => fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, {}, 14000).then(r => r.json()).then(w => JSON.parse(w.contents)),
+    // corsproxy.io as second proxy fallback (iOS/Android compatibility)
+    () => fetchWithTimeout(`https://corsproxy.io/?${encodeURIComponent(url)}`, {}, 14000).then(r => r.ok ? r.json() : Promise.reject()),
   ];
   for (const s of strategies) {
     try { return await s(); } catch(e) {}
