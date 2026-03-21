@@ -387,6 +387,81 @@
     }
     .topic-link:hover { text-decoration: underline; }
 
+    /* ── COMMUNITIES TAB ────────────────────────────────────────── */
+    .communities-wrap { display: flex; flex-direction: column; gap: 32px; }
+
+    .community-category {}
+    .category-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 0; margin-bottom: 14px;
+      border-bottom: 2px solid var(--border);
+      cursor: pointer; user-select: none;
+    }
+    .category-header-left { display: flex; align-items: center; gap: 10px; }
+    .category-header h3 { font-size: 16px; font-weight: 800; color: var(--text); }
+    .category-count {
+      font-size: 11px; font-weight: 600; color: var(--subtext);
+      background: var(--tag-bg); padding: 2px 8px; border-radius: 20px;
+    }
+    .category-toggle { font-size: 12px; color: var(--subtext); transition: transform 0.2s; }
+    .category-toggle.collapsed { transform: rotate(-90deg); }
+    .category-body { display: flex; flex-direction: column; gap: 10px; }
+    .category-body.collapsed { display: none; }
+
+    /* subreddit block */
+    .sub-block {
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 14px; overflow: hidden; box-shadow: var(--shadow);
+    }
+    .sub-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px; cursor: pointer; user-select: none;
+      border-bottom: 1px solid var(--border);
+    }
+    .sub-header:hover { background: var(--tag-bg); }
+    .sub-title { display: flex; align-items: center; gap: 8px; }
+    .sub-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .sub-name { font-size: 14px; font-weight: 700; color: var(--text); }
+    .sub-meta { font-size: 11px; color: var(--subtext); }
+    .sub-chevron { font-size: 11px; color: var(--subtext); transition: transform 0.2s; }
+    .sub-chevron.open { transform: rotate(90deg); }
+
+    .sub-posts { display: flex; flex-direction: column; }
+    .sub-post {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 11px 16px; border-bottom: 1px solid var(--border);
+      text-decoration: none; transition: background 0.15s;
+    }
+    .sub-post:last-child { border-bottom: none; }
+    .sub-post:hover { background: var(--tag-bg); }
+    .sub-post-score {
+      min-width: 32px; text-align: center;
+      font-size: 11px; font-weight: 700; color: var(--subtext);
+      background: var(--tag-bg); border-radius: 6px;
+      padding: 3px 4px; margin-top: 2px; flex-shrink: 0;
+    }
+    .sub-post-body { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+    .sub-post-title { font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.4; }
+    .sub-post-desc { font-size: 12px; color: var(--subtext); line-height: 1.4;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .sub-post-footer { display: flex; align-items: center; gap: 10px; margin-top: 2px; }
+    .sub-post-time { font-size: 11px; color: var(--subtext); }
+    .sub-post-comments { font-size: 11px; color: var(--subtext); }
+    .sub-flair {
+      font-size: 10px; font-weight: 700; padding: 1px 7px;
+      border-radius: 20px; background: var(--tag-bg); color: var(--subtext);
+    }
+
+    .sub-loading { padding: 20px; text-align: center; color: var(--subtext); font-size: 13px;
+      display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .sub-error { padding: 16px; text-align: center; color: var(--subtext); font-size: 12px; }
+    .sub-view-all {
+      display: block; text-align: center; padding: 10px;
+      font-size: 12px; font-weight: 600; color: var(--accent);
+      text-decoration: none; border-top: 1px solid var(--border);
+    }
+    .sub-view-all:hover { background: var(--tag-bg); }
+
     /* ── MOBILE ─────────────────────────────────────────────────── */
     @media (max-width: 640px) {
 
@@ -407,7 +482,7 @@
       .tab-bar { gap: 0; }
       .tab-btn {
         flex: 1; text-align: center;
-        padding: 12px 8px; font-size: 13px;
+        padding: 12px 4px; font-size: 12px;
       }
 
       /* Source pills: smaller, wrap tightly */
@@ -491,8 +566,9 @@
 
   <!-- TAB BAR -->
   <div class="tab-bar">
-    <button class="tab-btn active" id="tab-news"   onclick="switchTab('news')">📰 News Feed</button>
-    <button class="tab-btn"        id="tab-reddit" onclick="switchTab('reddit')">🤝 r/churning Digest</button>
+    <button class="tab-btn active" id="tab-news"        onclick="switchTab('news')">📰 News Feed</button>
+    <button class="tab-btn"        id="tab-reddit"      onclick="switchTab('reddit')">🤝 r/churning</button>
+    <button class="tab-btn"        id="tab-communities" onclick="switchTab('communities')">🌐 Communities</button>
   </div>
 
   <!-- ══ PANEL: NEWS FEED ══ -->
@@ -560,6 +636,13 @@
 
   </div><!-- /panel-reddit -->
 
+  <!-- ══ PANEL: COMMUNITIES ══ -->
+  <div id="panel-communities" style="display:none">
+    <div class="communities-wrap" id="communitiesWrap">
+      <div class="digest-loading"><div class="spinner"></div>Loading communities…</div>
+    </div>
+  </div><!-- /panel-communities -->
+
 </div>
 
 <script>
@@ -569,8 +652,39 @@ const SOURCES = [
   { id:'fm',     name:'FrequentMiler',       short:'FM',     color:'#2b6cb0', emoji:'🧮', url:'https://frequentmiler.com',           rss:'https://frequentmiler.com/feed/' },
   { id:'omaat',  name:'One Mile at a Time',  short:'OMAAT',  color:'#6b46c1', emoji:'🛫', url:'https://onemileatatime.com',          rss:'https://onemileatatime.com/feed/' },
   { id:'vftw',   name:'View From The Wing',  short:'VFTW',   color:'#2f855a', emoji:'🪟', url:'https://viewfromthewing.com',         rss:'https://viewfromthewing.com/feed/' },
-  { id:'tpg',    name:'The Points Guy',      short:'TPG',    color:'#c05621', emoji:'👑', url:'https://thepointsguy.com',            rss:'https://thepointsguy.com/feed/' },
-  { id:'ath',    name:'All The Hacks',       short:'ATH',    color:'#0ea5e9', emoji:'🔑', url:'https://members.allthehacks.com',     rss:'https://members.allthehacks.com/feed' },
+  { id:'mtm',    name:'Miles to Memories',   short:'MtM',    color:'#d97706', emoji:'✈️', url:'https://milestomemories.com',         rss:'https://milestomemories.com/feed/' },
+];
+
+// ─── COMMUNITIES CONFIG ───────────────────────────────────────────────────
+const COMMUNITIES = [
+  { label: '💳 Points & Travel', color: '#6b46c1', subs: [
+    { id: 'awardtravel',   name: 'r/awardtravel',   color: '#6b46c1' },
+    { id: 'CreditCards',   name: 'r/CreditCards',   color: '#e53e3e' },
+    { id: 'ChaseSapphire', name: 'r/ChaseSapphire', color: '#1a56db' },
+  ]},
+  { label: '💰 Finance & FIRE', color: '#2f855a', subs: [
+    { id: 'personalfinance',        name: 'r/personalfinance',        color: '#2f855a' },
+    { id: 'financialindependence',  name: 'r/financialindependence',  color: '#276749' },
+    { id: 'Bogleheads',             name: 'r/Bogleheads',             color: '#2b6cb0' },
+    { id: 'investing',              name: 'r/investing',              color: '#1a365d' },
+  ]},
+  { label: '🤖 AI & Tech', color: '#553c9a', subs: [
+    { id: 'LocalLLaMA',       name: 'r/LocalLLaMA',       color: '#553c9a' },
+    { id: 'MachineLearning',  name: 'r/MachineLearning',  color: '#44337a' },
+    { id: 'singularity',      name: 'r/singularity',      color: '#322659' },
+  ]},
+  { label: '🏃 Health & Wellness', color: '#276749', subs: [
+    { id: 'nutrition',    name: 'r/nutrition',    color: '#276749' },
+    { id: 'Supplements',  name: 'r/Supplements',  color: '#285e61' },
+  ]},
+  { label: '🧘 Lifestyle', color: '#744210', subs: [
+    { id: 'productivity', name: 'r/productivity', color: '#744210' },
+    { id: 'minimalism',   name: 'r/minimalism',   color: '#4a5568' },
+    { id: 'Stoicism',     name: 'r/Stoicism',     color: '#2d3748' },
+  ]},
+  { label: '🍕 Food & Local', color: '#c05621', subs: [
+    { id: 'FoodNYC', name: 'r/FoodNYC', color: '#c05621' },
+  ]},
 ];
 
 // CORS proxies — tried in order until one works
@@ -736,8 +850,9 @@ async function loadAll() {
     })
   );
 
-  // Start Reddit digest independently (doesn't block news feed)
+  // Start Reddit digest and Communities independently (don't block news feed)
   loadRedditDigest();
+  loadCommunities();
 
   // Wait for all blog sources to finish
   await Promise.allSettled(sourcePromises);
@@ -874,10 +989,10 @@ function fmtDate(d) {
 
 // ─── TAB SWITCHING ───────────────────────────────────────────────────────
 function switchTab(name) {
-  document.getElementById('panel-news').style.display   = name === 'news'   ? '' : 'none';
-  document.getElementById('panel-reddit').style.display = name === 'reddit' ? '' : 'none';
-  document.getElementById('tab-news').classList.toggle('active',   name === 'news');
-  document.getElementById('tab-reddit').classList.toggle('active', name === 'reddit');
+  ['news','reddit','communities'].forEach(t => {
+    document.getElementById(`panel-${t}`).style.display = name === t ? '' : 'none';
+    document.getElementById(`tab-${t}`).classList.toggle('active', name === t);
+  });
 }
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────
@@ -1083,6 +1198,127 @@ function digestPostHTML(p, topics) {
       <span class="comment-count">💬 ${p.num_comments} comments</span>
     </div>
   </div>`;
+}
+
+// ─── COMMUNITIES TAB ─────────────────────────────────────────────────────
+
+async function fetchSubreddit(subId) {
+  const url = `https://www.reddit.com/r/${subId}/hot.json?limit=15&raw_json=1`;
+  const strategies = [
+    () => fetchWithTimeout(url, { headers: { Accept: 'application/json' } }, 10000).then(r => r.ok ? r.json() : Promise.reject()),
+    () => fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, {}, 14000).then(r => r.json()).then(w => JSON.parse(w.contents)),
+  ];
+  for (const s of strategies) {
+    try { return await s(); } catch(e) {}
+  }
+  return null;
+}
+
+async function loadCommunities() {
+  const wrap = document.getElementById('communitiesWrap');
+  // Render category skeletons immediately
+  wrap.innerHTML = COMMUNITIES.map((cat, ci) => `
+    <div class="community-category" id="cat-${ci}">
+      <div class="category-header" onclick="toggleCategory(${ci})">
+        <div class="category-header-left">
+          <h3>${cat.label}</h3>
+          <span class="category-count" id="cat-count-${ci}">loading…</span>
+        </div>
+        <span class="category-toggle" id="cat-toggle-${ci}">▼</span>
+      </div>
+      <div class="category-body" id="cat-body-${ci}">
+        ${cat.subs.map(sub => `
+          <div class="sub-block" id="sub-${sub.id}">
+            <div class="sub-header" onclick="toggleSub('${sub.id}')">
+              <div class="sub-title">
+                <div class="sub-dot" style="background:${sub.color}"></div>
+                <span class="sub-name">${sub.name}</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="sub-meta" id="sub-meta-${sub.id}">loading…</span>
+                <span class="sub-chevron open" id="sub-chev-${sub.id}">›</span>
+              </div>
+            </div>
+            <div id="sub-posts-${sub.id}">
+              <div class="sub-loading"><div class="spinner" style="width:16px;height:16px;border-width:2px"></div> Fetching…</div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+
+  // Fetch all subreddits in parallel
+  const allSubs = COMMUNITIES.flatMap(c => c.subs);
+  await Promise.allSettled(allSubs.map(async sub => {
+    const data = await fetchSubreddit(sub.id);
+    const postsEl  = document.getElementById(`sub-posts-${sub.id}`);
+    const metaEl   = document.getElementById(`sub-meta-${sub.id}`);
+    if (!postsEl) return;
+
+    if (!data) {
+      postsEl.innerHTML = `<div class="sub-error">⚠️ Could not load</div>`;
+      metaEl.textContent = 'error';
+      return;
+    }
+
+    const cutoff = Date.now() / 1000 - 259200; // 72h
+    const posts = (data?.data?.children || [])
+      .map(c => c.data)
+      .filter(p => p.created_utc >= cutoff && !p.stickied)
+      .slice(0, 6);
+
+    metaEl.textContent = `${posts.length} posts`;
+
+    if (posts.length === 0) {
+      postsEl.innerHTML = `<div class="sub-error">No posts in the last 72 hours.</div>`;
+      return;
+    }
+
+    postsEl.innerHTML =
+      posts.map(p => {
+        const desc = p.selftext ? p.selftext.replace(/\n+/g,' ').trim().slice(0, 160) : '';
+        const flair = p.link_flair_text ? `<span class="sub-flair">${esc(p.link_flair_text)}</span>` : '';
+        const link  = `https://www.reddit.com${p.permalink}`;
+        return `
+          <a class="sub-post" href="${esc(link)}" target="_blank" rel="noopener">
+            <div class="sub-post-score">↑${p.score}</div>
+            <div class="sub-post-body">
+              <div class="sub-post-title">${esc(p.title)}</div>
+              ${desc ? `<div class="sub-post-desc">${esc(desc)}</div>` : ''}
+              <div class="sub-post-footer">
+                ${flair}
+                <span class="sub-post-time">${fmtDate(new Date(p.created_utc * 1000))}</span>
+                <span class="sub-post-comments">💬 ${p.num_comments}</span>
+              </div>
+            </div>
+          </a>`;
+      }).join('') +
+      `<a class="sub-view-all" href="https://reddit.com/r/${sub.id}" target="_blank" rel="noopener">View all of ${sub.name} →</a>`;
+  }));
+
+  // Update category counts
+  COMMUNITIES.forEach((cat, ci) => {
+    const total = cat.subs.reduce((sum, sub) => {
+      const el = document.getElementById(`sub-meta-${sub.id}`);
+      return sum + (parseInt(el?.textContent) || 0);
+    }, 0);
+    const countEl = document.getElementById(`cat-count-${ci}`);
+    if (countEl) countEl.textContent = `${total} posts`;
+  });
+}
+
+function toggleCategory(ci) {
+  const body    = document.getElementById(`cat-body-${ci}`);
+  const toggle  = document.getElementById(`cat-toggle-${ci}`);
+  const collapsed = body.classList.toggle('collapsed');
+  toggle.classList.toggle('collapsed', collapsed);
+}
+
+function toggleSub(id) {
+  const posts = document.getElementById(`sub-posts-${id}`);
+  const chev  = document.getElementById(`sub-chev-${id}`);
+  const hidden = posts.style.display === 'none';
+  posts.style.display = hidden ? '' : 'none';
+  if (chev) chev.classList.toggle('open', hidden);
 }
 
 // ─── THEME ───────────────────────────────────────────────────────────────
