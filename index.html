@@ -677,6 +677,9 @@
 </div>
 
 <script>
+// ─── VERSION ─────────────────────────────────────────────────────────────
+const VERSION = '1.4';
+
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
   { id:'doc',    name:'Doctor of Credit',    short:'DoC',    color:'#e53e3e', emoji:'🩺', url:'https://www.doctorofcredit.com',      rss:'https://www.doctorofcredit.com/feed/' },
@@ -888,7 +891,7 @@ async function loadAll() {
   // Wait for all blog sources to finish
   await Promise.allSettled(sourcePromises);
 
-  document.getElementById('refreshTime').textContent = 'Updated ' + new Date().toLocaleTimeString();
+  document.getElementById('refreshTime').textContent = `v${VERSION} · Updated ${new Date().toLocaleTimeString()}`;
   document.getElementById('refreshBtn').disabled = false;
 
   const hasErrors = debugLog.some(d => d.status === 'error');
@@ -1449,7 +1452,7 @@ function scheduleAutoRefresh() {
     if (!document.hidden) {
       // Show pulsing dot while refreshing silently
       const rt = document.getElementById('refreshTime');
-      if (rt) rt.innerHTML = `<span class="refresh-dot"></span> Refreshing…`;
+      if (rt) rt.innerHTML = `v${VERSION} · <span class="refresh-dot"></span> Refreshing…`;
       await loadAll();
     }
     scheduleAutoRefresh(); // schedule next
