@@ -490,6 +490,83 @@
     }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
+    /* ── DESKTOP ENHANCEMENTS (> 640px) ─────────────────────────── */
+    @media (min-width: 641px) {
+
+      /* News cards: explicit 3-column grid */
+      .grid {
+        grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+        gap: 20px;
+      }
+
+      /* Communities: subreddits side-by-side within each category */
+      .category-body {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+        gap: 14px;
+      }
+
+      /* Churning: two-panel split layout */
+      .digest-layout {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        gap: 20px;
+        align-items: start;
+      }
+      .thread-list-panel {
+        position: sticky;
+        top: 74px;
+        max-height: calc(100vh - 94px);
+        overflow-y: auto;
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        box-shadow: var(--shadow);
+        scrollbar-width: thin;
+        scrollbar-color: var(--border) transparent;
+      }
+      .thread-list-panel::-webkit-scrollbar { width: 4px; }
+      .thread-list-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    }
+
+    /* Thread list items (shared styles, visibility controlled per breakpoint) */
+    .thread-list-header {
+      padding: 10px 14px;
+      border-bottom: 2px solid var(--border);
+      font-size: 11px; font-weight: 700; color: var(--subtext);
+      text-transform: uppercase; letter-spacing: 0.5px;
+      position: sticky; top: 0;
+      background: var(--card-bg); z-index: 1;
+      border-radius: 14px 14px 0 0;
+    }
+    .thread-item {
+      padding: 10px 14px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+      display: flex; align-items: flex-start; gap: 10px;
+    }
+    .thread-item:last-child { border-bottom: none; }
+    .thread-item:hover { background: var(--tag-bg); }
+    .thread-item.active {
+      background: var(--accent-light);
+      border-left: 3px solid var(--accent);
+      padding-left: 11px;
+    }
+    .tli-score {
+      font-size: 11px; font-weight: 700; color: var(--subtext);
+      background: var(--tag-bg); border-radius: 6px;
+      padding: 2px 5px; margin-top: 3px;
+      flex-shrink: 0; min-width: 30px; text-align: center;
+    }
+    .tli-body { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+    .tli-flair {
+      font-size: 10px; font-weight: 700; padding: 1px 6px;
+      border-radius: 20px; background: var(--tag-bg); color: var(--subtext);
+      align-self: flex-start;
+    }
+    .tli-title { font-size: 12px; font-weight: 600; color: var(--text); line-height: 1.4; }
+
     /* ── MOBILE ─────────────────────────────────────────────────── */
     @media (max-width: 640px) {
 
@@ -555,6 +632,13 @@
       .card { padding: 14px 16px; }
       .card-title { font-size: 14px; }
       .card-desc { font-size: 12px; }
+
+      /* Churning two-panel: collapse to single column on mobile */
+      .digest-layout { display: block; }
+      .thread-list-panel { display: none; }
+
+      /* Communities: single column on mobile */
+      .category-body { display: flex; flex-direction: column; gap: 10px; }
 
       /* Reddit digest */
       .digest-header { flex-direction: column; align-items: flex-start; gap: 6px; }
@@ -675,10 +759,15 @@
       </div>
       <div class="digest-meta" id="digestMeta">Loading threads…</div>
     </div>
-    <div class="digest-grid" id="digestGrid">
-      <div class="digest-loading">
-        <div class="spinner"></div>
-        Fetching threads and discussion topics…
+    <div class="digest-layout">
+      <div class="thread-list-panel" id="threadListPanel" style="display:none"></div>
+      <div class="thread-detail-panel">
+        <div class="digest-grid" id="digestGrid">
+          <div class="digest-loading">
+            <div class="spinner"></div>
+            Fetching threads and discussion topics…
+          </div>
+        </div>
       </div>
     </div>
 
@@ -766,6 +855,11 @@ let activeCategory = 'all';
 let activeSources = new Set(SOURCES.map(s => s.id));
 let sourceState = {}; // { id: 'loading'|'ok'|'error' }
 let debugLog = [];
+
+// ── Churning two-panel state ──────────────────────────────────────────────
+let digestPostsData = [];       // all fetched posts
+let digestCommentsData = {};    // postId -> topics[] (undefined = pending, [] = none)
+let selectedPostId = null;
 
 // ─── FETCH ───────────────────────────────────────────────────────────────
 async function fetchWithProxy(rssUrl) {
@@ -1092,6 +1186,46 @@ function fetchWithTimeout(url, options = {}, ms = 15000) {
 
 // ─── REDDIT DAILY DIGEST ─────────────────────────────────────────────────
 
+function isDesktop() { return window.matchMedia('(min-width: 641px)').matches; }
+
+function renderThreadList(posts) {
+  const panel = document.getElementById('threadListPanel');
+  if (!panel) return;
+  panel.style.display = '';
+  panel.innerHTML =
+    `<div class="thread-list-header">Threads (${posts.length})</div>` +
+    posts.map(p => {
+      const flair = p.link_flair_text ? `<div class="tli-flair">${esc(p.link_flair_text)}</div>` : '';
+      return `
+        <div class="thread-item ${p.id === selectedPostId ? 'active' : ''}"
+             data-post-id="${p.id}"
+             onclick="selectThread('${p.id}')">
+          <div class="tli-score">↑${p.score}</div>
+          <div class="tli-body">
+            ${flair}
+            <div class="tli-title">${esc(p.title)}</div>
+          </div>
+        </div>`;
+    }).join('');
+}
+
+function selectThread(postId) {
+  selectedPostId = postId;
+  // Update highlight in thread list
+  document.querySelectorAll('.thread-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.postId === postId);
+  });
+  // Render detail panel
+  const post = digestPostsData.find(p => p.id === postId);
+  if (!post) return;
+  const topics = digestCommentsData.hasOwnProperty(postId) ? digestCommentsData[postId] : null;
+  const grid = document.getElementById('digestGrid');
+  if (grid) grid.innerHTML = digestPostHTML(post, topics);
+  // Scroll detail panel back to top
+  const detail = document.querySelector('.thread-detail-panel');
+  if (detail) detail.scrollTop = 0;
+}
+
 async function loadRedditDigest() {
   const grid = document.getElementById('digestGrid');
   const meta = document.getElementById('digestMeta');
@@ -1156,14 +1290,27 @@ async function loadRedditDigest() {
 
   meta.textContent = `${posts.length} threads · fetching discussions…`;
 
-  // 2. Render skeleton cards immediately so titles show up right away
-  grid.innerHTML = posts.map(p => digestPostHTML(p, null)).join('');
+  // Store posts globally for click-to-select
+  digestPostsData = posts;
+  digestCommentsData = {};
 
-  // 3. Fetch all thread comments in parallel with a hard 30s overall deadline
+  const desktop = isDesktop();
+
+  if (desktop) {
+    // ── Desktop: two-panel layout ──────────────────────────────────────
+    // Select first post by default, render thread list + skeleton detail
+    selectedPostId = posts[0].id;
+    renderThreadList(posts);
+    grid.innerHTML = digestPostHTML(posts[0], null);
+  } else {
+    // ── Mobile: stacked layout (all posts) ────────────────────────────
+    grid.innerHTML = posts.map(p => digestPostHTML(p, null)).join('');
+  }
+
+  // Fetch all thread comments in parallel with a hard 30s deadline
   async function fetchComments(p) {
     const commentUrl = `https://www.reddit.com/r/churning/comments/${p.id}.json?limit=15&sort=top&raw_json=1&depth=1`;
     let data = null;
-    // Try direct first, then CORS proxies for iOS/WebKit ITP compatibility
     const commentStrategies = [
       async () => {
         const res = await fetchWithTimeout(commentUrl, { headers: { Accept: 'application/json' }, credentials: 'omit' }, 8000);
@@ -1190,22 +1337,28 @@ async function loadRedditDigest() {
       ? (data[1]?.data?.children || [])
           .map(c => c.data)
           .filter(c =>
-            c.body &&
-            c.body !== '[deleted]' &&
-            c.body !== '[removed]' &&
-            c.author !== 'AutoModerator' &&
-            c.score > 0 &&
-            c.body.length > 20
+            c.body && c.body !== '[deleted]' && c.body !== '[removed]' &&
+            c.author !== 'AutoModerator' && c.score > 0 && c.body.length > 20
           )
           .slice(0, 8)
       : [];
 
-    const card = document.getElementById(`digest-post-${p.id}`);
-    if (card) card.outerHTML = digestPostHTML(p, topics);
+    // Store comments for click-to-select
+    digestCommentsData[p.id] = topics;
+
+    if (desktop) {
+      // Only update the detail panel if this post is currently selected
+      if (p.id === selectedPostId) {
+        grid.innerHTML = digestPostHTML(p, topics);
+      }
+    } else {
+      // Mobile: update the card in place
+      const card = document.getElementById(`digest-post-${p.id}`);
+      if (card) card.outerHTML = digestPostHTML(p, topics);
+    }
     return topics.length > 0;
   }
 
-  // Race: all comment fetches vs. a 30-second hard deadline (proxies need extra time on iOS)
   const HARD_DEADLINE = 30000;
   const deadline = new Promise(resolve => setTimeout(resolve, HARD_DEADLINE));
 
@@ -1215,13 +1368,18 @@ async function loadRedditDigest() {
   ]);
 
   // If deadline fired first, clear any remaining spinners
-  document.querySelectorAll('[id^="digest-post-"]').forEach(card => {
-    if (card.innerHTML.includes('Loading discussion')) {
-      const postId = card.id.replace('digest-post-', '');
-      const post = posts.find(p => p.id === postId);
-      if (post) card.outerHTML = digestPostHTML(post, []);
-    }
-  });
+  if (!desktop) {
+    document.querySelectorAll('[id^="digest-post-"]').forEach(card => {
+      if (card.innerHTML.includes('Loading discussion')) {
+        const postId = card.id.replace('digest-post-', '');
+        const post = posts.find(p => p.id === postId);
+        if (post) card.outerHTML = digestPostHTML(post, []);
+      }
+    });
+  } else if (grid.innerHTML.includes('Loading discussion')) {
+    // Selected post timed out — show it with empty topics
+    grid.innerHTML = digestPostHTML(posts.find(p => p.id === selectedPostId), []);
+  }
 
   const loaded = commentResults
     ? commentResults.filter(r => r.status === 'fulfilled' && r.value).length
