@@ -100,6 +100,8 @@
       user-select: none;
     }
     .src-pill.inactive { opacity: 0.3; }
+    .all-pill { background: #4a5568; }
+    .all-pill.inactive { opacity: 0.3; }
     .src-pill .pill-count {
       background: rgba(0,0,0,0.2); border-radius: 20px;
       padding: 1px 7px; font-size: 11px;
@@ -601,7 +603,9 @@
   <div id="panel-news">
 
     <!-- SOURCE STATUS PILLS -->
-    <div class="source-status" id="sourcePills"></div>
+    <div class="source-status" id="sourcePills">
+      <span class="src-pill all-pill ok" id="pill-all" onclick="selectAllSources()" title="Show all sources">All</span>
+    </div>
 
     <!-- STATS -->
     <div class="stats-bar" id="statsBar" style="display:none">
@@ -897,7 +901,7 @@ async function loadAll() {
 // ─── SOURCE PILLS ────────────────────────────────────────────────────────
 function buildPills() {
   const wrap = document.getElementById('sourcePills');
-  wrap.innerHTML = '';
+  // Keep the "All" pill, append source pills after it
   SOURCES.forEach(src => {
     sourceState[src.id] = 'loading';
     const pill = document.createElement('span');
@@ -912,6 +916,23 @@ function buildPills() {
   });
 }
 
+function updateAllPill() {
+  const allPill = document.getElementById('pill-all');
+  if (!allPill) return;
+  const allActive = activeSources.size === SOURCES.length;
+  allPill.classList.toggle('inactive', !allActive);
+}
+
+function selectAllSources() {
+  activeSources = new Set(SOURCES.map(s => s.id));
+  SOURCES.forEach(s => {
+    const pill = document.getElementById(`pill-${s.id}`);
+    if (pill) pill.classList.remove('inactive');
+  });
+  updateAllPill();
+  renderCards();
+}
+
 function setPillState(id, state, count) {
   sourceState[id] = state;
   const pill = document.getElementById(`pill-${id}`);
@@ -922,13 +943,30 @@ function setPillState(id, state, count) {
   if (state === 'ok' && count != null) cnt.textContent = count;
   if (state === 'error') cnt.textContent = '✗';
   if (state === 'loading') cnt.textContent = '⏳';
+  updateAllPill();
 }
 
 function toggleSource(id) {
-  if (activeSources.has(id)) activeSources.delete(id);
-  else activeSources.add(id);
-  const pill = document.getElementById(`pill-${id}`);
-  if (pill) pill.classList.toggle('inactive', !activeSources.has(id));
+  const allActive = activeSources.size === SOURCES.length;
+  if (allActive) {
+    // First click from "all selected": solo this source
+    activeSources = new Set([id]);
+  } else {
+    // Already in filtered mode: toggle this source on/off
+    if (activeSources.has(id)) {
+      activeSources.delete(id);
+      // If nothing left, reset to all
+      if (activeSources.size === 0) activeSources = new Set(SOURCES.map(s => s.id));
+    } else {
+      activeSources.add(id);
+    }
+  }
+  // Update all pill visuals
+  SOURCES.forEach(s => {
+    const pill = document.getElementById(`pill-${s.id}`);
+    if (pill) pill.classList.toggle('inactive', !activeSources.has(s.id));
+  });
+  updateAllPill();
   renderCards();
 }
 
