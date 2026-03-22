@@ -513,35 +513,36 @@
         padding: 12px 4px; font-size: 12px;
       }
 
-      /* Source pills: smaller, wrap tightly */
-      .src-pill { padding: 4px 10px; font-size: 11px; }
-
-      /* Stats: compact row */
-      .stats-bar { gap: 8px; }
-      .stat { padding: 8px 12px; min-width: 70px; }
-      .stat-num { font-size: 18px; }
-      .stat-label { font-size: 10px; }
-
-      /* Filter bar: horizontal scroll instead of wrapping */
-      .filter-bar {
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        gap: 8px;
-        padding-bottom: 6px;
+      /* Source pills: equal-width 3-column grid */
+      .source-status {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
         margin-bottom: 16px;
-        /* hide scrollbar visually */
-        scrollbar-width: none;
       }
-      .filter-bar::-webkit-scrollbar { display: none; }
-      .filter-label { white-space: nowrap; }
-      .filter-btn { white-space: nowrap; flex-shrink: 0; padding: 7px 14px; }
+      .src-pill {
+        justify-content: center;
+        padding: 8px 4px;
+        font-size: 11px;
+        width: 100%;
+      }
 
-      /* Search: full width below filters */
+      /* Stats bar: hidden on mobile */
+      .stats-bar { display: none !important; }
+
+      /* Category filter: hidden on mobile */
+      .filter-label, .filter-btn { display: none; }
+
+      /* Keep search bar, full width */
+      .filter-bar {
+        gap: 0;
+        padding-bottom: 0;
+        margin-bottom: 14px;
+        overflow: visible;
+      }
       .search-wrap {
         margin-left: 0;
         width: 100%;
-        order: 99; /* push to its own row */
         flex-basis: 100%;
       }
       .search-wrap input { width: 100%; }
