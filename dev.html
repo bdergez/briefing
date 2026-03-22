@@ -1520,6 +1520,7 @@ async function loadCommunities() {
     const posts = (data?.data?.children || [])
       .map(c => c.data)
       .filter(p => p.created_utc >= cutoff && !p.stickied)
+      .sort((a, b) => b.score - a.score)
       .slice(0, 6);
 
     metaEl.textContent = `${posts.length} posts`;
