@@ -1600,9 +1600,19 @@ function toggleSub(id) {
 function showMoreSub(subId) {
   document.querySelectorAll(`#sub-posts-${subId} .sub-post-hidden`).forEach(el => {
     el.classList.remove('sub-post-hidden');
+    el.classList.add('sub-post-expanded');
   });
   const btn = document.getElementById(`sub-more-${subId}`);
-  if (btn) btn.remove();
+  if (btn) btn.outerHTML = `<button class="sub-show-more" id="sub-less-${subId}" onclick="showLessSub('${subId}')">Show less ↑</button>`;
+}
+
+function showLessSub(subId) {
+  document.querySelectorAll(`#sub-posts-${subId} .sub-post-expanded`).forEach(el => {
+    el.classList.remove('sub-post-expanded');
+    el.classList.add('sub-post-hidden');
+  });
+  const btn = document.getElementById(`sub-less-${subId}`);
+  if (btn) btn.outerHTML = `<button class="sub-show-more" id="sub-more-${subId}" onclick="showMoreSub('${subId}')">Show more ↓</button>`;
 }
 
 // ─── THEME ───────────────────────────────────────────────────────────────
