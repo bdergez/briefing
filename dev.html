@@ -470,6 +470,15 @@
       text-decoration: none; border-top: 1px solid var(--border);
     }
     .sub-view-all:hover { background: var(--tag-bg); }
+    .sub-post-hidden { display: none; }
+    .sub-show-more {
+      display: block; width: 100%; text-align: center;
+      padding: 10px; font-size: 12px; font-weight: 600;
+      color: var(--accent); background: none; cursor: pointer;
+      border: none; border-top: 1px solid var(--border);
+      font-family: inherit;
+    }
+    .sub-show-more:hover { background: var(--tag-bg); }
 
     /* ── NEW BADGE ──────────────────────────────────────────────── */
     .new-badge {
@@ -1455,7 +1464,7 @@ function digestPostHTML(p, topics) {
 // ─── COMMUNITIES TAB ─────────────────────────────────────────────────────
 
 async function fetchSubreddit(subId) {
-  const url = `https://www.reddit.com/r/${subId}/hot.json?limit=15&raw_json=1`;
+  const url = `https://www.reddit.com/r/${subId}/hot.json?limit=25&raw_json=1`;
   const strategies = [
     // Direct — credentials:omit helps bypass iOS ITP blocking
     () => fetchWithTimeout(url, { headers: { Accept: 'application/json' }, credentials: 'omit' }, 10000).then(r => r.ok ? r.json() : Promise.reject()),
@@ -1521,7 +1530,7 @@ async function loadCommunities() {
       .map(c => c.data)
       .filter(p => p.created_utc >= cutoff && !p.stickied)
       .sort((a, b) => b.score - a.score)
-      .slice(0, 6);
+      .slice(0, 20);
 
     metaEl.textContent = `${posts.length} posts`;
 
@@ -1530,25 +1539,35 @@ async function loadCommunities() {
       return;
     }
 
-    postsEl.innerHTML =
-      posts.map(p => {
-        const desc = p.selftext ? p.selftext.replace(/\n+/g,' ').trim().slice(0, 160) : '';
-        const flair = p.link_flair_text ? `<span class="sub-flair">${esc(p.link_flair_text)}</span>` : '';
-        const link  = `https://www.reddit.com${p.permalink}`;
-        return `
-          <a class="sub-post" href="${esc(link)}" target="_blank" rel="noopener">
-            <div class="sub-post-score">↑${p.score}</div>
-            <div class="sub-post-body">
-              <div class="sub-post-title">${esc(p.title)}</div>
-              ${desc ? `<div class="sub-post-desc">${esc(desc)}</div>` : ''}
-              <div class="sub-post-footer">
-                ${flair}
-                <span class="sub-post-time">${fmtDate(new Date(p.created_utc * 1000))}</span>
-                <span class="sub-post-comments">💬 ${p.num_comments}</span>
-              </div>
+    const INITIAL_SHOW = 8;
+    const renderSubPost = (p, hidden = false) => {
+      const desc = p.selftext ? p.selftext.replace(/\n+/g,' ').trim().slice(0, 160) : '';
+      const flair = p.link_flair_text ? `<span class="sub-flair">${esc(p.link_flair_text)}</span>` : '';
+      const link  = `https://www.reddit.com${p.permalink}`;
+      return `
+        <a class="sub-post${hidden ? ' sub-post-hidden' : ''}" href="${esc(link)}" target="_blank" rel="noopener">
+          <div class="sub-post-score">↑${p.score}</div>
+          <div class="sub-post-body">
+            <div class="sub-post-title">${esc(p.title)}</div>
+            ${desc ? `<div class="sub-post-desc">${esc(desc)}</div>` : ''}
+            <div class="sub-post-footer">
+              ${flair}
+              <span class="sub-post-time">${fmtDate(new Date(p.created_utc * 1000))}</span>
+              <span class="sub-post-comments">💬 ${p.num_comments}</span>
             </div>
-          </a>`;
-      }).join('') +
+          </div>
+        </a>`;
+    };
+
+    const visible = posts.slice(0, INITIAL_SHOW);
+    const hidden  = posts.slice(INITIAL_SHOW);
+
+    postsEl.innerHTML =
+      visible.map(p => renderSubPost(p)).join('') +
+      hidden.map(p => renderSubPost(p, true)).join('') +
+      (hidden.length > 0
+        ? `<button class="sub-show-more" id="sub-more-${sub.id}" onclick="showMoreSub('${sub.id}')">Show ${hidden.length} more ↓</button>`
+        : '') +
       `<a class="sub-view-all" href="https://reddit.com/r/${sub.id}" target="_blank" rel="noopener">View all of ${sub.name} →</a>`;
   }));
 
@@ -1576,6 +1595,14 @@ function toggleSub(id) {
   const hidden = posts.style.display === 'none';
   posts.style.display = hidden ? '' : 'none';
   if (chev) chev.classList.toggle('open', hidden);
+}
+
+function showMoreSub(subId) {
+  document.querySelectorAll(`#sub-posts-${subId} .sub-post-hidden`).forEach(el => {
+    el.classList.remove('sub-post-hidden');
+  });
+  const btn = document.getElementById(`sub-more-${subId}`);
+  if (btn) btn.remove();
 }
 
 // ─── THEME ───────────────────────────────────────────────────────────────
