@@ -471,6 +471,15 @@
     }
     .sub-view-all:hover { background: var(--tag-bg); }
     .sub-post-hidden { display: none; }
+    .churning-extra { display: none; }
+    .churning-show-more-btn {
+      display: block; width: 100%; text-align: center;
+      padding: 14px; font-size: 13px; font-weight: 600;
+      color: var(--accent); background: var(--card-bg); cursor: pointer;
+      border: 1px solid var(--border); border-radius: 14px;
+      font-family: inherit; margin-top: 4px;
+    }
+    .churning-show-more-btn:hover { background: var(--accent-light); }
     .sub-show-more {
       display: block; width: 100%; text-align: center;
       padding: 10px; font-size: 12px; font-weight: 600;
@@ -793,7 +802,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.4-dev';
+const VERSION = '1.5.5-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -869,6 +878,8 @@ let debugLog = [];
 let digestPostsData = [];       // all fetched posts
 let digestCommentsData = {};    // postId -> topics[] (undefined = pending, [] = none)
 let selectedPostId = null;
+const CHURNING_MOBILE_INITIAL = 10;
+let churningExpanded = false;
 
 // ─── FETCH ───────────────────────────────────────────────────────────────
 async function fetchWithProxy(rssUrl) {
@@ -1197,6 +1208,24 @@ function fetchWithTimeout(url, options = {}, ms = 15000) {
 
 function isDesktop() { return window.matchMedia('(min-width: 641px)').matches; }
 
+function showMoreChurning() {
+  churningExpanded = true;
+  document.querySelectorAll('#digestGrid .churning-extra').forEach(el => el.classList.remove('churning-extra'));
+  const btn = document.getElementById('churning-more-btn');
+  if (btn) btn.outerHTML = `<button class="churning-show-more-btn" id="churning-less-btn" onclick="showLessChurning()">Show less ↑</button>`;
+}
+
+function showLessChurning() {
+  churningExpanded = false;
+  document.querySelectorAll('#digestGrid .digest-post').forEach((el, i) => {
+    if (i >= CHURNING_MOBILE_INITIAL) el.classList.add('churning-extra');
+  });
+  const remaining = document.querySelectorAll('#digestGrid .churning-extra').length;
+  const btn = document.getElementById('churning-less-btn');
+  if (btn) btn.outerHTML = `<button class="churning-show-more-btn" id="churning-more-btn" onclick="showMoreChurning()">Show ${remaining} more threads ↓</button>`;
+  document.getElementById('panel-reddit')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 function renderThreadList(posts) {
   const panel = document.getElementById('threadListPanel');
   if (!panel) return;
@@ -1279,7 +1308,7 @@ async function loadRedditDigest() {
         .map(c => c.data)
         .filter(p => p.created_utc >= cutoff)
         .sort((a, b) => b.score - a.score)
-        .slice(0, 30);
+        .slice(0, 50);
       allFailed = false;
       break;
     } catch (e) { /* try next */ }
@@ -1312,8 +1341,18 @@ async function loadRedditDigest() {
     renderThreadList(posts);
     grid.innerHTML = digestPostHTML(posts[0], null);
   } else {
-    // ── Mobile: stacked layout (all posts) ────────────────────────────
-    grid.innerHTML = posts.map(p => digestPostHTML(p, null)).join('');
+    // ── Mobile: stacked layout, first 10 visible + show more ──────────
+    churningExpanded = false;
+    const extraCount = Math.max(0, posts.length - CHURNING_MOBILE_INITIAL);
+    grid.innerHTML =
+      posts.map(p => digestPostHTML(p, null)).join('') +
+      (extraCount > 0
+        ? `<button class="churning-show-more-btn" id="churning-more-btn" onclick="showMoreChurning()">Show ${extraCount} more threads ↓</button>`
+        : '');
+    // Hide extra posts
+    document.querySelectorAll('#digestGrid .digest-post').forEach((el, i) => {
+      if (i >= CHURNING_MOBILE_INITIAL) el.classList.add('churning-extra');
+    });
   }
 
   // Fetch all thread comments in parallel with a hard 30s deadline
@@ -1363,7 +1402,17 @@ async function loadRedditDigest() {
     } else {
       // Mobile: update the card in place
       const card = document.getElementById(`digest-post-${p.id}`);
-      if (card) card.outerHTML = digestPostHTML(p, topics);
+      if (card) {
+        card.outerHTML = digestPostHTML(p, topics);
+        // Re-apply hidden class if post is beyond initial count and not expanded
+        if (!churningExpanded) {
+          const idx = digestPostsData.indexOf(p);
+          if (idx >= CHURNING_MOBILE_INITIAL) {
+            const updated = document.getElementById(`digest-post-${p.id}`);
+            if (updated) updated.classList.add('churning-extra');
+          }
+        }
+      }
     }
     return topics.length > 0;
   }
@@ -1385,6 +1434,12 @@ async function loadRedditDigest() {
         if (post) card.outerHTML = digestPostHTML(post, []);
       }
     });
+    // Re-apply hidden class after any outerHTML replacements
+    if (!churningExpanded) {
+      document.querySelectorAll('#digestGrid .digest-post').forEach((el, i) => {
+        if (i >= CHURNING_MOBILE_INITIAL) el.classList.add('churning-extra');
+      });
+    }
   } else if (grid.innerHTML.includes('Loading discussion')) {
     // Selected post timed out — show it with empty topics
     grid.innerHTML = digestPostHTML(posts.find(p => p.id === selectedPostId), []);
