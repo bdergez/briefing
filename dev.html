@@ -1,0 +1,1565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1a1a2e" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="P&M Dash" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon-dev.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icon-dev.svg" />
+  <title>[DEV] Points & Miles Dashboard</title>
+  <style>
+    :root {
+      --bg: #f0f2f5;
+      --card-bg: #ffffff;
+      --text: #1a1a2e;
+      --subtext: #555770;
+      --border: #e2e4ea;
+      --accent: #4f46e5;
+      --accent-light: #eef2ff;
+      --tag-bg: #f1f5f9;
+      --shadow: 0 2px 8px rgba(0,0,0,0.07);
+      --shadow-hover: 0 6px 20px rgba(0,0,0,0.12);
+      --header-bg: #1a1a2e;
+      --header-text: #fff;
+    }
+    [data-theme="dark"] {
+      --bg: #12131c;
+      --card-bg: #1e1f2e;
+      --text: #e8eaf6;
+      --subtext: #9899b0;
+      --border: #2e2f45;
+      --accent: #818cf8;
+      --accent-light: #1e1f40;
+      --tag-bg: #252638;
+      --shadow: 0 2px 8px rgba(0,0,0,0.3);
+      --shadow-hover: 0 6px 20px rgba(0,0,0,0.4);
+      --header-bg: #0e0f1a;
+      --header-text: #e8eaf6;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      transition: background 0.3s, color 0.3s;
+      min-height: 100vh;
+    }
+
+    header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+    }
+    .logo { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+    .logo span { color: #818cf8; }
+    .tagline { font-size: 12px; opacity: 0.5; margin-top: 2px; }
+    .header-right { display: flex; align-items: center; gap: 12px; }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 16px; border-radius: 8px; border: none;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-ghost {
+      background: rgba(255,255,255,0.1); color: var(--header-text);
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,0.18); }
+
+    .refresh-time { font-size: 11px; opacity: 0.45; }
+
+    .main { max-width: 1400px; margin: 0 auto; padding: 28px 24px; }
+
+    /* STATUS ROW */
+    .source-status {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;
+    }
+    .src-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 12px; border-radius: 20px;
+      font-size: 12px; font-weight: 600; color: #fff;
+      cursor: pointer; transition: opacity 0.2s;
+      border: 2px solid transparent;
+      user-select: none;
+    }
+    .src-pill.inactive { opacity: 0.3; }
+    .all-pill { background: #4a5568; }
+    .all-pill.inactive { opacity: 0.3; }
+    .src-pill .pill-count {
+      background: rgba(0,0,0,0.2); border-radius: 20px;
+      padding: 1px 7px; font-size: 11px;
+    }
+    .src-pill.loading::after { content: ' ⏳'; }
+    .src-pill.error::after { content: ' ✗'; }
+    .src-pill.ok::after { content: ''; }
+
+    /* STATS BAR */
+    .stats-bar { display: flex; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+    .stat {
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px 18px;
+      display: flex; flex-direction: column; gap: 2px; min-width: 90px;
+    }
+    .stat-num { font-size: 22px; font-weight: 800; color: var(--accent); }
+    .stat-label { font-size: 11px; color: var(--subtext); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* FILTER BAR */
+    .filter-bar {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 24px; flex-wrap: wrap;
+    }
+    .filter-label { font-size: 12px; font-weight: 600; color: var(--subtext); text-transform: uppercase; letter-spacing: 0.5px; margin-right: 4px; }
+    .filter-btn {
+      padding: 7px 16px; border-radius: 20px;
+      border: 1.5px solid var(--border);
+      background: var(--card-bg); color: var(--text);
+      font-size: 13px; font-weight: 500; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    .search-wrap { margin-left: auto; position: relative; }
+    .search-wrap input {
+      padding: 8px 14px 8px 36px;
+      border-radius: 8px; border: 1.5px solid var(--border);
+      background: var(--card-bg); color: var(--text);
+      font-size: 13px; width: 220px; outline: none;
+      transition: border-color 0.2s;
+    }
+    .search-wrap input:focus { border-color: var(--accent); }
+    .search-icon {
+      position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
+      color: var(--subtext); font-size: 14px; pointer-events: none;
+    }
+
+    /* GRID */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 16px;
+    }
+
+    /* CARD */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px 20px;
+      box-shadow: var(--shadow);
+      transition: box-shadow 0.2s, transform 0.2s;
+      display: flex; flex-direction: column; gap: 10px;
+      animation: fadeIn 0.3s ease;
+    }
+    .card:hover { box-shadow: var(--shadow-hover); transform: translateY(-2px); }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    .card-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .source-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 700; color: #fff;
+    }
+    .category-tag {
+      padding: 3px 10px; border-radius: 20px;
+      background: var(--tag-bg); color: var(--subtext);
+      font-size: 11px; font-weight: 600;
+    }
+    .card-date { font-size: 11px; color: var(--subtext); margin-left: auto; }
+
+    .card-title { font-size: 15px; font-weight: 700; line-height: 1.4; }
+    .card-title a { color: var(--text); text-decoration: none; transition: color 0.15s; }
+    .card-title a:hover { color: var(--accent); }
+
+    .card-desc {
+      font-size: 13px; color: var(--subtext); line-height: 1.55;
+      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .card-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: auto; padding-top: 6px;
+    }
+    .read-link {
+      font-size: 12px; font-weight: 600; color: var(--accent);
+      text-decoration: none;
+    }
+    .read-link:hover { text-decoration: underline; }
+
+    /* LOADING */
+    .loading-wrap { grid-column: 1/-1; display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 60px 0; }
+    .spinner {
+      width: 38px; height: 38px; border-radius: 50%;
+      border: 3px solid var(--border); border-top-color: var(--accent);
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { font-size: 14px; color: var(--subtext); text-align: center; }
+    .loading-sub { font-size: 12px; color: var(--subtext); opacity: 0.6; text-align: center; max-width: 420px; }
+
+    .empty-msg { grid-column: 1/-1; text-align: center; padding: 60px; color: var(--subtext); font-size: 15px; }
+
+    /* DEBUG */
+    .debug-box {
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px; margin-bottom: 20px;
+      font-size: 12px; color: var(--subtext); display: none;
+    }
+    .debug-box h4 { font-size: 13px; color: var(--text); margin-bottom: 8px; }
+    .debug-box ul { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+    .debug-box li { display: flex; align-items: center; gap: 8px; }
+    .debug-ok { color: #22c55e; }
+    .debug-err { color: #ef4444; }
+
+    /* ── REDDIT DIGEST ─────────────────────────────────────────── */
+    .reddit-digest {
+      margin-top: 48px;
+      border-top: 2px solid var(--border);
+      padding-top: 32px;
+    }
+    .digest-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
+    }
+    .digest-title {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .digest-title h2 {
+      font-size: 18px; font-weight: 800; color: var(--text);
+    }
+    .reddit-badge {
+      background: #ff4500; color: #fff;
+      padding: 3px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 700;
+    }
+    .digest-meta { font-size: 12px; color: var(--subtext); }
+
+    .digest-grid {
+      display: flex; flex-direction: column; gap: 16px;
+    }
+
+    .digest-post {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-left: 4px solid #ff4500;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      animation: fadeIn 0.3s ease;
+    }
+    .digest-post-header {
+      padding: 16px 20px 12px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .digest-post-meta {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+    .post-flair {
+      padding: 2px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 700;
+      background: #ff450022; color: #ff4500;
+      border: 1px solid #ff450033;
+    }
+    .post-score {
+      font-size: 11px; color: var(--subtext);
+      display: flex; align-items: center; gap: 4px;
+    }
+    .post-time { font-size: 11px; color: var(--subtext); margin-left: auto; }
+    .digest-post-title {
+      font-size: 15px; font-weight: 700; line-height: 1.4;
+    }
+    .digest-post-title a {
+      color: var(--text); text-decoration: none; transition: color 0.15s;
+    }
+    .digest-post-title a:hover { color: #ff4500; }
+
+    .digest-selftext {
+      font-size: 13px; color: var(--subtext); line-height: 1.6;
+      padding: 0 20px 12px;
+    }
+
+    .digest-comments {
+      border-top: 1px solid var(--border);
+      padding: 12px 20px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .digest-comments-label {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.5px; color: var(--subtext); margin-bottom: 2px;
+    }
+    .digest-comment {
+      display: flex; gap: 10px; align-items: flex-start;
+    }
+    .comment-score-badge {
+      background: var(--tag-bg); color: var(--subtext);
+      font-size: 10px; font-weight: 700;
+      padding: 2px 7px; border-radius: 20px;
+      white-space: nowrap; margin-top: 2px;
+    }
+    .comment-body {
+      font-size: 13px; color: var(--text); line-height: 1.5;
+      flex: 1;
+      display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .comment-author {
+      font-size: 11px; color: var(--subtext); font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .digest-post-footer {
+      padding: 10px 20px 14px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .thread-link {
+      font-size: 12px; font-weight: 600; color: #ff4500;
+      text-decoration: none;
+    }
+    .thread-link:hover { text-decoration: underline; }
+    .comment-count { font-size: 12px; color: var(--subtext); }
+
+    .digest-loading {
+      text-align: center; padding: 40px;
+      color: var(--subtext); font-size: 14px;
+      display: flex; flex-direction: column; align-items: center; gap: 12px;
+    }
+    .digest-error {
+      text-align: center; padding: 30px;
+      color: var(--subtext); font-size: 14px;
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 14px;
+    }
+
+    /* ── TAB BAR ───────────────────────────────────────────────── */
+    .tab-bar {
+      display: flex; gap: 4px;
+      border-bottom: 2px solid var(--border);
+      margin-bottom: 24px;
+    }
+    .tab-btn {
+      padding: 10px 22px; border: none; background: none;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      color: var(--subtext); border-bottom: 3px solid transparent;
+      margin-bottom: -2px; transition: all 0.2s; border-radius: 6px 6px 0 0;
+    }
+    .tab-btn:hover { color: var(--text); background: var(--tag-bg); }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    /* ── TOPIC LIST (Reddit digest) ────────────────────────────── */
+    .topic-list {
+      border-top: 1px solid var(--border);
+      padding: 14px 20px;
+      display: flex; flex-direction: column; gap: 0;
+    }
+    .topic-list-label {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.5px; color: var(--subtext); margin-bottom: 10px;
+    }
+    .topic-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .topic-item:last-child { border-bottom: none; }
+    .topic-votes {
+      min-width: 36px; text-align: center;
+      background: var(--tag-bg); color: var(--subtext);
+      font-size: 10px; font-weight: 700; border-radius: 6px;
+      padding: 3px 5px; margin-top: 2px;
+    }
+    .topic-content { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+    .topic-author { font-size: 11px; color: var(--subtext); font-weight: 600; }
+    .topic-text {
+      font-size: 13px; color: var(--text); line-height: 1.5;
+    }
+    .topic-link {
+      font-size: 11px; color: var(--accent); text-decoration: none;
+      font-weight: 600; align-self: flex-start; margin-top: 2px;
+    }
+    .topic-link:hover { text-decoration: underline; }
+
+    /* ── COMMUNITIES TAB ────────────────────────────────────────── */
+    .communities-wrap { display: flex; flex-direction: column; gap: 32px; }
+
+    .community-category {}
+    .category-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 0; margin-bottom: 14px;
+      border-bottom: 2px solid var(--border);
+      cursor: pointer; user-select: none;
+    }
+    .category-header-left { display: flex; align-items: center; gap: 10px; }
+    .category-header h3 { font-size: 16px; font-weight: 800; color: var(--text); }
+    .category-count {
+      font-size: 11px; font-weight: 600; color: var(--subtext);
+      background: var(--tag-bg); padding: 2px 8px; border-radius: 20px;
+    }
+    .category-toggle { font-size: 12px; color: var(--subtext); transition: transform 0.2s; }
+    .category-toggle.collapsed { transform: rotate(-90deg); }
+    .category-body { display: flex; flex-direction: column; gap: 10px; }
+    .category-body.collapsed { display: none; }
+
+    /* subreddit block */
+    .sub-block {
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 14px; overflow: hidden; box-shadow: var(--shadow);
+    }
+    .sub-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px; cursor: pointer; user-select: none;
+      border-bottom: 1px solid var(--border);
+    }
+    .sub-header:hover { background: var(--tag-bg); }
+    .sub-title { display: flex; align-items: center; gap: 8px; }
+    .sub-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .sub-name { font-size: 14px; font-weight: 700; color: var(--text); }
+    .sub-meta { font-size: 11px; color: var(--subtext); }
+    .sub-chevron { font-size: 11px; color: var(--subtext); transition: transform 0.2s; }
+    .sub-chevron.open { transform: rotate(90deg); }
+
+    .sub-posts { display: flex; flex-direction: column; }
+    .sub-post {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 11px 16px; border-bottom: 1px solid var(--border);
+      text-decoration: none; transition: background 0.15s;
+    }
+    .sub-post:last-child { border-bottom: none; }
+    .sub-post:hover { background: var(--tag-bg); }
+    .sub-post-score {
+      min-width: 32px; text-align: center;
+      font-size: 11px; font-weight: 700; color: var(--subtext);
+      background: var(--tag-bg); border-radius: 6px;
+      padding: 3px 4px; margin-top: 2px; flex-shrink: 0;
+    }
+    .sub-post-body { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+    .sub-post-title { font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.4; }
+    .sub-post-desc { font-size: 12px; color: var(--subtext); line-height: 1.4;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .sub-post-footer { display: flex; align-items: center; gap: 10px; margin-top: 2px; }
+    .sub-post-time { font-size: 11px; color: var(--subtext); }
+    .sub-post-comments { font-size: 11px; color: var(--subtext); }
+    .sub-flair {
+      font-size: 10px; font-weight: 700; padding: 1px 7px;
+      border-radius: 20px; background: var(--tag-bg); color: var(--subtext);
+    }
+
+    .sub-loading { padding: 20px; text-align: center; color: var(--subtext); font-size: 13px;
+      display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .sub-error { padding: 16px; text-align: center; color: var(--subtext); font-size: 12px; }
+    .sub-view-all {
+      display: block; text-align: center; padding: 10px;
+      font-size: 12px; font-weight: 600; color: var(--accent);
+      text-decoration: none; border-top: 1px solid var(--border);
+    }
+    .sub-view-all:hover { background: var(--tag-bg); }
+
+    /* ── NEW BADGE ──────────────────────────────────────────────── */
+    .new-badge {
+      display: inline-block; background: #22c55e; color: #fff;
+      font-size: 9px; font-weight: 800; padding: 1px 5px;
+      border-radius: 20px; vertical-align: middle;
+      margin-left: 4px; letter-spacing: 0.3px; text-transform: uppercase;
+    }
+    .tab-new-dot {
+      display: inline-block; width: 7px; height: 7px;
+      background: #22c55e; border-radius: 50%; margin-left: 5px;
+      vertical-align: middle;
+    }
+    .refresh-dot {
+      display: inline-block; width: 7px; height: 7px;
+      background: #818cf8; border-radius: 50%;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    /* ── MOBILE ─────────────────────────────────────────────────── */
+    @media (max-width: 640px) {
+
+      /* Header: compact, no tagline */
+      header {
+        padding: 0 16px;
+        height: 54px;
+      }
+      .logo { font-size: 18px; }
+      .tagline { display: none; }
+      .refresh-time { display: none; }
+      .btn { padding: 7px 12px; font-size: 12px; }
+
+      /* Main padding */
+      .main { padding: 16px 12px; }
+
+      /* Tabs: fill full width, bigger tap targets */
+      .tab-bar { gap: 0; }
+      .tab-btn {
+        flex: 1; text-align: center;
+        padding: 12px 4px; font-size: 12px;
+      }
+
+      /* Source pills: equal-width 3-column grid */
+      .source-status {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+        margin-bottom: 16px;
+      }
+      .src-pill {
+        justify-content: center;
+        padding: 8px 4px;
+        font-size: 11px;
+        width: 100%;
+      }
+
+      /* Stats bar: hidden on mobile */
+      .stats-bar { display: none !important; }
+
+      /* Category filter: hidden on mobile */
+      .filter-label, .filter-btn { display: none; }
+
+      /* Keep search bar, full width */
+      .filter-bar {
+        gap: 0;
+        padding-bottom: 0;
+        margin-bottom: 14px;
+        overflow: visible;
+      }
+      .search-wrap {
+        margin-left: 0;
+        width: 100%;
+        flex-basis: 100%;
+      }
+      .search-wrap input { width: 100%; }
+
+      /* Cards: single column, full width */
+      .grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .card { padding: 14px 16px; }
+      .card-title { font-size: 14px; }
+      .card-desc { font-size: 12px; }
+
+      /* Reddit digest */
+      .digest-header { flex-direction: column; align-items: flex-start; gap: 6px; }
+      .digest-title h2 { font-size: 16px; }
+      .digest-post-header { padding: 14px 14px 10px; }
+      .digest-post-title { font-size: 14px; }
+      .digest-selftext { padding: 0 14px 10px; font-size: 12px; }
+      .topic-list { padding: 12px 14px; }
+      .topic-text { font-size: 12px; }
+      .digest-post-footer { padding: 10px 14px 12px; }
+
+      /* Touch-friendly tap targets */
+      .read-link, .thread-link, .topic-link {
+        padding: 4px 0;
+        display: inline-block;
+        min-height: 32px;
+        line-height: 32px;
+      }
+      .card:hover { transform: none; } /* disable hover lift on touch */
+    }
+
+    /* ── DEV BANNER ── */
+    #devBanner {
+      background: #f59e0b;
+      color: #1a1a2e;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      padding: 5px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+    }
+  </style>
+</head>
+<body>
+
+<div id="devBanner">🚧 DEV / STAGING — changes here are not live yet · <a href="index.html" style="color:#1a1a2e;text-decoration:underline">View production →</a></div>
+
+<header>
+  <div>
+    <div class="logo">Points &amp; Miles <span>Dash</span></div>
+    <div class="tagline">Your personalized rewards &amp; travel news hub</div>
+  </div>
+  <div class="header-right">
+    <span class="refresh-time" id="refreshTime">Not loaded</span>
+    <button class="btn btn-primary" id="refreshBtn" onclick="loadAll()">⟳ Refresh</button>
+    <button class="btn btn-ghost" onclick="toggleTheme()">🌓 Theme</button>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- TAB BAR -->
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tab-news"        onclick="switchTab('news')">📰 News Feed</button>
+    <button class="tab-btn"        id="tab-reddit"      onclick="switchTab('reddit')">🤝 r/churning</button>
+    <button class="tab-btn"        id="tab-communities" onclick="switchTab('communities')">🌐 Communities</button>
+  </div>
+
+  <!-- ══ PANEL: NEWS FEED ══ -->
+  <div id="panel-news">
+
+    <!-- SOURCE STATUS PILLS -->
+    <div class="source-status" id="sourcePills">
+      <span class="src-pill all-pill ok" id="pill-all" onclick="selectAllSources()" title="Show all sources">All</span>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-bar" id="statsBar" style="display:none">
+      <div class="stat"><div class="stat-num" id="statTotal">0</div><div class="stat-label">Articles</div></div>
+      <div class="stat"><div class="stat-num" id="statSources">0</div><div class="stat-label">Sources</div></div>
+      <div class="stat"><div class="stat-num" id="statCategories">0</div><div class="stat-label">Categories</div></div>
+    </div>
+
+    <!-- DEBUG (shown if errors) -->
+    <div class="debug-box" id="debugBox">
+      <h4>🔍 Source Load Status</h4>
+      <ul id="debugList"></ul>
+    </div>
+
+    <!-- FILTER BAR -->
+    <div class="filter-bar">
+      <span class="filter-label">Category:</span>
+      <button class="filter-btn active" onclick="setCategory('all',this)">All</button>
+      <button class="filter-btn" onclick="setCategory('new',this)" id="filterNew">🆕 New</button>
+      <button class="filter-btn" onclick="setCategory('credit-cards',this)">💳 Credit Cards</button>
+      <button class="filter-btn" onclick="setCategory('bank-bonuses',this)">🏦 Bank Bonuses</button>
+      <button class="filter-btn" onclick="setCategory('points-miles',this)">✈️ Points &amp; Miles</button>
+      <button class="filter-btn" onclick="setCategory('travel',this)">🌍 Travel Deals</button>
+      <button class="filter-btn" onclick="setCategory('news',this)">📰 News</button>
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Search articles…" oninput="renderCards()" />
+      </div>
+    </div>
+
+    <!-- CARDS GRID -->
+    <div class="grid" id="cardGrid">
+      <div class="loading-wrap">
+        <div class="spinner"></div>
+        <div class="loading-text">Loading your dashboard…</div>
+        <div class="loading-sub">Fetching articles from sources via RSS</div>
+      </div>
+    </div>
+
+  </div><!-- /panel-news -->
+
+  <!-- ══ PANEL: REDDIT DIGEST ══ -->
+  <div id="panel-reddit" style="display:none">
+
+    <div class="digest-header">
+      <div class="digest-title">
+        <span style="font-size:22px">🤝</span>
+        <h2>r/churning Daily Digest</h2>
+        <span class="reddit-badge">Last 72 hours</span>
+      </div>
+      <div class="digest-meta" id="digestMeta">Loading threads…</div>
+    </div>
+    <div class="digest-grid" id="digestGrid">
+      <div class="digest-loading">
+        <div class="spinner"></div>
+        Fetching threads and discussion topics…
+      </div>
+    </div>
+
+  </div><!-- /panel-reddit -->
+
+  <!-- ══ PANEL: COMMUNITIES ══ -->
+  <div id="panel-communities" style="display:none">
+    <div class="communities-wrap" id="communitiesWrap">
+      <div class="digest-loading"><div class="spinner"></div>Loading communities…</div>
+    </div>
+  </div><!-- /panel-communities -->
+
+</div>
+
+<script>
+// ─── VERSION ─────────────────────────────────────────────────────────────
+const VERSION = '1.5-dev';
+
+// ─── CONFIG ──────────────────────────────────────────────────────────────
+const SOURCES = [
+  { id:'doc',    name:'Doctor of Credit',    short:'DoC',    color:'#e53e3e', emoji:'🩺', url:'https://www.doctorofcredit.com',      rss:'https://www.doctorofcredit.com/feed/' },
+  { id:'fm',     name:'FrequentMiler',       short:'FM',     color:'#2b6cb0', emoji:'🧮', url:'https://frequentmiler.com',           rss:'https://frequentmiler.com/feed/' },
+  { id:'omaat',  name:'One Mile at a Time',  short:'OMAAT',  color:'#6b46c1', emoji:'🛫', url:'https://onemileatatime.com',          rss:'https://onemileatatime.com/feed/' },
+  { id:'vftw',   name:'View From The Wing',  short:'VFTW',   color:'#2f855a', emoji:'🪟', url:'https://viewfromthewing.com',         rss:'https://viewfromthewing.com/feed/' },
+  { id:'mtm',    name:'Miles to Memories',   short:'MtM',    color:'#d97706', emoji:'✈️', url:'https://milestomemories.com',         rss:'https://milestomemories.com/feed/' },
+];
+
+// ─── COMMUNITIES CONFIG ───────────────────────────────────────────────────
+const COMMUNITIES = [
+  { label: '💳 Points & Travel', color: '#6b46c1', subs: [
+    { id: 'awardtravel',   name: 'r/awardtravel',   color: '#6b46c1' },
+    { id: 'CreditCards',   name: 'r/CreditCards',   color: '#e53e3e' },
+    { id: 'ChaseSapphire', name: 'r/ChaseSapphire', color: '#1a56db' },
+  ]},
+  { label: '💰 Finance & FIRE', color: '#2f855a', subs: [
+    { id: 'personalfinance',        name: 'r/personalfinance',        color: '#2f855a' },
+    { id: 'financialindependence',  name: 'r/financialindependence',  color: '#276749' },
+    { id: 'Bogleheads',             name: 'r/Bogleheads',             color: '#2b6cb0' },
+    { id: 'investing',              name: 'r/investing',              color: '#1a365d' },
+  ]},
+  { label: '🤖 AI & Tech', color: '#553c9a', subs: [
+    { id: 'LocalLLaMA',       name: 'r/LocalLLaMA',       color: '#553c9a' },
+    { id: 'MachineLearning',  name: 'r/MachineLearning',  color: '#44337a' },
+    { id: 'singularity',      name: 'r/singularity',      color: '#322659' },
+  ]},
+  { label: '🏃 Health & Wellness', color: '#276749', subs: [
+    { id: 'nutrition',    name: 'r/nutrition',    color: '#276749' },
+    { id: 'Supplements',  name: 'r/Supplements',  color: '#285e61' },
+  ]},
+  { label: '🧘 Lifestyle', color: '#744210', subs: [
+    { id: 'productivity', name: 'r/productivity', color: '#744210' },
+    { id: 'minimalism',   name: 'r/minimalism',   color: '#4a5568' },
+    { id: 'Stoicism',     name: 'r/Stoicism',     color: '#2d3748' },
+  ]},
+  { label: '🍕 Food & Local', color: '#c05621', subs: [
+    { id: 'FoodNYC', name: 'r/FoodNYC', color: '#c05621' },
+  ]},
+];
+
+// CORS proxies — tried in order until one works
+const PROXIES = [
+  url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+  url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+];
+
+const CATEGORIES = {
+  'credit-cards': { label:'💳 Credit Cards', kw:['credit card','card bonus','sign-up bonus','signup bonus','annual fee','welcome offer','welcome bonus','card review','amex','chase','citi','capital one','barclays','us bank','discover','ink','sapphire','platinum card','gold card','venture','freedom','preferred','reserve','business card','approval','credit pull','hard pull','application rule','5/24','2/90','card offer'] },
+  'bank-bonuses': { label:'🏦 Bank Bonuses', kw:['bank bonus','checking bonus','savings bonus','bank account','direct deposit','checking account','savings account','money market','cd rate','high yield','bank offer','bank deal','brokerage bonus'] },
+  'points-miles': { label:'✈️ Points & Miles', kw:['points','miles','award','redemption','transfer partner','transfer bonus','loyalty','frequent flyer','mileage','mileage plan','skymiles','saver award','award chart','cpp','cents per point','sweet spot','hyatt','marriott','hilton','ihg','bonvoy','honors','oneworld','star alliance','skyteam','alaska','united','delta','american airlines','british airways','air canada','aeroplan'] },
+  'travel':       { label:'🌍 Travel Deals',  kw:['flight deal','fare sale','error fare','mistake fare','sale','hotel deal','travel deal','cheap flight','discount','flash sale','business class','first class','lounge','priority pass','global entry','tsa precheck','trip report','cruise','upgrade'] },
+};
+
+function categorize(title, desc) {
+  const t = (title + ' ' + (desc||'')).toLowerCase();
+  for (const [cat, d] of Object.entries(CATEGORIES)) {
+    if (d.kw.some(k => t.includes(k))) return cat;
+  }
+  return 'news';
+}
+
+// ─── STATE ───────────────────────────────────────────────────────────────
+let allArticles = [];
+let activeCategory = 'all';
+let activeSources = new Set(SOURCES.map(s => s.id));
+let sourceState = {}; // { id: 'loading'|'ok'|'error' }
+let debugLog = [];
+
+// ─── FETCH ───────────────────────────────────────────────────────────────
+async function fetchWithProxy(rssUrl) {
+  for (const makeProxy of PROXIES) {
+    try {
+      const proxyUrl = makeProxy(rssUrl);
+      const res = await fetchWithTimeout(proxyUrl, {}, 12000);
+      if (!res.ok) continue;
+
+      // allorigins returns { contents: "...", status: {...} }
+      const text = await res.text();
+      let xmlText;
+      try {
+        const json = JSON.parse(text);
+        xmlText = json.contents || json.data || text;
+      } catch {
+        xmlText = text; // plain XML (corsproxy.io, codetabs)
+      }
+
+      if (xmlText && xmlText.includes('<item')) return xmlText;
+    } catch (e) {
+      // try next proxy
+    }
+  }
+  return null;
+}
+
+function parseRSS(xmlText, source) {
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xmlText, 'application/xml');
+    const items = Array.from(doc.querySelectorAll('item'));
+
+    return items.slice(0, 15).map(item => {
+      const title = item.querySelector('title')?.textContent?.trim() || '';
+      const link  = item.querySelector('link')?.textContent?.trim()
+                 || item.querySelector('guid')?.textContent?.trim()
+                 || source.url;
+      const pubDateStr = item.querySelector('pubDate')?.textContent?.trim()
+                      || item.querySelector('published')?.textContent?.trim()
+                      || item.querySelector('updated')?.textContent?.trim() || '';
+      const rawDesc = item.querySelector('description')?.textContent?.trim()
+                    || item.querySelector('summary')?.textContent?.trim()
+                    || item.querySelector('content')?.textContent?.trim() || '';
+
+      // strip HTML from description
+      const tmpDiv = document.createElement('div');
+      tmpDiv.innerHTML = rawDesc;
+      const cleanDesc = tmpDiv.textContent.replace(/\s+/g,' ').trim().slice(0, 280);
+
+      const pubDate = pubDateStr ? new Date(pubDateStr) : null;
+
+      return {
+        sourceId:    source.id,
+        sourceName:  source.name,
+        sourceShort: source.short,
+        sourceColor: source.color,
+        sourceEmoji: source.emoji,
+        sourceUrl:   source.url,
+        title:       title.replace(/&amp;/g,'&').replace(/&#8217;/g,"'").replace(/&#8216;/g,"'").replace(/&lt;/g,'<').replace(/&gt;/g,'>'),
+        url:         link,
+        desc:        cleanDesc,
+        date:        pubDate && !isNaN(pubDate) ? pubDate : null,
+        category:    categorize(title, cleanDesc),
+      };
+    });
+  } catch(e) {
+    return [];
+  }
+}
+
+async function fetchSource(source) {
+  setPillState(source.id, 'loading');
+  debugLog.push({ id: source.id, name: source.name, status: 'loading', msg: 'Fetching…' });
+  updateDebug();
+
+  // All sources use RSS via CORS proxy
+  const xml = await fetchWithProxy(source.rss);
+
+  if (!xml) {
+    setPillState(source.id, 'error');
+    updateDebugEntry(source.id, 'error', 'All proxies failed');
+    return [];
+  }
+
+  const articles = parseRSS(xml, source);
+  if (articles.length === 0) {
+    setPillState(source.id, 'error');
+    updateDebugEntry(source.id, 'error', 'Fetched but 0 articles parsed');
+    return [];
+  }
+
+  setPillState(source.id, 'ok', articles.length);
+  updateDebugEntry(source.id, 'ok', `${articles.length} articles loaded`);
+  return articles;
+}
+
+// ─── LOAD ALL ────────────────────────────────────────────────────────────
+async function loadAll() {
+  allArticles = [];
+  debugLog = [];
+  document.getElementById('statsBar').style.display = 'none';
+  document.getElementById('debugBox').style.display = 'none';
+  document.getElementById('refreshBtn').disabled = true;
+  document.getElementById('refreshTime').textContent = 'Loading…';
+  document.getElementById('cardGrid').innerHTML = `
+    <div class="loading-wrap">
+      <div class="spinner"></div>
+      <div class="loading-text" id="loadingText">Fetching articles from ${SOURCES.length} sources…</div>
+      <div class="loading-sub">Using RSS feeds with CORS proxy — may take 10–20 seconds</div>
+    </div>`;
+  document.getElementById('digestGrid').innerHTML = `<div class="digest-loading"><div class="spinner"></div>Fetching r/churning threads…</div>`;
+  document.getElementById('digestMeta').textContent = 'Loading…';
+
+  buildPills();
+
+  // Fetch each blog source independently and render as soon as it arrives
+  const sourcePromises = SOURCES.map(s =>
+    fetchSource(s).then(articles => {
+      allArticles.push(...articles);
+      allArticles.sort((a, b) => {
+        if (a.date && b.date) return b.date - a.date;
+        if (a.date) return -1;
+        if (b.date) return 1;
+        return 0;
+      });
+      // Update stats and re-render immediately when each source lands
+      document.getElementById('statTotal').textContent = allArticles.length;
+      document.getElementById('statSources').textContent = new Set(allArticles.map(a => a.sourceId)).size;
+      document.getElementById('statCategories').textContent = new Set(allArticles.map(a => a.category)).size;
+      document.getElementById('statsBar').style.display = 'flex';
+      renderCards();
+    })
+  );
+
+  // Start Reddit digest and Communities independently (don't block news feed)
+  loadRedditDigest();
+  loadCommunities();
+
+  // Wait for all blog sources to finish
+  await Promise.allSettled(sourcePromises);
+
+  document.getElementById('refreshTime').textContent = `v${VERSION} · Updated ${new Date().toLocaleTimeString()}`;
+  document.getElementById('refreshBtn').disabled = false;
+
+  const hasErrors = debugLog.some(d => d.status === 'error');
+  if (hasErrors) {
+    document.getElementById('debugBox').style.display = 'block';
+    updateDebug();
+  }
+}
+
+// ─── SOURCE PILLS ────────────────────────────────────────────────────────
+function buildPills() {
+  const wrap = document.getElementById('sourcePills');
+  // Keep the "All" pill, append source pills after it
+  SOURCES.forEach(src => {
+    sourceState[src.id] = 'loading';
+    const pill = document.createElement('span');
+    pill.className = 'src-pill loading';
+    pill.id = `pill-${src.id}`;
+    pill.style.background = src.color;
+    pill.dataset.srcId = src.id;
+    pill.innerHTML = `${src.emoji} ${src.short} <span class="pill-count" id="pillcount-${src.id}">…</span>`;
+    pill.title = `Toggle ${src.name}`;
+    pill.onclick = () => toggleSource(src.id);
+    wrap.appendChild(pill);
+  });
+}
+
+function updateAllPill() {
+  const allPill = document.getElementById('pill-all');
+  if (!allPill) return;
+  const allActive = activeSources.size === SOURCES.length;
+  allPill.classList.toggle('inactive', !allActive);
+}
+
+function selectAllSources() {
+  activeSources = new Set(SOURCES.map(s => s.id));
+  SOURCES.forEach(s => {
+    const pill = document.getElementById(`pill-${s.id}`);
+    if (pill) pill.classList.remove('inactive');
+  });
+  updateAllPill();
+  renderCards();
+}
+
+function setPillState(id, state, count) {
+  sourceState[id] = state;
+  const pill = document.getElementById(`pill-${id}`);
+  const cnt  = document.getElementById(`pillcount-${id}`);
+  if (!pill) return;
+  pill.className = `src-pill ${state}`;
+  if (!activeSources.has(id)) pill.classList.add('inactive');
+  if (state === 'ok' && count != null) cnt.textContent = count;
+  if (state === 'error') cnt.textContent = '✗';
+  if (state === 'loading') cnt.textContent = '⏳';
+  updateAllPill();
+}
+
+function toggleSource(id) {
+  const allActive = activeSources.size === SOURCES.length;
+  if (allActive) {
+    // First click from "all selected": solo this source
+    activeSources = new Set([id]);
+  } else {
+    // Already in filtered mode: toggle this source on/off
+    if (activeSources.has(id)) {
+      activeSources.delete(id);
+      // If nothing left, reset to all
+      if (activeSources.size === 0) activeSources = new Set(SOURCES.map(s => s.id));
+    } else {
+      activeSources.add(id);
+    }
+  }
+  // Update all pill visuals
+  SOURCES.forEach(s => {
+    const pill = document.getElementById(`pill-${s.id}`);
+    if (pill) pill.classList.toggle('inactive', !activeSources.has(s.id));
+  });
+  updateAllPill();
+  renderCards();
+}
+
+// ─── DEBUG ───────────────────────────────────────────────────────────────
+function updateDebug() {
+  const list = document.getElementById('debugList');
+  list.innerHTML = debugLog.map(d => `
+    <li>
+      <span class="${d.status === 'ok' ? 'debug-ok' : d.status === 'error' ? 'debug-err' : ''}">${d.status === 'ok' ? '✓' : d.status === 'error' ? '✗' : '⏳'}</span>
+      <strong>${d.name}</strong> — ${d.msg}
+    </li>`).join('');
+}
+
+function updateDebugEntry(id, status, msg) {
+  const entry = debugLog.find(d => d.id === id);
+  if (entry) { entry.status = status; entry.msg = msg; }
+  updateDebug();
+}
+
+// ─── FILTER / RENDER ─────────────────────────────────────────────────────
+function setCategory(cat, btn) {
+  activeCategory = cat;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCards();
+}
+
+function renderCards() {
+  const search = (document.getElementById('searchInput').value || '').toLowerCase();
+  const grid = document.getElementById('cardGrid');
+
+  const filtered = allArticles.filter(a => {
+    if (!activeSources.has(a.sourceId)) return false;
+    if (activeCategory !== 'all' && a.category !== activeCategory) return false;
+    if (search && !a.title.toLowerCase().includes(search) && !a.desc.toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    if (allArticles.length === 0) {
+      grid.innerHTML = `<div class="empty-msg">⏳ Still loading… or all sources failed to load.<br><small>Check the status above for details.</small></div>`;
+    } else {
+      grid.innerHTML = `<div class="empty-msg">No articles match the current filters.</div>`;
+    }
+    return;
+  }
+
+  grid.innerHTML = filtered.map(a => cardHTML(a)).join('');
+}
+
+function cardHTML(a) {
+  const catLabel = a.category === 'news' ? '📰 News' : (CATEGORIES[a.category]?.label || a.category);
+  const dateStr  = a.date ? fmtDate(a.date) : '';
+  const desc     = a.desc ? `<div class="card-desc">${esc(a.desc)}</div>` : '';
+
+  return `
+  <div class="card">
+    <div class="card-meta">
+      <span class="source-badge" style="background:${a.sourceColor}">${a.sourceShort}</span>
+      <span class="category-tag">${catLabel}</span>
+      <span class="card-date">${dateStr}</span>
+    </div>
+    <div class="card-title"><a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.title)}</a></div>
+    ${desc}
+    <div class="card-footer">
+      <a class="read-link" href="${esc(a.url)}" target="_blank" rel="noopener">Read article →</a>
+      <span style="font-size:11px;color:var(--subtext)">${esc(a.sourceName)}</span>
+    </div>
+  </div>`;
+}
+
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmtDate(d) {
+  const diff = (Date.now() - d) / 1000;
+  if (diff < 60)    return 'just now';
+  if (diff < 3600)  return Math.floor(diff/60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+  if (diff < 172800) return 'Yesterday';
+  return d.toLocaleDateString(undefined, { month:'short', day:'numeric' });
+}
+
+// ─── TAB SWITCHING ───────────────────────────────────────────────────────
+function switchTab(name) {
+  ['news','reddit','communities'].forEach(t => {
+    document.getElementById(`panel-${t}`).style.display = name === t ? '' : 'none';
+    document.getElementById(`tab-${t}`).classList.toggle('active', name === t);
+  });
+}
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────
+
+// Mobile-safe fetch with timeout (AbortSignal.timeout not supported on all mobile browsers)
+function fetchWithTimeout(url, options = {}, ms = 15000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  return fetch(url, { ...options, signal: controller.signal })
+    .finally(() => clearTimeout(timer));
+}
+
+// ─── REDDIT DAILY DIGEST ─────────────────────────────────────────────────
+
+async function loadRedditDigest() {
+  const grid = document.getElementById('digestGrid');
+  const meta = document.getElementById('digestMeta');
+
+  const REDDIT_URL = 'https://www.reddit.com/r/churning/new.json?limit=100&raw_json=1';
+
+  // Try direct first, then CORS proxies as fallback (needed for some mobile browsers)
+  const STRATEGIES = [
+    async () => {
+      const res = await fetchWithTimeout(REDDIT_URL, { headers: { Accept: 'application/json' }, credentials: 'omit' }, 15000);
+      if (!res.ok) throw new Error('Bad status: ' + res.status);
+      return res.json();
+    },
+    async () => {
+      // allorigins proxy wraps response in { contents: "json string" }
+      const res = await fetchWithTimeout(
+        `https://api.allorigins.win/get?url=${encodeURIComponent(REDDIT_URL)}`, {}, 18000
+      );
+      if (!res.ok) throw new Error('Proxy error');
+      const wrapper = await res.json();
+      return JSON.parse(wrapper.contents);
+    },
+    async () => {
+      const res = await fetchWithTimeout(
+        `https://corsproxy.io/?${encodeURIComponent(REDDIT_URL)}`, {}, 18000
+      );
+      if (!res.ok) throw new Error('Proxy error');
+      return res.json();
+    },
+  ];
+
+  let posts = [];
+  let allFailed = true;
+
+  for (const strategy of STRATEGIES) {
+    try {
+      const data = await strategy();
+      const children = data?.data?.children || [];
+      if (children.length === 0) continue;
+      const cutoff = Date.now() / 1000 - 259200; // 72 hours
+      posts = children
+        .map(c => c.data)
+        .filter(p => p.created_utc >= cutoff)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 30);
+      allFailed = false;
+      break;
+    } catch (e) { /* try next */ }
+  }
+
+  if (allFailed) {
+    grid.innerHTML = `<div class="digest-error">⚠️ Could not reach Reddit. Check your connection and try refreshing.</div>`;
+    meta.textContent = 'Failed to load';
+    return;
+  }
+
+  if (posts.length === 0) {
+    grid.innerHTML = `<div class="digest-error">No posts found in the last 72 hours.</div>`;
+    meta.textContent = '0 posts found';
+    return;
+  }
+
+  meta.textContent = `${posts.length} threads · fetching discussions…`;
+
+  // 2. Render skeleton cards immediately so titles show up right away
+  grid.innerHTML = posts.map(p => digestPostHTML(p, null)).join('');
+
+  // 3. Fetch all thread comments in parallel with a hard 30s overall deadline
+  async function fetchComments(p) {
+    const commentUrl = `https://www.reddit.com/r/churning/comments/${p.id}.json?limit=15&sort=top&raw_json=1&depth=1`;
+    let data = null;
+    // Try direct first, then CORS proxies for iOS/WebKit ITP compatibility
+    const commentStrategies = [
+      async () => {
+        const res = await fetchWithTimeout(commentUrl, { headers: { Accept: 'application/json' }, credentials: 'omit' }, 8000);
+        if (!res.ok) throw new Error();
+        return res.json();
+      },
+      async () => {
+        const res = await fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(commentUrl)}`, {}, 12000);
+        if (!res.ok) throw new Error();
+        const w = await res.json();
+        return JSON.parse(w.contents);
+      },
+      async () => {
+        const res = await fetchWithTimeout(`https://corsproxy.io/?${encodeURIComponent(commentUrl)}`, {}, 12000);
+        if (!res.ok) throw new Error();
+        return res.json();
+      },
+    ];
+    for (const s of commentStrategies) {
+      try { data = await s(); break; } catch(e) { /* try next */ }
+    }
+
+    const topics = data
+      ? (data[1]?.data?.children || [])
+          .map(c => c.data)
+          .filter(c =>
+            c.body &&
+            c.body !== '[deleted]' &&
+            c.body !== '[removed]' &&
+            c.author !== 'AutoModerator' &&
+            c.score > 0 &&
+            c.body.length > 20
+          )
+          .slice(0, 8)
+      : [];
+
+    const card = document.getElementById(`digest-post-${p.id}`);
+    if (card) card.outerHTML = digestPostHTML(p, topics);
+    return topics.length > 0;
+  }
+
+  // Race: all comment fetches vs. a 30-second hard deadline (proxies need extra time on iOS)
+  const HARD_DEADLINE = 30000;
+  const deadline = new Promise(resolve => setTimeout(resolve, HARD_DEADLINE));
+
+  const commentResults = await Promise.race([
+    Promise.allSettled(posts.map(p => fetchComments(p))),
+    deadline.then(() => null),
+  ]);
+
+  // If deadline fired first, clear any remaining spinners
+  document.querySelectorAll('[id^="digest-post-"]').forEach(card => {
+    if (card.innerHTML.includes('Loading discussion')) {
+      const postId = card.id.replace('digest-post-', '');
+      const post = posts.find(p => p.id === postId);
+      if (post) card.outerHTML = digestPostHTML(post, []);
+    }
+  });
+
+  const loaded = commentResults
+    ? commentResults.filter(r => r.status === 'fulfilled' && r.value).length
+    : '?';
+  meta.textContent = `${posts.length} threads · ${loaded} with discussion topics`;
+}
+
+function digestPostHTML(p, topics) {
+  const flair    = p.link_flair_text ? `<span class="post-flair">${esc(p.link_flair_text)}</span>` : '';
+  const timeAgo  = fmtDate(new Date(p.created_utc * 1000));
+  const permalink = `https://www.reddit.com${p.permalink}`;
+
+  // Topic list from comments
+  let topicsHTML = '';
+  if (topics === null) {
+    // skeleton
+    topicsHTML = `
+      <div class="topic-list">
+        <div class="topic-list-label">Discussion Topics</div>
+        <div style="font-size:12px;color:var(--subtext);padding:6px 0;display:flex;align-items:center;gap:8px">
+          <div class="spinner" style="width:14px;height:14px;border-width:2px"></div> Loading discussion…
+        </div>
+      </div>`;
+  } else if (topics.length > 0) {
+    const items = topics.map(c => {
+      // Extract first meaningful sentence as the topic headline
+      const rawBody  = c.body.replace(/\*\*/g,'').replace(/\*/g,'').replace(/\n+/g,' ').trim();
+      const headline = rawBody.split(/[.!?]/)[0].trim().slice(0, 120);
+      const preview  = rawBody.slice(0, 260);
+      // Direct comment link: reddit.com/r/churning/comments/POST/SLUG/COMMENT_ID/
+      const commentUrl = `https://www.reddit.com/r/churning/comments/${p.id}/_/${c.id}/?context=1`;
+
+      return `
+        <div class="topic-item">
+          <div class="topic-votes">↑${c.score}</div>
+          <div class="topic-content">
+            <div class="topic-author">u/${esc(c.author)}</div>
+            <div class="topic-text"><strong>${esc(headline)}${rawBody.length > 120 ? '…' : ''}</strong><br>
+              <span style="color:var(--subtext);font-size:12px">${esc(preview)}${rawBody.length > 260 ? '…' : ''}</span>
+            </div>
+            <a class="topic-link" href="${esc(commentUrl)}" target="_blank" rel="noopener">↗ Jump to this comment</a>
+          </div>
+        </div>`;
+    }).join('');
+
+    topicsHTML = `
+      <div class="topic-list">
+        <div class="topic-list-label">💬 Discussion Topics (${topics.length})</div>
+        ${items}
+      </div>`;
+  }
+
+  return `
+  <div class="digest-post" id="digest-post-${p.id}">
+    <div class="digest-post-header">
+      <div class="digest-post-meta">
+        ${flair}
+        <span class="post-score">↑ ${p.score}</span>
+        <span class="post-time">${timeAgo}</span>
+      </div>
+      <div class="digest-post-title">
+        <a href="${esc(permalink)}" target="_blank" rel="noopener">${esc(p.title)}</a>
+      </div>
+    </div>
+    ${topicsHTML}
+    <div class="digest-post-footer">
+      <a class="thread-link" href="${esc(permalink)}" target="_blank" rel="noopener">Open full thread →</a>
+      <span class="comment-count">💬 ${p.num_comments} comments</span>
+    </div>
+  </div>`;
+}
+
+// ─── COMMUNITIES TAB ─────────────────────────────────────────────────────
+
+async function fetchSubreddit(subId) {
+  const url = `https://www.reddit.com/r/${subId}/hot.json?limit=15&raw_json=1`;
+  const strategies = [
+    // Direct — credentials:omit helps bypass iOS ITP blocking
+    () => fetchWithTimeout(url, { headers: { Accept: 'application/json' }, credentials: 'omit' }, 10000).then(r => r.ok ? r.json() : Promise.reject()),
+    // allorigins proxy fallback
+    () => fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, {}, 14000).then(r => r.json()).then(w => JSON.parse(w.contents)),
+    // corsproxy.io as second proxy fallback (iOS/Android compatibility)
+    () => fetchWithTimeout(`https://corsproxy.io/?${encodeURIComponent(url)}`, {}, 14000).then(r => r.ok ? r.json() : Promise.reject()),
+  ];
+  for (const s of strategies) {
+    try { return await s(); } catch(e) {}
+  }
+  return null;
+}
+
+async function loadCommunities() {
+  const wrap = document.getElementById('communitiesWrap');
+  // Render category skeletons immediately
+  wrap.innerHTML = COMMUNITIES.map((cat, ci) => `
+    <div class="community-category" id="cat-${ci}">
+      <div class="category-header" onclick="toggleCategory(${ci})">
+        <div class="category-header-left">
+          <h3>${cat.label}</h3>
+          <span class="category-count" id="cat-count-${ci}">loading…</span>
+        </div>
+        <span class="category-toggle" id="cat-toggle-${ci}">▼</span>
+      </div>
+      <div class="category-body" id="cat-body-${ci}">
+        ${cat.subs.map(sub => `
+          <div class="sub-block" id="sub-${sub.id}">
+            <div class="sub-header" onclick="toggleSub('${sub.id}')">
+              <div class="sub-title">
+                <div class="sub-dot" style="background:${sub.color}"></div>
+                <span class="sub-name">${sub.name}</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="sub-meta" id="sub-meta-${sub.id}">loading…</span>
+                <span class="sub-chevron open" id="sub-chev-${sub.id}">›</span>
+              </div>
+            </div>
+            <div id="sub-posts-${sub.id}">
+              <div class="sub-loading"><div class="spinner" style="width:16px;height:16px;border-width:2px"></div> Fetching…</div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+
+  // Fetch all subreddits in parallel
+  const allSubs = COMMUNITIES.flatMap(c => c.subs);
+  await Promise.allSettled(allSubs.map(async sub => {
+    const data = await fetchSubreddit(sub.id);
+    const postsEl  = document.getElementById(`sub-posts-${sub.id}`);
+    const metaEl   = document.getElementById(`sub-meta-${sub.id}`);
+    if (!postsEl) return;
+
+    if (!data) {
+      postsEl.innerHTML = `<div class="sub-error">⚠️ Could not load</div>`;
+      metaEl.textContent = 'error';
+      return;
+    }
+
+    const cutoff = Date.now() / 1000 - 259200; // 72h
+    const posts = (data?.data?.children || [])
+      .map(c => c.data)
+      .filter(p => p.created_utc >= cutoff && !p.stickied)
+      .slice(0, 6);
+
+    metaEl.textContent = `${posts.length} posts`;
+
+    if (posts.length === 0) {
+      postsEl.innerHTML = `<div class="sub-error">No posts in the last 72 hours.</div>`;
+      return;
+    }
+
+    postsEl.innerHTML =
+      posts.map(p => {
+        const desc = p.selftext ? p.selftext.replace(/\n+/g,' ').trim().slice(0, 160) : '';
+        const flair = p.link_flair_text ? `<span class="sub-flair">${esc(p.link_flair_text)}</span>` : '';
+        const link  = `https://www.reddit.com${p.permalink}`;
+        return `
+          <a class="sub-post" href="${esc(link)}" target="_blank" rel="noopener">
+            <div class="sub-post-score">↑${p.score}</div>
+            <div class="sub-post-body">
+              <div class="sub-post-title">${esc(p.title)}</div>
+              ${desc ? `<div class="sub-post-desc">${esc(desc)}</div>` : ''}
+              <div class="sub-post-footer">
+                ${flair}
+                <span class="sub-post-time">${fmtDate(new Date(p.created_utc * 1000))}</span>
+                <span class="sub-post-comments">💬 ${p.num_comments}</span>
+              </div>
+            </div>
+          </a>`;
+      }).join('') +
+      `<a class="sub-view-all" href="https://reddit.com/r/${sub.id}" target="_blank" rel="noopener">View all of ${sub.name} →</a>`;
+  }));
+
+  // Update category counts
+  COMMUNITIES.forEach((cat, ci) => {
+    const total = cat.subs.reduce((sum, sub) => {
+      const el = document.getElementById(`sub-meta-${sub.id}`);
+      return sum + (parseInt(el?.textContent) || 0);
+    }, 0);
+    const countEl = document.getElementById(`cat-count-${ci}`);
+    if (countEl) countEl.textContent = `${total} posts`;
+  });
+}
+
+function toggleCategory(ci) {
+  const body    = document.getElementById(`cat-body-${ci}`);
+  const toggle  = document.getElementById(`cat-toggle-${ci}`);
+  const collapsed = body.classList.toggle('collapsed');
+  toggle.classList.toggle('collapsed', collapsed);
+}
+
+function toggleSub(id) {
+  const posts = document.getElementById(`sub-posts-${id}`);
+  const chev  = document.getElementById(`sub-chev-${id}`);
+  const hidden = posts.style.display === 'none';
+  posts.style.display = hidden ? '' : 'none';
+  if (chev) chev.classList.toggle('open', hidden);
+}
+
+// ─── THEME ───────────────────────────────────────────────────────────────
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.dataset.theme === 'dark';
+  html.dataset.theme = isDark ? '' : 'dark';
+  try { localStorage.setItem('pmDashTheme', isDark ? 'light' : 'dark'); } catch{}
+}
+
+// ─── LAST VISIT / NEW TRACKING ───────────────────────────────────────────
+let lastVisitTime = 0;
+
+function saveLastVisit() {
+  try { localStorage.setItem('pmDashLastVisit', Date.now().toString()); } catch{}
+}
+
+function loadLastVisit() {
+  try {
+    const v = localStorage.getItem('pmDashLastVisit');
+    lastVisitTime = v ? parseInt(v) : 0;
+  } catch{}
+}
+
+function countNewArticles() {
+  return allArticles.filter(a => a.date && a.date.getTime() > lastVisitTime).length;
+}
+
+function updateNewBadge() {
+  const count = countNewArticles();
+  const tab = document.getElementById('tab-news');
+  if (!tab) return;
+  const existing = tab.querySelector('.tab-new-dot');
+  if (count > 0 && !existing) {
+    tab.innerHTML = `📰 News Feed <span class="tab-new-dot" title="${count} new articles"></span>`;
+  } else if (count === 0 && existing) {
+    tab.textContent = '📰 News Feed';
+  }
+  // Update "New" filter button label
+  const filterNew = document.getElementById('filterNew');
+  if (filterNew) filterNew.textContent = count > 0 ? `🆕 New (${count})` : '🆕 New';
+}
+
+// ─── AUTO-REFRESH ─────────────────────────────────────────────────────────
+let autoRefreshTimer = null;
+
+function scheduleAutoRefresh() {
+  if (autoRefreshTimer) clearTimeout(autoRefreshTimer);
+  autoRefreshTimer = setTimeout(async () => {
+    if (!document.hidden) {
+      // Show pulsing dot while refreshing silently
+      const rt = document.getElementById('refreshTime');
+      if (rt) rt.innerHTML = `v${VERSION} · <span class="refresh-dot"></span> Refreshing…`;
+      await loadAll();
+    }
+    scheduleAutoRefresh(); // schedule next
+  }, 30 * 60 * 1000); // 30 minutes
+}
+
+// ─── RENDER (updated to support "new" filter) ────────────────────────────
+function renderCards() {
+  const search = (document.getElementById('searchInput').value || '').toLowerCase();
+  const grid = document.getElementById('cardGrid');
+
+  const filtered = allArticles.filter(a => {
+    if (!activeSources.has(a.sourceId)) return false;
+    if (activeCategory === 'new') return a.date && a.date.getTime() > lastVisitTime;
+    if (activeCategory !== 'all' && a.category !== activeCategory) return false;
+    if (search && !a.title.toLowerCase().includes(search) && !(a.desc||'').toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    if (allArticles.length === 0) {
+      grid.innerHTML = `<div class="empty-msg">⏳ Still loading… or all sources failed.<br><small>Check the status pills above.</small></div>`;
+    } else {
+      grid.innerHTML = `<div class="empty-msg">No articles match the current filters.</div>`;
+    }
+    return;
+  }
+
+  grid.innerHTML = filtered.map(a => {
+    const isNew = a.date && a.date.getTime() > lastVisitTime;
+    const catLabel = a.category === 'news' ? '📰 News' : (CATEGORIES[a.category]?.label || a.category);
+    const dateStr  = a.date ? fmtDate(a.date) : '';
+    const desc     = a.desc ? `<div class="card-desc">${esc(a.desc)}</div>` : '';
+    return `
+    <div class="card">
+      <div class="card-meta">
+        <span class="source-badge" style="background:${a.sourceColor}">${a.sourceShort}</span>
+        <span class="category-tag">${catLabel}</span>
+        ${isNew ? '<span class="new-badge">New</span>' : ''}
+        <span class="card-date">${dateStr}</span>
+      </div>
+      <div class="card-title"><a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.title)}</a></div>
+      ${desc}
+      <div class="card-footer">
+        <a class="read-link" href="${esc(a.url)}" target="_blank" rel="noopener">Read article →</a>
+        <span style="font-size:11px;color:var(--subtext)">${esc(a.sourceName)}</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  updateNewBadge();
+}
+
+// ─── PWA SERVICE WORKER ───────────────────────────────────────────────────
+function registerSW() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/briefing/service-worker.js')
+      .catch(e => console.log('SW registration skipped:', e.message));
+  }
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────
+(function init() {
+  // 1. Theme: use saved preference, or fall back to system preference
+  try {
+    const saved = localStorage.getItem('pmDashTheme');
+    if (saved) {
+      document.documentElement.dataset.theme = saved;
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      document.documentElement.dataset.theme = 'dark';
+    }
+    // Auto-update if system theme changes and user hasn't overridden
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+      if (!localStorage.getItem('pmDashTheme')) {
+        document.documentElement.dataset.theme = e.matches ? 'dark' : '';
+      }
+    });
+  } catch{}
+
+  // 2. Load last visit time, then save new visit timestamp
+  loadLastVisit();
+  saveLastVisit();
+
+  // 3. Register service worker for PWA
+  registerSW();
+
+  // 4. Load content and start auto-refresh
+  loadAll();
+  scheduleAutoRefresh();
+})();
+</script>
+</body>
+</html>
