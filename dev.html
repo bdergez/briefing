@@ -879,7 +879,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.18-dev';
+const VERSION = '1.5.19-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1390,7 +1390,7 @@ function renderThreadList(posts) {
         dayPosts.map(p => `
           <div class="comm-nav-item comm-nav-sub"
                data-post-id="${p.id}"
-               onclick="scrollToThread('${p.id}')">
+               onclick="scrollToThread('${p.id}', ${day})">
             <span style="flex:1;line-height:1.35">${esc(simplifyThreadTitle(p.title))}</span>
             <span class="comm-nav-cat-count" style="white-space:nowrap;margin-left:6px">💬${p.num_comments}</span>
           </div>`
@@ -1469,7 +1469,10 @@ function selectDay(day) {
   });
 }
 
-function scrollToThread(postId) {
+function scrollToThread(postId, day) {
+  if (day !== undefined && day !== selectedDay) {
+    selectDay(day);
+  }
   const card = document.getElementById(`digest-post-${postId}`);
   if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
