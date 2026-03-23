@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#1a1a2e" />
+  <meta name="theme-color" content="#c0392b" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="P&M Dash" />
+  <meta name="apple-mobile-web-app-title" content="P&M DEV" />
   <link rel="manifest" href="manifest.json" />
-  <link rel="icon" href="icon.svg" type="image/svg+xml" />
-  <link rel="apple-touch-icon" href="icon.svg" />
-  <title>Points & Miles Dashboard</title>
+  <link rel="icon" href="icon-dev.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icon-dev.svg" />
+  <title>[DEV] Points & Miles Dashboard</title>
   <style>
     :root {
       --bg: #f0f2f5;
@@ -408,11 +408,8 @@
     }
     .category-header-left { display: flex; align-items: center; gap: 10px; }
     .category-header h3 { font-size: 16px; font-weight: 800; color: var(--text); }
-    .category-count {
-      font-size: 11px; font-weight: 600; color: var(--subtext);
-      background: var(--tag-bg); padding: 2px 8px; border-radius: 20px;
-    }
-    .category-toggle { font-size: 12px; color: var(--subtext); transition: transform 0.2s; }
+    .category-count { display: none; } /* count shown in left nav instead */
+    .category-toggle { display: none; }
     .category-toggle.collapsed { transform: rotate(-90deg); }
     .category-body { display: flex; flex-direction: column; gap: 10px; }
     .category-body.collapsed { display: none; }
@@ -429,7 +426,7 @@
     }
     .sub-header:hover { background: var(--tag-bg); }
     .sub-title { display: flex; align-items: center; gap: 8px; }
-    .sub-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .sub-dot { display: none; } /* replaced by colored left border on the block */
     .sub-name { font-size: 14px; font-weight: 700; color: var(--text); }
     .sub-meta { font-size: 11px; color: var(--subtext); }
     .sub-chevron { font-size: 11px; color: var(--subtext); transition: transform 0.2s; }
@@ -517,6 +514,57 @@
     }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
+    /* ── SECTION LABEL (above right panel on churning + communities) */
+    .section-label {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 16px; font-weight: 800; color: var(--text);
+      padding: 10px 0; margin-bottom: 14px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    /* ── COMMUNITIES NAV PANEL ──────────────────────────────────── */
+    .comm-nav-header {
+      padding: 10px 14px;
+      border-bottom: 2px solid var(--border);
+      font-size: 11px; font-weight: 700; color: var(--subtext);
+      text-transform: uppercase; letter-spacing: 0.5px;
+      position: sticky; top: 0; z-index: 1;
+      background: var(--card-bg);
+      border-radius: 14px 14px 0 0;
+    }
+    .comm-nav-item {
+      padding: 9px 14px;
+      cursor: pointer;
+      transition: background 0.15s;
+      border-bottom: 1px solid var(--border);
+    }
+    .comm-nav-item:last-child { border-bottom: none; }
+    .comm-nav-item:hover { background: var(--tag-bg); }
+    .comm-nav-all { font-size: 13px; font-weight: 600; color: var(--text); }
+    .comm-nav-cat {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.4px; color: var(--subtext);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 7px 14px;
+    }
+    .comm-nav-sub {
+      padding: 7px 14px 7px 24px;
+      font-size: 12px; color: var(--text);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .comm-nav-item.active {
+      background: var(--accent-light);
+      color: var(--accent);
+      border-left: 3px solid var(--accent);
+    }
+    .comm-nav-all.active { padding-left: 11px; }
+    .comm-nav-sub.active { padding-left: 21px; }
+    .comm-nav-cat-count {
+      background: var(--tag-bg); color: var(--subtext);
+      font-size: 10px; padding: 1px 6px; border-radius: 20px; font-weight: 600;
+    }
+    .comm-nav-cat.active .comm-nav-cat-count { background: var(--accent-light); color: var(--accent); }
+
     /* ── DESKTOP ENHANCEMENTS (> 640px) ─────────────────────────── */
     @media (min-width: 641px) {
 
@@ -526,12 +574,9 @@
         gap: 20px;
       }
 
-      /* Communities: subreddits side-by-side within each category */
-      .category-body {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-        gap: 14px;
-      }
+
+      /* Churning: meta count hidden on desktop (thread list panel shows it) */
+      #digestMeta { display: none; }
 
       /* Churning: two-panel split layout */
       .digest-layout {
@@ -554,6 +599,28 @@
       }
       .thread-list-panel::-webkit-scrollbar { width: 4px; }
       .thread-list-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+      /* Communities: two-panel split layout (mirrors churning) */
+      .comm-layout {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        gap: 20px;
+        align-items: start;
+      }
+      .comm-nav-panel {
+        position: sticky;
+        top: 74px;
+        max-height: calc(100vh - 94px);
+        overflow-y: auto;
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        box-shadow: var(--shadow);
+        scrollbar-width: thin;
+        scrollbar-color: var(--border) transparent;
+      }
+      .comm-nav-panel::-webkit-scrollbar { width: 4px; }
+      .comm-nav-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
     }
 
     /* Thread list items (shared styles, visibility controlled per breakpoint) */
@@ -664,7 +731,9 @@
       .digest-layout { display: block; }
       .thread-list-panel { display: none; }
 
-      /* Communities: single column on mobile */
+      /* Communities: single column on mobile, nav hidden */
+      .comm-layout { display: block; }
+      .comm-nav-panel { display: none !important; }
       .category-body { display: flex; flex-direction: column; gap: 10px; }
 
       /* Reddit digest */
@@ -687,9 +756,24 @@
       .card:hover { transform: none; } /* disable hover lift on touch */
     }
 
+    /* ── DEV BANNER ── */
+    #devBanner {
+      background: #f59e0b;
+      color: #1a1a2e;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      padding: 5px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+    }
   </style>
 </head>
 <body>
+
+<div id="devBanner">🚧 DEV / STAGING — changes here are not live yet · <a href="index.html" style="color:#1a1a2e;text-decoration:underline">View production →</a></div>
 
 <header>
   <div>
@@ -763,17 +847,11 @@
   <!-- ══ PANEL: REDDIT DIGEST ══ -->
   <div id="panel-reddit" style="display:none">
 
-    <div class="digest-header">
-      <div class="digest-title">
-        <span style="font-size:22px">🤝</span>
-        <h2>r/churning Daily Digest</h2>
-        <span class="reddit-badge">Last 72 hours</span>
-      </div>
-      <div class="digest-meta" id="digestMeta">Loading threads…</div>
-    </div>
+    <div class="digest-meta" id="digestMeta" style="font-size:12px;color:var(--subtext);margin-bottom:12px">Loading threads…</div>
     <div class="digest-layout">
       <div class="thread-list-panel" id="threadListPanel" style="display:none"></div>
       <div class="thread-detail-panel">
+        <div class="section-label" id="digestSectionLabel"></div>
         <div class="digest-grid" id="digestGrid">
           <div class="digest-loading">
             <div class="spinner"></div>
@@ -787,8 +865,13 @@
 
   <!-- ══ PANEL: COMMUNITIES ══ -->
   <div id="panel-communities" style="display:none">
-    <div class="communities-wrap" id="communitiesWrap">
-      <div class="digest-loading"><div class="spinner"></div>Loading communities…</div>
+    <div class="comm-layout">
+      <div class="comm-nav-panel" id="commNavPanel" style="display:none"></div>
+      <div class="comm-detail-panel">
+        <div class="communities-wrap" id="communitiesWrap">
+          <div class="digest-loading"><div class="spinner"></div>Loading communities…</div>
+        </div>
+      </div>
     </div>
   </div><!-- /panel-communities -->
 
@@ -796,7 +879,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5';
+const VERSION = '1.5.20';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -872,8 +955,13 @@ let debugLog = [];
 let digestPostsData = [];       // all fetched posts
 let digestCommentsData = {};    // postId -> topics[] (undefined = pending, [] = none)
 let selectedPostId = null;
+let selectedDay = null;         // UTC day number currently shown in right panel
 const CHURNING_MOBILE_INITIAL = 10;
 let churningExpanded = false;
+
+// ── Communities two-panel state ───────────────────────────────────────────
+let selectedCommCat = null;   // null = all, or category index
+let selectedCommSub = null;   // null = all/category, or sub id
 
 // ─── FETCH ───────────────────────────────────────────────────────────────
 async function fetchWithProxy(rssUrl) {
@@ -1251,24 +1339,63 @@ function showLessChurning() {
   document.getElementById('panel-reddit')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+function simplifyThreadTitle(title) {
+  const months = 'Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?';
+  return title
+    // " - Week of Month DD, YYYY"  or  " - Month DD, YYYY"
+    .replace(new RegExp(`\\s*[,\\-–]\\s*(Week of\\s+)?(${months})\\s+\\d{1,2},?\\s*\\d{4}`, 'gi'), '')
+    // ", Monday, March 23, 2026" style suffixes
+    .replace(/,\s*(?:Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?|Sun(?:day)?),?\s*.{0,30}\d{4}/gi, '')
+    // " - Month YYYY"  (no day number)
+    .replace(new RegExp(`\\s*[\\-–]\\s*(${months})\\s+\\d{4}`, 'gi'), '')
+    // trailing " - YYYY"
+    .replace(/\s*[-–]\s*\d{4}\s*$/, '')
+    .trim();
+}
+
+// Shared day label helper used by thread list panel and section label
+function postDayLabel(utcSeconds) {
+  const todayDay     = Math.floor(Date.now() / 1000 / 86400);
+  const yesterdayDay = todayDay - 1;
+  const day = Math.floor(utcSeconds / 86400);
+  if (day === todayDay)     return 'Today';
+  if (day === yesterdayDay) return 'Yesterday';
+  return new Date(day * 86400 * 1000).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
 function renderThreadList(posts) {
   const panel = document.getElementById('threadListPanel');
   if (!panel) return;
   panel.style.display = '';
+
+  // Group posts by UTC day
+  const groups = {};
+  posts.forEach(p => {
+    const day = Math.floor(p.created_utc / 86400);
+    if (!groups[day]) groups[day] = [];
+    groups[day].push(p);
+  });
+  const sortedDays = Object.keys(groups).map(Number).sort((a, b) => b - a);
+
   panel.innerHTML =
-    `<div class="thread-list-header">Threads (${posts.length})</div>` +
-    posts.map(p => {
-      const flair = p.link_flair_text ? `<div class="tli-flair">${esc(p.link_flair_text)}</div>` : '';
-      return `
-        <div class="thread-item ${p.id === selectedPostId ? 'active' : ''}"
-             data-post-id="${p.id}"
-             onclick="selectThread('${p.id}')">
-          <div class="tli-score">↑${p.score}</div>
-          <div class="tli-body">
-            ${flair}
-            <div class="tli-title">${esc(p.title)}</div>
-          </div>
-        </div>`;
+    `<div class="comm-nav-header">Threads (${posts.length})</div>` +
+    sortedDays.map(day => {
+      const dayPosts = groups[day];
+      const isDayActive = day === selectedDay;
+      return (
+        `<div class="comm-nav-item comm-nav-cat ${isDayActive ? 'active' : ''}" onclick="selectDay(${day})">
+          <span>${postDayLabel(day * 86400)}</span>
+          <span class="comm-nav-cat-count">${dayPosts.length}</span>
+        </div>` +
+        dayPosts.map(p => `
+          <div class="comm-nav-item comm-nav-sub ${selectedPostId === p.id ? 'active' : ''}"
+               data-post-id="${p.id}"
+               onclick="selectThread('${p.id}', ${day})">
+            <span style="flex:1;line-height:1.35">${esc(simplifyThreadTitle(p.title))}</span>
+            <span class="comm-nav-cat-count" style="white-space:nowrap;margin-left:6px">💬${p.num_comments}</span>
+          </div>`
+        ).join('')
+      );
     }).join('');
 }
 
@@ -1306,36 +1433,68 @@ async function fetchThreadComments(postId, limit = 25) {
     : [];
 }
 
-async function selectThread(postId) {
-  selectedPostId = postId;
-  // Update highlight in thread list
-  document.querySelectorAll('.thread-item').forEach(el => {
-    el.classList.toggle('active', el.dataset.postId === postId);
-  });
-  const post = digestPostsData.find(p => p.id === postId);
-  if (!post) return;
-  const grid = document.getElementById('digestGrid');
+function selectDay(day) {
+  selectedDay = day;
+  selectedPostId = null;
+  // Re-render nav with updated active state
+  renderThreadList(digestPostsData);
 
-  // Scroll detail panel to top immediately
+  // Update section label
+  const sectionLabel = document.getElementById('digestSectionLabel');
+  if (sectionLabel) sectionLabel.textContent = '📅 ' + postDayLabel(day * 86400);
+
+  const dayPosts = digestPostsData.filter(p => Math.floor(p.created_utc / 86400) === day);
+  const grid = document.getElementById('digestGrid');
+  if (!grid) return;
+
+  // Render all posts for this day (cached or skeleton)
+  grid.innerHTML = dayPosts.map(p =>
+    digestPostHTML(p, digestCommentsData.hasOwnProperty(p.id) ? digestCommentsData[p.id] : null)
+  ).join('');
+
+  // Scroll detail panel to top
   const detail = document.querySelector('.thread-detail-panel');
   if (detail) detail.scrollTop = 0;
 
-  // If comments already cached, show immediately
-  if (digestCommentsData.hasOwnProperty(postId)) {
-    if (grid) grid.innerHTML = digestPostHTML(post, digestCommentsData[postId]);
-    return;
-  }
+  // Fetch comments for any uncached posts in this day
+  dayPosts.forEach(async p => {
+    if (!digestCommentsData.hasOwnProperty(p.id)) {
+      const topics = await fetchThreadComments(p.id, 50);
+      digestCommentsData[p.id] = topics;
+      // Only update if user is still on same day
+      if (selectedDay === day) {
+        const card = document.getElementById(`digest-post-${p.id}`);
+        if (card) card.outerHTML = digestPostHTML(p, topics);
+      }
+    }
+  });
+}
 
-  // Show skeleton while fetching
-  if (grid) grid.innerHTML = digestPostHTML(post, null);
+function selectThread(postId, day) {
+  selectedPostId = postId;
+  selectedDay = day;
+  renderThreadList(digestPostsData);
 
-  // Lazy fetch 25 comments for this thread
-  const topics = await fetchThreadComments(postId, 50);
-  digestCommentsData[postId] = topics;
+  const sectionLabel = document.getElementById('digestSectionLabel');
+  if (sectionLabel) sectionLabel.textContent = '📅 ' + postDayLabel(day * 86400);
 
-  // Only update if user hasn't switched to another thread
-  if (selectedPostId === postId && grid) {
-    grid.innerHTML = digestPostHTML(post, topics);
+  const post = digestPostsData.find(p => p.id === postId);
+  const grid = document.getElementById('digestGrid');
+  if (!grid || !post) return;
+
+  grid.innerHTML = digestPostHTML(post, digestCommentsData.hasOwnProperty(post.id) ? digestCommentsData[post.id] : null);
+
+  const detail = document.querySelector('.thread-detail-panel');
+  if (detail) detail.scrollTop = 0;
+
+  if (!digestCommentsData.hasOwnProperty(post.id)) {
+    fetchThreadComments(post.id, 50).then(topics => {
+      digestCommentsData[post.id] = topics;
+      if (selectedPostId === postId) {
+        const card = document.getElementById(`digest-post-${post.id}`);
+        if (card) card.outerHTML = digestPostHTML(post, topics);
+      }
+    });
   }
 }
 
@@ -1343,7 +1502,7 @@ async function loadRedditDigest() {
   const grid = document.getElementById('digestGrid');
   const meta = document.getElementById('digestMeta');
 
-  const REDDIT_URL = 'https://www.reddit.com/r/churning/new.json?limit=100&raw_json=1';
+  const REDDIT_URL = 'https://www.reddit.com/r/churning/hot.json?limit=50&raw_json=1';
 
   // Try direct first, then CORS proxies as fallback (needed for some mobile browsers)
   const STRATEGIES = [
@@ -1378,11 +1537,14 @@ async function loadRedditDigest() {
       const data = await strategy();
       const children = data?.data?.children || [];
       if (children.length === 0) continue;
-      const cutoff = Date.now() / 1000 - 259200; // 72 hours
       posts = children
         .map(c => c.data)
-        .filter(p => p.created_utc >= cutoff)
-        .sort((a, b) => b.score - a.score)
+        .sort((a, b) => {
+          const dayA = Math.floor(a.created_utc / 86400);
+          const dayB = Math.floor(b.created_utc / 86400);
+          if (dayA !== dayB) return dayB - dayA;          // newest day first
+          return b.num_comments - a.num_comments;         // same day: most comments first
+        })
         .slice(0, 50);
       allFailed = false;
       break;
@@ -1396,7 +1558,7 @@ async function loadRedditDigest() {
   }
 
   if (posts.length === 0) {
-    grid.innerHTML = `<div class="digest-error">No posts found in the last 72 hours.</div>`;
+    grid.innerHTML = `<div class="digest-error">No posts found.</div>`;
     meta.textContent = '0 posts found';
     return;
   }
@@ -1410,19 +1572,13 @@ async function loadRedditDigest() {
   const desktop = isDesktop();
 
   if (desktop) {
-    // ── Desktop: two-panel, lazy load comments on click ───────────────
-    selectedPostId = posts[0].id;
+    // ── Desktop: two-panel, select day to see all threads for that day ─
+    const firstDay = Math.floor(posts[0].created_utc / 86400);
+    selectedDay = firstDay;
     renderThreadList(posts);
-    grid.innerHTML = digestPostHTML(posts[0], null);
     meta.textContent = `${posts.length} threads`;
-    // Load comments for the first thread
-    const topics = await fetchThreadComments(posts[0].id, 50);
-    digestCommentsData[posts[0].id] = topics;
-    if (selectedPostId === posts[0].id) {
-      grid.innerHTML = digestPostHTML(posts[0], topics);
-      meta.textContent = `${posts.length} threads · click any to load discussion`;
-    }
-    return; // Desktop is done — no bulk pre-fetch needed
+    selectDay(firstDay);
+    return;
   }
 
   // ── Mobile: stacked layout, first 10 visible + show more ────────────
@@ -1485,8 +1641,32 @@ async function loadRedditDigest() {
   meta.textContent = `${posts.length} threads · ${loaded} with discussions`;
 }
 
+// ─── CHURNING THREAD COLOR MAP ───────────────────────────────────────────
+const CHURNING_THREAD_COLORS = [
+  { match: ['daily discussion', 'daily thread'],                    color: '#4f46e5' }, // indigo
+  { match: ['newbie', 'weekly question', 'newbie weekly'],          color: '#0891b2' }, // teal
+  { match: ['news', 'update'],                                      color: '#059669' }, // emerald
+  { match: ['off topic', 'off-topic', 'offtopic'],                  color: '#7c3aed' }, // violet
+  { match: ['frustration'],                                         color: '#dc2626' }, // red
+  { match: ['manufactured spending'],                               color: '#d97706' }, // amber
+  { match: ['data point'],                                          color: '#2563eb' }, // blue
+  { match: ['trip report', 'redemption'],                           color: '#16a34a' }, // green
+  { match: ['what card', 'card recommendation', 'card should'],     color: '#db2777' }, // pink
+  { match: ['targeted offer'],                                      color: '#ea580c' }, // orange
+];
+const CHURNING_DEFAULT_COLOR = '#ff4500';
+
+function churningThreadColor(post) {
+  const haystack = ((post.link_flair_text || '') + ' ' + (post.title || '')).toLowerCase();
+  for (const { match, color } of CHURNING_THREAD_COLORS) {
+    if (match.some(m => haystack.includes(m))) return color;
+  }
+  return CHURNING_DEFAULT_COLOR;
+}
+
 function digestPostHTML(p, topics) {
-  const flair    = p.link_flair_text ? `<span class="post-flair">${esc(p.link_flair_text)}</span>` : '';
+  const threadColor = churningThreadColor(p);
+  const flair    = p.link_flair_text ? `<span class="post-flair" style="background:${threadColor}22;color:${threadColor};border-color:${threadColor}44">${esc(p.link_flair_text)}</span>` : '';
   const timeAgo  = fmtDate(new Date(p.created_utc * 1000));
   const permalink = `https://www.reddit.com${p.permalink}`;
 
@@ -1537,7 +1717,7 @@ function digestPostHTML(p, topics) {
   }
 
   return `
-  <div class="digest-post" id="digest-post-${p.id}">
+  <div class="digest-post" id="digest-post-${p.id}" style="border-left-color:${threadColor}">
     <div class="digest-post-header">
       <div class="digest-post-meta">
         ${flair}
@@ -1545,21 +1725,118 @@ function digestPostHTML(p, topics) {
         <span class="post-time">${timeAgo}</span>
       </div>
       <div class="digest-post-title">
-        <a href="${esc(permalink)}" target="_blank" rel="noopener">${esc(p.title)}</a>
+        <a href="${esc(permalink)}" target="_blank" rel="noopener" style="color:var(--text)">${esc(p.title)}</a>
       </div>
     </div>
     ${topicsHTML}
     <div class="digest-post-footer">
-      <a class="thread-link" href="${esc(permalink)}" target="_blank" rel="noopener">Open full thread →</a>
+      <a class="thread-link" href="${esc(permalink)}" target="_blank" rel="noopener" style="color:${threadColor}">Open full thread →</a>
       <span class="comment-count">💬 ${p.num_comments} comments</span>
     </div>
   </div>`;
 }
 
+// ─── COMMUNITIES NAV ─────────────────────────────────────────────────────
+
+function renderCommNav() {
+  const panel = document.getElementById('commNavPanel');
+  if (!panel) return;
+  if (!isDesktop()) { panel.style.display = 'none'; return; }
+  panel.style.display = '';
+  panel.innerHTML =
+    `<div class="comm-nav-header">Filter</div>` +
+    COMMUNITIES.map((cat, ci) => {
+      const countEl = document.getElementById(`cat-count-${ci}`);
+      const countText = countEl?.textContent || '';
+      const isCatActive = selectedCommCat === ci && selectedCommSub === null;
+      return (
+        `<div class="comm-nav-item comm-nav-cat ${isCatActive ? 'active' : ''}" onclick="selectCommCat(${ci})">
+          <span>${cat.label}</span>
+          <span class="comm-nav-cat-count">${countText}</span>
+        </div>` +
+        cat.subs.map(sub => {
+          const isSubActive = selectedCommSub === sub.id;
+          return `<div class="comm-nav-item comm-nav-sub ${isSubActive ? 'active' : ''}" onclick="selectCommSub('${sub.id}', ${ci})">
+            <span style="flex:1">${sub.name}</span>
+          </div>`;
+        }).join('')
+      );
+    }).join('');
+}
+
+function renderCommDetail() {
+  if (!isDesktop() || (selectedCommSub === null && selectedCommCat === null)) {
+    // Mobile always shows everything; desktop "All" also shows everything
+    COMMUNITIES.forEach((cat, ci) => {
+      const catEl = document.getElementById(`cat-${ci}`);
+      if (catEl) catEl.style.display = '';
+      cat.subs.forEach(sub => {
+        const subEl = document.getElementById(`sub-${sub.id}`);
+        if (subEl) subEl.style.display = '';
+      });
+    });
+    return;
+  }
+  if (selectedCommSub !== null) {
+    // Show only the selected subreddit's block within its category
+    COMMUNITIES.forEach((cat, ci) => {
+      const catEl = document.getElementById(`cat-${ci}`);
+      if (!catEl) return;
+      if (ci !== selectedCommCat) {
+        catEl.style.display = 'none';
+      } else {
+        catEl.style.display = '';
+        const body = document.getElementById(`cat-body-${ci}`);
+        if (body) body.classList.remove('collapsed');
+        cat.subs.forEach(sub => {
+          const subEl = document.getElementById(`sub-${sub.id}`);
+          if (subEl) subEl.style.display = sub.id === selectedCommSub ? '' : 'none';
+        });
+      }
+    });
+  } else if (selectedCommCat !== null) {
+    // Show only the selected category, all its subs
+    COMMUNITIES.forEach((cat, ci) => {
+      const catEl = document.getElementById(`cat-${ci}`);
+      if (!catEl) return;
+      catEl.style.display = ci === selectedCommCat ? '' : 'none';
+      if (ci === selectedCommCat) {
+        const body = document.getElementById(`cat-body-${ci}`);
+        if (body) body.classList.remove('collapsed');
+        cat.subs.forEach(sub => {
+          const subEl = document.getElementById(`sub-${sub.id}`);
+          if (subEl) subEl.style.display = '';
+        });
+      }
+    });
+  }
+}
+
+function selectAllComm() {
+  selectedCommCat = null;
+  selectedCommSub = null;
+  renderCommNav();
+  renderCommDetail();
+}
+
+function selectCommCat(ci) {
+  selectedCommCat = ci;
+  selectedCommSub = null;
+  renderCommNav();
+  renderCommDetail();
+}
+
+function selectCommSub(subId, ci) {
+  selectedCommCat = ci;
+  selectedCommSub = subId;
+  renderCommNav();
+  renderCommDetail();
+}
+
 // ─── COMMUNITIES TAB ─────────────────────────────────────────────────────
 
 async function fetchSubreddit(subId) {
-  const url = `https://www.reddit.com/r/${subId}/hot.json?limit=25&raw_json=1`;
+  const url = `https://www.reddit.com/r/${subId}/hot.json?limit=50&raw_json=1`;
   const strategies = [
     // Direct — credentials:omit helps bypass iOS ITP blocking
     () => fetchWithTimeout(url, { headers: { Accept: 'application/json' }, credentials: 'omit' }, 10000).then(r => r.ok ? r.json() : Promise.reject()),
@@ -1576,6 +1853,10 @@ async function fetchSubreddit(subId) {
 
 async function loadCommunities() {
   const wrap = document.getElementById('communitiesWrap');
+  // Default to first category on reload
+  selectedCommCat = 0;
+  selectedCommSub = null;
+  renderCommNav();
   // Render category skeletons immediately
   wrap.innerHTML = COMMUNITIES.map((cat, ci) => `
     <div class="community-category" id="cat-${ci}">
@@ -1588,10 +1869,9 @@ async function loadCommunities() {
       </div>
       <div class="category-body" id="cat-body-${ci}">
         ${cat.subs.map(sub => `
-          <div class="sub-block" id="sub-${sub.id}">
+          <div class="sub-block" id="sub-${sub.id}" style="border-left: 4px solid ${sub.color}">
             <div class="sub-header" onclick="toggleSub('${sub.id}')">
               <div class="sub-title">
-                <div class="sub-dot" style="background:${sub.color}"></div>
                 <span class="sub-name">${sub.name}</span>
               </div>
               <div style="display:flex;align-items:center;gap:8px">
@@ -1605,6 +1885,9 @@ async function loadCommunities() {
           </div>`).join('')}
       </div>
     </div>`).join('');
+
+  // Apply initial filter (default: first category)
+  renderCommDetail();
 
   // Fetch all subreddits in parallel
   const allSubs = COMMUNITIES.flatMap(c => c.subs);
@@ -1620,17 +1903,16 @@ async function loadCommunities() {
       return;
     }
 
-    const cutoff = Date.now() / 1000 - 259200; // 72h
     const posts = (data?.data?.children || [])
       .map(c => c.data)
-      .filter(p => p.created_utc >= cutoff && !p.stickied)
+      .filter(p => !p.stickied)
       .sort((a, b) => b.score - a.score)
       .slice(0, 20);
 
     metaEl.textContent = `${posts.length} posts`;
 
     if (posts.length === 0) {
-      postsEl.innerHTML = `<div class="sub-error">No posts in the last 72 hours.</div>`;
+      postsEl.innerHTML = `<div class="sub-error">No posts found.</div>`;
       return;
     }
 
@@ -1675,6 +1957,9 @@ async function loadCommunities() {
     const countEl = document.getElementById(`cat-count-${ci}`);
     if (countEl) countEl.textContent = `${total} posts`;
   });
+
+  // Render nav now that counts are populated
+  renderCommNav();
 }
 
 function toggleCategory(ci) {
