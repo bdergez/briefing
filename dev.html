@@ -879,7 +879,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.19-dev';
+const VERSION = '1.5.20-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1388,9 +1388,9 @@ function renderThreadList(posts) {
           <span class="comm-nav-cat-count">${dayPosts.length}</span>
         </div>` +
         dayPosts.map(p => `
-          <div class="comm-nav-item comm-nav-sub"
+          <div class="comm-nav-item comm-nav-sub ${selectedPostId === p.id ? 'active' : ''}"
                data-post-id="${p.id}"
-               onclick="scrollToThread('${p.id}', ${day})">
+               onclick="selectThread('${p.id}', ${day})">
             <span style="flex:1;line-height:1.35">${esc(simplifyThreadTitle(p.title))}</span>
             <span class="comm-nav-cat-count" style="white-space:nowrap;margin-left:6px">💬${p.num_comments}</span>
           </div>`
@@ -1435,6 +1435,7 @@ async function fetchThreadComments(postId, limit = 25) {
 
 function selectDay(day) {
   selectedDay = day;
+  selectedPostId = null;
   // Re-render nav with updated active state
   renderThreadList(digestPostsData);
 
@@ -1469,12 +1470,32 @@ function selectDay(day) {
   });
 }
 
-function scrollToThread(postId, day) {
-  if (day !== undefined && day !== selectedDay) {
-    selectDay(day);
+function selectThread(postId, day) {
+  selectedPostId = postId;
+  selectedDay = day;
+  renderThreadList(digestPostsData);
+
+  const sectionLabel = document.getElementById('digestSectionLabel');
+  if (sectionLabel) sectionLabel.textContent = '📅 ' + postDayLabel(day * 86400);
+
+  const post = digestPostsData.find(p => p.id === postId);
+  const grid = document.getElementById('digestGrid');
+  if (!grid || !post) return;
+
+  grid.innerHTML = digestPostHTML(post, digestCommentsData.hasOwnProperty(post.id) ? digestCommentsData[post.id] : null);
+
+  const detail = document.querySelector('.thread-detail-panel');
+  if (detail) detail.scrollTop = 0;
+
+  if (!digestCommentsData.hasOwnProperty(post.id)) {
+    fetchThreadComments(post.id, 50).then(topics => {
+      digestCommentsData[post.id] = topics;
+      if (selectedPostId === postId) {
+        const card = document.getElementById(`digest-post-${post.id}`);
+        if (card) card.outerHTML = digestPostHTML(post, topics);
+      }
+    });
   }
-  const card = document.getElementById(`digest-post-${postId}`);
-  if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 async function loadRedditDigest() {
