@@ -469,6 +469,8 @@
     .sub-view-all:hover { background: var(--tag-bg); }
     .sub-post-hidden { display: none; }
     .churning-extra { display: none; }
+    .digest-day-header { display: flex; align-items: center; padding: 10px 0; margin-bottom: 4px; border-bottom: 2px solid var(--border); }
+    .digest-day-header h3 { font-size: 16px; font-weight: 800; color: var(--text); margin: 0; }
     .topic-hidden { display: none; }
     .topics-show-more-btn {
       display: block; width: 100%; text-align: center;
@@ -879,7 +881,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.20-dev';
+const VERSION = '1.5.21-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1333,7 +1335,19 @@ function showLessChurning() {
   document.querySelectorAll('#digestGrid .digest-post').forEach((el, i) => {
     if (i >= CHURNING_MOBILE_INITIAL) el.classList.add('churning-extra');
   });
-  const remaining = document.querySelectorAll('#digestGrid .churning-extra').length;
+  // Re-hide day headers whose posts are all now hidden
+  document.querySelectorAll('#digestGrid .digest-day-header').forEach(header => {
+    let el = header.nextElementSibling;
+    let hasVisible = false;
+    while (el && !el.classList.contains('digest-day-header')) {
+      if (el.classList.contains('digest-post') && !el.classList.contains('churning-extra')) {
+        hasVisible = true; break;
+      }
+      el = el.nextElementSibling;
+    }
+    if (!hasVisible) header.classList.add('churning-extra');
+  });
+  const remaining = document.querySelectorAll('#digestGrid .digest-post.churning-extra').length;
   const btn = document.getElementById('churning-less-btn');
   if (btn) btn.outerHTML = `<button class="churning-show-more-btn" id="churning-more-btn" onclick="showMoreChurning()">Show ${remaining} more threads ↓</button>`;
   document.getElementById('panel-reddit')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1581,14 +1595,33 @@ async function loadRedditDigest() {
     return;
   }
 
-  // ── Mobile: stacked layout, first 10 visible + show more ────────────
+  // ── Mobile: stacked layout with day headers, first 10 visible + show more ──
   churningExpanded = false;
+
+  // Group posts by UTC day (newest first)
+  const mobileDayGroups = {};
+  posts.forEach(p => {
+    const day = Math.floor(p.created_utc / 86400);
+    if (!mobileDayGroups[day]) mobileDayGroups[day] = [];
+    mobileDayGroups[day].push(p);
+  });
+  const mobileSortedDays = Object.keys(mobileDayGroups).map(Number).sort((a, b) => b - a);
+
+  // Build HTML: day header + posts per group
+  let mobilePostIndex = 0;
+  let mobileHtml = '';
+  mobileSortedDays.forEach(day => {
+    const dayPosts = mobileDayGroups[day];
+    const headerExtra = mobilePostIndex >= CHURNING_MOBILE_INITIAL ? ' churning-extra' : '';
+    mobileHtml += `<div class="digest-day-header${headerExtra}" data-day="${day}"><h3>📅 ${postDayLabel(day * 86400)}</h3></div>`;
+    dayPosts.forEach(p => { mobileHtml += digestPostHTML(p, null); mobilePostIndex++; });
+  });
+
   const extraCount = Math.max(0, posts.length - CHURNING_MOBILE_INITIAL);
-  grid.innerHTML =
-    posts.map(p => digestPostHTML(p, null)).join('') +
-    (extraCount > 0
-      ? `<button class="churning-show-more-btn" id="churning-more-btn" onclick="showMoreChurning()">Show ${extraCount} more threads ↓</button>`
-      : '');
+  grid.innerHTML = mobileHtml + (extraCount > 0
+    ? `<button class="churning-show-more-btn" id="churning-more-btn" onclick="showMoreChurning()">Show ${extraCount} more threads ↓</button>`
+    : '');
+
   document.querySelectorAll('#digestGrid .digest-post').forEach((el, i) => {
     if (i >= CHURNING_MOBILE_INITIAL) el.classList.add('churning-extra');
   });
