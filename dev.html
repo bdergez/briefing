@@ -604,7 +604,7 @@
       /* Communities: two-panel split layout (mirrors churning) */
       .comm-layout {
         display: grid;
-        grid-template-columns: 220px 1fr;
+        grid-template-columns: 280px 1fr;
         gap: 20px;
         align-items: start;
       }
@@ -879,7 +879,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.12-dev';
+const VERSION = '1.5.13-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1338,6 +1338,20 @@ function showLessChurning() {
   document.getElementById('panel-reddit')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+function simplifyThreadTitle(title) {
+  const months = 'Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?';
+  return title
+    // " - Week of Month DD, YYYY"  or  " - Month DD, YYYY"
+    .replace(new RegExp(`\\s*[,\\-–]\\s*(Week of\\s+)?(${months})\\s+\\d{1,2},?\\s*\\d{4}`, 'gi'), '')
+    // ", Monday, March 23, 2026" style suffixes
+    .replace(/,\s*(?:Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?|Sun(?:day)?),?\s*.{0,30}\d{4}/gi, '')
+    // " - Month YYYY"  (no day number)
+    .replace(new RegExp(`\\s*[\\-–]\\s*(${months})\\s+\\d{4}`, 'gi'), '')
+    // trailing " - YYYY"
+    .replace(/\s*[-–]\s*\d{4}\s*$/, '')
+    .trim();
+}
+
 function renderThreadList(posts) {
   const panel = document.getElementById('threadListPanel');
   if (!panel) return;
@@ -1373,7 +1387,7 @@ function renderThreadList(posts) {
           <div class="comm-nav-item comm-nav-sub ${p.id === selectedPostId ? 'active' : ''}"
                data-post-id="${p.id}"
                onclick="selectThread('${p.id}')">
-            <span style="flex:1;line-height:1.35">${esc(p.title)}</span>
+            <span style="flex:1;line-height:1.35">${esc(simplifyThreadTitle(p.title))}</span>
             <span class="comm-nav-cat-count" style="white-space:nowrap;margin-left:6px">💬${p.num_comments}</span>
           </div>`
         ).join('')
@@ -1690,8 +1704,7 @@ function renderCommNav() {
         cat.subs.map(sub => {
           const isSubActive = selectedCommSub === sub.id;
           return `<div class="comm-nav-item comm-nav-sub ${isSubActive ? 'active' : ''}" onclick="selectCommSub('${sub.id}', ${ci})">
-            <div style="width:8px;height:8px;border-radius:50%;background:${sub.color};flex-shrink:0"></div>
-            ${sub.name}
+            <span style="flex:1">${sub.name}</span>
           </div>`;
         }).join('')
       );
