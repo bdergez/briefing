@@ -517,6 +517,49 @@
     }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
+    /* ── COMMUNITIES NAV PANEL ──────────────────────────────────── */
+    .comm-nav-header {
+      padding: 10px 14px;
+      border-bottom: 2px solid var(--border);
+      font-size: 11px; font-weight: 700; color: var(--subtext);
+      text-transform: uppercase; letter-spacing: 0.5px;
+      position: sticky; top: 0; z-index: 1;
+      background: var(--card-bg);
+      border-radius: 14px 14px 0 0;
+    }
+    .comm-nav-item {
+      padding: 9px 14px;
+      cursor: pointer;
+      transition: background 0.15s;
+      border-bottom: 1px solid var(--border);
+    }
+    .comm-nav-item:last-child { border-bottom: none; }
+    .comm-nav-item:hover { background: var(--tag-bg); }
+    .comm-nav-all { font-size: 13px; font-weight: 600; color: var(--text); }
+    .comm-nav-cat {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.4px; color: var(--subtext);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 7px 14px;
+    }
+    .comm-nav-sub {
+      padding: 7px 14px 7px 24px;
+      font-size: 12px; color: var(--text);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .comm-nav-item.active {
+      background: var(--accent-light);
+      color: var(--accent);
+      border-left: 3px solid var(--accent);
+    }
+    .comm-nav-all.active { padding-left: 11px; }
+    .comm-nav-sub.active { padding-left: 21px; }
+    .comm-nav-cat-count {
+      background: var(--tag-bg); color: var(--subtext);
+      font-size: 10px; padding: 1px 6px; border-radius: 20px; font-weight: 600;
+    }
+    .comm-nav-cat.active .comm-nav-cat-count { background: var(--accent-light); color: var(--accent); }
+
     /* ── DESKTOP ENHANCEMENTS (> 640px) ─────────────────────────── */
     @media (min-width: 641px) {
 
@@ -554,6 +597,28 @@
       }
       .thread-list-panel::-webkit-scrollbar { width: 4px; }
       .thread-list-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+      /* Communities: two-panel split layout (mirrors churning) */
+      .comm-layout {
+        display: grid;
+        grid-template-columns: 220px 1fr;
+        gap: 20px;
+        align-items: start;
+      }
+      .comm-nav-panel {
+        position: sticky;
+        top: 74px;
+        max-height: calc(100vh - 94px);
+        overflow-y: auto;
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        box-shadow: var(--shadow);
+        scrollbar-width: thin;
+        scrollbar-color: var(--border) transparent;
+      }
+      .comm-nav-panel::-webkit-scrollbar { width: 4px; }
+      .comm-nav-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
     }
 
     /* Thread list items (shared styles, visibility controlled per breakpoint) */
@@ -664,7 +729,9 @@
       .digest-layout { display: block; }
       .thread-list-panel { display: none; }
 
-      /* Communities: single column on mobile */
+      /* Communities: single column on mobile, nav hidden */
+      .comm-layout { display: block; }
+      .comm-nav-panel { display: none !important; }
       .category-body { display: flex; flex-direction: column; gap: 10px; }
 
       /* Reddit digest */
@@ -802,8 +869,13 @@
 
   <!-- ══ PANEL: COMMUNITIES ══ -->
   <div id="panel-communities" style="display:none">
-    <div class="communities-wrap" id="communitiesWrap">
-      <div class="digest-loading"><div class="spinner"></div>Loading communities…</div>
+    <div class="comm-layout">
+      <div class="comm-nav-panel" id="commNavPanel" style="display:none"></div>
+      <div class="comm-detail-panel">
+        <div class="communities-wrap" id="communitiesWrap">
+          <div class="digest-loading"><div class="spinner"></div>Loading communities…</div>
+        </div>
+      </div>
     </div>
   </div><!-- /panel-communities -->
 
@@ -811,7 +883,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.8-dev';
+const VERSION = '1.5.9-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -889,6 +961,10 @@ let digestCommentsData = {};    // postId -> topics[] (undefined = pending, [] =
 let selectedPostId = null;
 const CHURNING_MOBILE_INITIAL = 10;
 let churningExpanded = false;
+
+// ── Communities two-panel state ───────────────────────────────────────────
+let selectedCommCat = null;   // null = all, or category index
+let selectedCommSub = null;   // null = all/category, or sub id
 
 // ─── FETCH ───────────────────────────────────────────────────────────────
 async function fetchWithProxy(rssUrl) {
@@ -1571,6 +1647,105 @@ function digestPostHTML(p, topics) {
   </div>`;
 }
 
+// ─── COMMUNITIES NAV ─────────────────────────────────────────────────────
+
+function renderCommNav() {
+  const panel = document.getElementById('commNavPanel');
+  if (!panel) return;
+  if (!isDesktop()) { panel.style.display = 'none'; return; }
+  panel.style.display = '';
+  panel.innerHTML =
+    `<div class="comm-nav-header">Filter</div>` +
+    `<div class="comm-nav-item comm-nav-all ${selectedCommCat === null ? 'active' : ''}" onclick="selectAllComm()">🌐 All Communities</div>` +
+    COMMUNITIES.map((cat, ci) => {
+      const countEl = document.getElementById(`cat-count-${ci}`);
+      const countText = countEl?.textContent || '';
+      const isCatActive = selectedCommCat === ci && selectedCommSub === null;
+      return (
+        `<div class="comm-nav-item comm-nav-cat ${isCatActive ? 'active' : ''}" onclick="selectCommCat(${ci})">
+          <span>${cat.label}</span>
+          <span class="comm-nav-cat-count">${countText}</span>
+        </div>` +
+        cat.subs.map(sub => {
+          const isSubActive = selectedCommSub === sub.id;
+          return `<div class="comm-nav-item comm-nav-sub ${isSubActive ? 'active' : ''}" onclick="selectCommSub('${sub.id}', ${ci})">
+            <div style="width:8px;height:8px;border-radius:50%;background:${sub.color};flex-shrink:0"></div>
+            ${sub.name}
+          </div>`;
+        }).join('')
+      );
+    }).join('');
+}
+
+function renderCommDetail() {
+  if (!isDesktop() || (selectedCommSub === null && selectedCommCat === null)) {
+    // Mobile always shows everything; desktop "All" also shows everything
+    COMMUNITIES.forEach((cat, ci) => {
+      const catEl = document.getElementById(`cat-${ci}`);
+      if (catEl) catEl.style.display = '';
+      cat.subs.forEach(sub => {
+        const subEl = document.getElementById(`sub-${sub.id}`);
+        if (subEl) subEl.style.display = '';
+      });
+    });
+    return;
+  }
+  if (selectedCommSub !== null) {
+    // Show only the selected subreddit's block within its category
+    COMMUNITIES.forEach((cat, ci) => {
+      const catEl = document.getElementById(`cat-${ci}`);
+      if (!catEl) return;
+      if (ci !== selectedCommCat) {
+        catEl.style.display = 'none';
+      } else {
+        catEl.style.display = '';
+        const body = document.getElementById(`cat-body-${ci}`);
+        if (body) body.classList.remove('collapsed');
+        cat.subs.forEach(sub => {
+          const subEl = document.getElementById(`sub-${sub.id}`);
+          if (subEl) subEl.style.display = sub.id === selectedCommSub ? '' : 'none';
+        });
+      }
+    });
+  } else if (selectedCommCat !== null) {
+    // Show only the selected category, all its subs
+    COMMUNITIES.forEach((cat, ci) => {
+      const catEl = document.getElementById(`cat-${ci}`);
+      if (!catEl) return;
+      catEl.style.display = ci === selectedCommCat ? '' : 'none';
+      if (ci === selectedCommCat) {
+        const body = document.getElementById(`cat-body-${ci}`);
+        if (body) body.classList.remove('collapsed');
+        cat.subs.forEach(sub => {
+          const subEl = document.getElementById(`sub-${sub.id}`);
+          if (subEl) subEl.style.display = '';
+        });
+      }
+    });
+  }
+}
+
+function selectAllComm() {
+  selectedCommCat = null;
+  selectedCommSub = null;
+  renderCommNav();
+  renderCommDetail();
+}
+
+function selectCommCat(ci) {
+  selectedCommCat = ci;
+  selectedCommSub = null;
+  renderCommNav();
+  renderCommDetail();
+}
+
+function selectCommSub(subId, ci) {
+  selectedCommCat = ci;
+  selectedCommSub = subId;
+  renderCommNav();
+  renderCommDetail();
+}
+
 // ─── COMMUNITIES TAB ─────────────────────────────────────────────────────
 
 async function fetchSubreddit(subId) {
@@ -1591,6 +1766,10 @@ async function fetchSubreddit(subId) {
 
 async function loadCommunities() {
   const wrap = document.getElementById('communitiesWrap');
+  // Reset nav state on reload
+  selectedCommCat = null;
+  selectedCommSub = null;
+  renderCommNav();
   // Render category skeletons immediately
   wrap.innerHTML = COMMUNITIES.map((cat, ci) => `
     <div class="community-category" id="cat-${ci}">
@@ -1690,6 +1869,9 @@ async function loadCommunities() {
     const countEl = document.getElementById(`cat-count-${ci}`);
     if (countEl) countEl.textContent = `${total} posts`;
   });
+
+  // Render nav now that counts are populated
+  renderCommNav();
 }
 
 function toggleCategory(ci) {
