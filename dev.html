@@ -576,6 +576,9 @@
         gap: 14px;
       }
 
+      /* Churning: meta count hidden on desktop (thread list panel shows it) */
+      #digestMeta { display: none; }
+
       /* Churning: two-panel split layout */
       .digest-layout {
         display: grid;
@@ -876,7 +879,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.10-dev';
+const VERSION = '1.5.11-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1464,7 +1467,6 @@ async function loadRedditDigest() {
       if (children.length === 0) continue;
       posts = children
         .map(c => c.data)
-        .filter(p => !p.stickied)
         .sort((a, b) => b.score - a.score)
         .slice(0, 50);
       allFailed = false;
