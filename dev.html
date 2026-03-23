@@ -468,7 +468,7 @@
     }
     .sub-view-all:hover { background: var(--tag-bg); }
     .sub-post-hidden { display: none; }
-    .churning-extra { display: none; }
+    .churning-extra { display: none !important; }
     .digest-day-header { display: flex; align-items: center; padding: 10px 0; margin-bottom: 4px; border-bottom: 2px solid var(--border); }
     .digest-day-header h3 { font-size: 16px; font-weight: 800; color: var(--text); margin: 0; }
     .topic-hidden { display: none; }
@@ -881,7 +881,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.23-dev';
+const VERSION = '1.5.24-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1328,6 +1328,18 @@ function showMoreChurning() {
   document.querySelectorAll('#digestGrid .churning-extra').forEach(el => el.classList.remove('churning-extra'));
   const btn = document.getElementById('churning-more-btn');
   if (btn) btn.outerHTML = `<button class="churning-show-more-btn" id="churning-less-btn" onclick="showLessChurning()">Show less ↑</button>`;
+  // Fetch comments for hidden posts that are now visible
+  const hiddenPosts = digestPostsData.slice(CHURNING_MOBILE_INITIAL);
+  hiddenPosts.forEach(async p => {
+    if (!digestCommentsData.hasOwnProperty(p.id)) {
+      const topics = await fetchThreadComments(p.id, 15);
+      digestCommentsData[p.id] = topics;
+      if (churningExpanded) {
+        const card = document.getElementById(`digest-post-${p.id}`);
+        if (card) card.outerHTML = digestPostHTML(p, topics);
+      }
+    }
+  });
 }
 
 function showLessChurning() {
