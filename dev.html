@@ -811,7 +811,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.8-dev';
+const VERSION = '1.5.9-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1316,7 +1316,7 @@ async function fetchThreadComments(postId, limit = 25) {
         .map(c => c.data)
         .filter(c =>
           c.body && c.body !== '[deleted]' && c.body !== '[removed]' &&
-          c.author !== 'AutoModerator' && c.score > 0 && c.body.length > 20
+          c.author !== 'AutoModerator' && c.body.length > 20
         )
     : [];
 }
