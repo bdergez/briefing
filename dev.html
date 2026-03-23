@@ -845,14 +845,7 @@
   <!-- ══ PANEL: REDDIT DIGEST ══ -->
   <div id="panel-reddit" style="display:none">
 
-    <div class="digest-header">
-      <div class="digest-title">
-        <span style="font-size:22px">🤝</span>
-        <h2>r/churning Daily Digest</h2>
-        <span class="reddit-badge">Last 72 hours</span>
-      </div>
-      <div class="digest-meta" id="digestMeta">Loading threads…</div>
-    </div>
+    <div class="digest-meta" id="digestMeta" style="font-size:12px;color:var(--subtext);margin-bottom:12px">Loading threads…</div>
     <div class="digest-layout">
       <div class="thread-list-panel" id="threadListPanel" style="display:none"></div>
       <div class="thread-detail-panel">
@@ -883,7 +876,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.9-dev';
+const VERSION = '1.5.10-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1434,7 +1427,7 @@ async function loadRedditDigest() {
   const grid = document.getElementById('digestGrid');
   const meta = document.getElementById('digestMeta');
 
-  const REDDIT_URL = 'https://www.reddit.com/r/churning/new.json?limit=100&raw_json=1';
+  const REDDIT_URL = 'https://www.reddit.com/r/churning/hot.json?limit=50&raw_json=1';
 
   // Try direct first, then CORS proxies as fallback (needed for some mobile browsers)
   const STRATEGIES = [
@@ -1469,10 +1462,9 @@ async function loadRedditDigest() {
       const data = await strategy();
       const children = data?.data?.children || [];
       if (children.length === 0) continue;
-      const cutoff = Date.now() / 1000 - 259200; // 72 hours
       posts = children
         .map(c => c.data)
-        .filter(p => p.created_utc >= cutoff)
+        .filter(p => !p.stickied)
         .sort((a, b) => b.score - a.score)
         .slice(0, 50);
       allFailed = false;
@@ -1749,7 +1741,7 @@ function selectCommSub(subId, ci) {
 // ─── COMMUNITIES TAB ─────────────────────────────────────────────────────
 
 async function fetchSubreddit(subId) {
-  const url = `https://www.reddit.com/r/${subId}/hot.json?limit=25&raw_json=1`;
+  const url = `https://www.reddit.com/r/${subId}/hot.json?limit=50&raw_json=1`;
   const strategies = [
     // Direct — credentials:omit helps bypass iOS ITP blocking
     () => fetchWithTimeout(url, { headers: { Accept: 'application/json' }, credentials: 'omit' }, 10000).then(r => r.ok ? r.json() : Promise.reject()),
@@ -1814,17 +1806,16 @@ async function loadCommunities() {
       return;
     }
 
-    const cutoff = Date.now() / 1000 - 259200; // 72h
     const posts = (data?.data?.children || [])
       .map(c => c.data)
-      .filter(p => p.created_utc >= cutoff && !p.stickied)
+      .filter(p => !p.stickied)
       .sort((a, b) => b.score - a.score)
       .slice(0, 20);
 
     metaEl.textContent = `${posts.length} posts`;
 
     if (posts.length === 0) {
-      postsEl.innerHTML = `<div class="sub-error">No posts in the last 72 hours.</div>`;
+      postsEl.innerHTML = `<div class="sub-error">No posts found.</div>`;
       return;
     }
 
