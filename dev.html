@@ -811,7 +811,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.7-dev';
+const VERSION = '1.5.8-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1345,7 +1345,7 @@ async function selectThread(postId) {
   if (grid) grid.innerHTML = digestPostHTML(post, null);
 
   // Lazy fetch 25 comments for this thread
-  const topics = await fetchThreadComments(postId, 25);
+  const topics = await fetchThreadComments(postId, 50);
   digestCommentsData[postId] = topics;
 
   // Only update if user hasn't switched to another thread
@@ -1431,7 +1431,7 @@ async function loadRedditDigest() {
     grid.innerHTML = digestPostHTML(posts[0], null);
     meta.textContent = `${posts.length} threads`;
     // Load comments for the first thread
-    const topics = await fetchThreadComments(posts[0].id, 25);
+    const topics = await fetchThreadComments(posts[0].id, 50);
     digestCommentsData[posts[0].id] = topics;
     if (selectedPostId === posts[0].id) {
       grid.innerHTML = digestPostHTML(posts[0], topics);
