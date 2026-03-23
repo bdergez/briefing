@@ -802,7 +802,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.5-dev';
+const VERSION = '1.5.6-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1247,21 +1247,71 @@ function renderThreadList(posts) {
     }).join('');
 }
 
-function selectThread(postId) {
+async function fetchThreadComments(postId, limit = 25) {
+  const url = `https://www.reddit.com/r/churning/comments/${postId}.json?limit=${limit}&sort=top&raw_json=1&depth=1`;
+  let data = null;
+  const strategies = [
+    async () => {
+      const res = await fetchWithTimeout(url, { headers: { Accept: 'application/json' }, credentials: 'omit' }, 8000);
+      if (!res.ok) throw new Error();
+      return res.json();
+    },
+    async () => {
+      const res = await fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, {}, 12000);
+      if (!res.ok) throw new Error();
+      const w = await res.json();
+      return JSON.parse(w.contents);
+    },
+    async () => {
+      const res = await fetchWithTimeout(`https://corsproxy.io/?${encodeURIComponent(url)}`, {}, 12000);
+      if (!res.ok) throw new Error();
+      return res.json();
+    },
+  ];
+  for (const s of strategies) {
+    try { data = await s(); break; } catch(e) { /* try next */ }
+  }
+  return data
+    ? (data[1]?.data?.children || [])
+        .map(c => c.data)
+        .filter(c =>
+          c.body && c.body !== '[deleted]' && c.body !== '[removed]' &&
+          c.author !== 'AutoModerator' && c.score > 0 && c.body.length > 20
+        )
+    : [];
+}
+
+async function selectThread(postId) {
   selectedPostId = postId;
   // Update highlight in thread list
   document.querySelectorAll('.thread-item').forEach(el => {
     el.classList.toggle('active', el.dataset.postId === postId);
   });
-  // Render detail panel
   const post = digestPostsData.find(p => p.id === postId);
   if (!post) return;
-  const topics = digestCommentsData.hasOwnProperty(postId) ? digestCommentsData[postId] : null;
   const grid = document.getElementById('digestGrid');
-  if (grid) grid.innerHTML = digestPostHTML(post, topics);
-  // Scroll detail panel back to top
+
+  // Scroll detail panel to top immediately
   const detail = document.querySelector('.thread-detail-panel');
   if (detail) detail.scrollTop = 0;
+
+  // If comments already cached, show immediately
+  if (digestCommentsData.hasOwnProperty(postId)) {
+    if (grid) grid.innerHTML = digestPostHTML(post, digestCommentsData[postId]);
+    return;
+  }
+
+  // Show skeleton while fetching
+  if (grid) grid.innerHTML = digestPostHTML(post, null);
+
+  // Lazy fetch 25 comments for this thread
+  const topics = await fetchThreadComments(postId, 25);
+  digestCommentsData[postId] = topics;
+
+  // Only update if user hasn't switched to another thread
+  if (selectedPostId === postId && grid) {
+    grid.innerHTML = digestPostHTML(post, topics);
+  }
 }
 
 async function loadRedditDigest() {
@@ -1335,82 +1385,47 @@ async function loadRedditDigest() {
   const desktop = isDesktop();
 
   if (desktop) {
-    // ── Desktop: two-panel layout ──────────────────────────────────────
-    // Select first post by default, render thread list + skeleton detail
+    // ── Desktop: two-panel, lazy load comments on click ───────────────
     selectedPostId = posts[0].id;
     renderThreadList(posts);
     grid.innerHTML = digestPostHTML(posts[0], null);
-  } else {
-    // ── Mobile: stacked layout, first 10 visible + show more ──────────
-    churningExpanded = false;
-    const extraCount = Math.max(0, posts.length - CHURNING_MOBILE_INITIAL);
-    grid.innerHTML =
-      posts.map(p => digestPostHTML(p, null)).join('') +
-      (extraCount > 0
-        ? `<button class="churning-show-more-btn" id="churning-more-btn" onclick="showMoreChurning()">Show ${extraCount} more threads ↓</button>`
-        : '');
-    // Hide extra posts
-    document.querySelectorAll('#digestGrid .digest-post').forEach((el, i) => {
-      if (i >= CHURNING_MOBILE_INITIAL) el.classList.add('churning-extra');
-    });
+    meta.textContent = `${posts.length} threads`;
+    // Load comments for the first thread
+    const topics = await fetchThreadComments(posts[0].id, 25);
+    digestCommentsData[posts[0].id] = topics;
+    if (selectedPostId === posts[0].id) {
+      grid.innerHTML = digestPostHTML(posts[0], topics);
+      meta.textContent = `${posts.length} threads · click any to load discussion`;
+    }
+    return; // Desktop is done — no bulk pre-fetch needed
   }
 
-  // Fetch all thread comments in parallel with a hard 30s deadline
-  async function fetchComments(p) {
-    const commentUrl = `https://www.reddit.com/r/churning/comments/${p.id}.json?limit=15&sort=top&raw_json=1&depth=1`;
-    let data = null;
-    const commentStrategies = [
-      async () => {
-        const res = await fetchWithTimeout(commentUrl, { headers: { Accept: 'application/json' }, credentials: 'omit' }, 8000);
-        if (!res.ok) throw new Error();
-        return res.json();
-      },
-      async () => {
-        const res = await fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(commentUrl)}`, {}, 12000);
-        if (!res.ok) throw new Error();
-        const w = await res.json();
-        return JSON.parse(w.contents);
-      },
-      async () => {
-        const res = await fetchWithTimeout(`https://corsproxy.io/?${encodeURIComponent(commentUrl)}`, {}, 12000);
-        if (!res.ok) throw new Error();
-        return res.json();
-      },
-    ];
-    for (const s of commentStrategies) {
-      try { data = await s(); break; } catch(e) { /* try next */ }
-    }
+  // ── Mobile: stacked layout, first 10 visible + show more ────────────
+  churningExpanded = false;
+  const extraCount = Math.max(0, posts.length - CHURNING_MOBILE_INITIAL);
+  grid.innerHTML =
+    posts.map(p => digestPostHTML(p, null)).join('') +
+    (extraCount > 0
+      ? `<button class="churning-show-more-btn" id="churning-more-btn" onclick="showMoreChurning()">Show ${extraCount} more threads ↓</button>`
+      : '');
+  document.querySelectorAll('#digestGrid .digest-post').forEach((el, i) => {
+    if (i >= CHURNING_MOBILE_INITIAL) el.classList.add('churning-extra');
+  });
 
-    const topics = data
-      ? (data[1]?.data?.children || [])
-          .map(c => c.data)
-          .filter(c =>
-            c.body && c.body !== '[deleted]' && c.body !== '[removed]' &&
-            c.author !== 'AutoModerator' && c.score > 0 && c.body.length > 20
-          )
-          .slice(0, 8)
-      : [];
+  // Pre-fetch comments only for the visible first 10 threads
+  const visiblePosts = posts.slice(0, CHURNING_MOBILE_INITIAL);
 
-    // Store comments for click-to-select
+  async function fetchMobileComments(p) {
+    const topics = await fetchThreadComments(p.id, 15);
     digestCommentsData[p.id] = topics;
-
-    if (desktop) {
-      // Only update the detail panel if this post is currently selected
-      if (p.id === selectedPostId) {
-        grid.innerHTML = digestPostHTML(p, topics);
-      }
-    } else {
-      // Mobile: update the card in place
-      const card = document.getElementById(`digest-post-${p.id}`);
-      if (card) {
-        card.outerHTML = digestPostHTML(p, topics);
-        // Re-apply hidden class if post is beyond initial count and not expanded
-        if (!churningExpanded) {
-          const idx = digestPostsData.indexOf(p);
-          if (idx >= CHURNING_MOBILE_INITIAL) {
-            const updated = document.getElementById(`digest-post-${p.id}`);
-            if (updated) updated.classList.add('churning-extra');
-          }
+    const card = document.getElementById(`digest-post-${p.id}`);
+    if (card) {
+      card.outerHTML = digestPostHTML(p, topics);
+      if (!churningExpanded) {
+        const idx = digestPostsData.indexOf(p);
+        if (idx >= CHURNING_MOBILE_INITIAL) {
+          const updated = document.getElementById(`digest-post-${p.id}`);
+          if (updated) updated.classList.add('churning-extra');
         }
       }
     }
@@ -1421,34 +1436,28 @@ async function loadRedditDigest() {
   const deadline = new Promise(resolve => setTimeout(resolve, HARD_DEADLINE));
 
   const commentResults = await Promise.race([
-    Promise.allSettled(posts.map(p => fetchComments(p))),
+    Promise.allSettled(visiblePosts.map(p => fetchMobileComments(p))),
     deadline.then(() => null),
   ]);
 
-  // If deadline fired first, clear any remaining spinners
-  if (!desktop) {
-    document.querySelectorAll('[id^="digest-post-"]').forEach(card => {
-      if (card.innerHTML.includes('Loading discussion')) {
-        const postId = card.id.replace('digest-post-', '');
-        const post = posts.find(p => p.id === postId);
-        if (post) card.outerHTML = digestPostHTML(post, []);
-      }
-    });
-    // Re-apply hidden class after any outerHTML replacements
-    if (!churningExpanded) {
-      document.querySelectorAll('#digestGrid .digest-post').forEach((el, i) => {
-        if (i >= CHURNING_MOBILE_INITIAL) el.classList.add('churning-extra');
-      });
+  // If deadline fired, clear any remaining spinners
+  document.querySelectorAll('[id^="digest-post-"]').forEach(card => {
+    if (card.innerHTML.includes('Loading discussion')) {
+      const postId = card.id.replace('digest-post-', '');
+      const post = posts.find(p => p.id === postId);
+      if (post) card.outerHTML = digestPostHTML(post, []);
     }
-  } else if (grid.innerHTML.includes('Loading discussion')) {
-    // Selected post timed out — show it with empty topics
-    grid.innerHTML = digestPostHTML(posts.find(p => p.id === selectedPostId), []);
+  });
+  if (!churningExpanded) {
+    document.querySelectorAll('#digestGrid .digest-post').forEach((el, i) => {
+      if (i >= CHURNING_MOBILE_INITIAL) el.classList.add('churning-extra');
+    });
   }
 
   const loaded = commentResults
     ? commentResults.filter(r => r.status === 'fulfilled' && r.value).length
     : '?';
-  meta.textContent = `${posts.length} threads · ${loaded} with discussion topics`;
+  meta.textContent = `${posts.length} threads · ${loaded} with discussions`;
 }
 
 function digestPostHTML(p, topics) {
