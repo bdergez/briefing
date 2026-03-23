@@ -408,10 +408,7 @@
     }
     .category-header-left { display: flex; align-items: center; gap: 10px; }
     .category-header h3 { font-size: 16px; font-weight: 800; color: var(--text); }
-    .category-count {
-      font-size: 11px; font-weight: 600; color: var(--subtext);
-      background: var(--tag-bg); padding: 2px 8px; border-radius: 20px;
-    }
+    .category-count { display: none; } /* count shown in left nav instead */
     .category-toggle { font-size: 12px; color: var(--subtext); transition: transform 0.2s; }
     .category-toggle.collapsed { transform: rotate(-90deg); }
     .category-body { display: flex; flex-direction: column; gap: 10px; }
@@ -517,6 +514,13 @@
     }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
+    /* ── SECTION LABEL (above right panel on churning + communities) */
+    .section-label {
+      font-size: 16px; font-weight: 800; color: var(--text);
+      padding: 10px 0; margin-bottom: 14px;
+      border-bottom: 2px solid var(--border);
+    }
+
     /* ── COMMUNITIES NAV PANEL ──────────────────────────────────── */
     .comm-nav-header {
       padding: 10px 14px;
@@ -569,12 +573,6 @@
         gap: 20px;
       }
 
-      /* Communities: subreddits side-by-side within each category */
-      .category-body {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-        gap: 14px;
-      }
 
       /* Churning: meta count hidden on desktop (thread list panel shows it) */
       #digestMeta { display: none; }
@@ -852,6 +850,7 @@
     <div class="digest-layout">
       <div class="thread-list-panel" id="threadListPanel" style="display:none"></div>
       <div class="thread-detail-panel">
+        <div class="section-label" id="digestSectionLabel"></div>
         <div class="digest-grid" id="digestGrid">
           <div class="digest-loading">
             <div class="spinner"></div>
@@ -879,7 +878,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.13-dev';
+const VERSION = '1.5.14-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1352,14 +1351,22 @@ function simplifyThreadTitle(title) {
     .trim();
 }
 
+// Shared day label helper used by thread list panel and section label
+function postDayLabel(utcSeconds) {
+  const todayDay     = Math.floor(Date.now() / 1000 / 86400);
+  const yesterdayDay = todayDay - 1;
+  const day = Math.floor(utcSeconds / 86400);
+  if (day === todayDay)     return 'Today';
+  if (day === yesterdayDay) return 'Yesterday';
+  return new Date(day * 86400 * 1000).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
 function renderThreadList(posts) {
   const panel = document.getElementById('threadListPanel');
   if (!panel) return;
   panel.style.display = '';
 
   // Group posts by UTC day
-  const todayDay     = Math.floor(Date.now() / 1000 / 86400);
-  const yesterdayDay = todayDay - 1;
   const groups = {};
   posts.forEach(p => {
     const day = Math.floor(p.created_utc / 86400);
@@ -1368,19 +1375,13 @@ function renderThreadList(posts) {
   });
   const sortedDays = Object.keys(groups).map(Number).sort((a, b) => b - a);
 
-  function dayLabel(day) {
-    if (day === todayDay)     return 'Today';
-    if (day === yesterdayDay) return 'Yesterday';
-    return new Date(day * 86400 * 1000).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-  }
-
   panel.innerHTML =
     `<div class="comm-nav-header">Threads (${posts.length})</div>` +
     sortedDays.map(day => {
       const dayPosts = groups[day];
       return (
         `<div class="comm-nav-item comm-nav-cat">
-          <span>${dayLabel(day)}</span>
+          <span>${postDayLabel(day * 86400)}</span>
           <span class="comm-nav-cat-count">${dayPosts.length}</span>
         </div>` +
         dayPosts.map(p => `
@@ -1436,6 +1437,9 @@ async function selectThread(postId) {
     el.classList.toggle('active', el.dataset.postId === postId);
   });
   const post = digestPostsData.find(p => p.id === postId);
+  // Update section label with the selected thread's day
+  const sectionLabel = document.getElementById('digestSectionLabel');
+  if (sectionLabel && post) sectionLabel.textContent = postDayLabel(post.created_utc);
   if (!post) return;
   const grid = document.getElementById('digestGrid');
 
@@ -1522,7 +1526,7 @@ async function loadRedditDigest() {
   }
 
   if (posts.length === 0) {
-    grid.innerHTML = `<div class="digest-error">No posts found in the last 72 hours.</div>`;
+    grid.innerHTML = `<div class="digest-error">No posts found.</div>`;
     meta.textContent = '0 posts found';
     return;
   }
@@ -1541,6 +1545,8 @@ async function loadRedditDigest() {
     renderThreadList(posts);
     grid.innerHTML = digestPostHTML(posts[0], null);
     meta.textContent = `${posts.length} threads`;
+    const sectionLabel = document.getElementById('digestSectionLabel');
+    if (sectionLabel) sectionLabel.textContent = postDayLabel(posts[0].created_utc);
     // Load comments for the first thread
     const topics = await fetchThreadComments(posts[0].id, 50);
     digestCommentsData[posts[0].id] = topics;
