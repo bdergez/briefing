@@ -472,6 +472,15 @@
     .sub-view-all:hover { background: var(--tag-bg); }
     .sub-post-hidden { display: none; }
     .churning-extra { display: none; }
+    .topic-hidden { display: none; }
+    .topics-show-more-btn {
+      display: block; width: 100%; text-align: center;
+      padding: 10px 14px; font-size: 12px; font-weight: 600;
+      color: var(--accent); background: none; cursor: pointer;
+      border: none; border-top: 1px solid var(--border);
+      font-family: inherit; margin-top: 4px;
+    }
+    .topics-show-more-btn:hover { background: var(--accent-light); }
     .churning-show-more-btn {
       display: block; width: 100%; text-align: center;
       padding: 14px; font-size: 13px; font-weight: 600;
@@ -802,7 +811,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.6-dev';
+const VERSION = '1.5.7-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1208,6 +1217,37 @@ function fetchWithTimeout(url, options = {}, ms = 15000) {
 
 function isDesktop() { return window.matchMedia('(min-width: 641px)').matches; }
 
+function showMoreTopics(postId) {
+  const container = document.getElementById(`digest-post-${postId}`);
+  if (!container) return;
+  const hidden = Array.from(container.querySelectorAll('.topic-item.topic-hidden'));
+  hidden.slice(0, 10).forEach(el => {
+    el.classList.remove('topic-hidden');
+    el.classList.add('topic-shown-extra');
+  });
+  const btn = document.getElementById(`topics-more-${postId}`);
+  const stillHidden = container.querySelectorAll('.topic-item.topic-hidden').length;
+  if (stillHidden === 0) {
+    if (btn) btn.outerHTML = `<button class="topics-show-more-btn" id="topics-less-${postId}" onclick="showLessTopics('${postId}')">Show less ↑</button>`;
+  } else {
+    const next = Math.min(10, stillHidden);
+    if (btn) btn.textContent = `Show ${next} more ↓`;
+  }
+}
+
+function showLessTopics(postId) {
+  const container = document.getElementById(`digest-post-${postId}`);
+  if (!container) return;
+  container.querySelectorAll('.topic-item.topic-shown-extra').forEach(el => {
+    el.classList.remove('topic-shown-extra');
+    el.classList.add('topic-hidden');
+  });
+  const btn = document.getElementById(`topics-less-${postId}`);
+  const hidden = container.querySelectorAll('.topic-item.topic-hidden').length;
+  const next = Math.min(10, hidden);
+  if (btn) btn.outerHTML = `<button class="topics-show-more-btn" id="topics-more-${postId}" onclick="showMoreTopics('${postId}')">Show ${next} more ↓</button>`;
+}
+
 function showMoreChurning() {
   churningExpanded = true;
   document.querySelectorAll('#digestGrid .churning-extra').forEach(el => el.classList.remove('churning-extra'));
@@ -1477,16 +1517,18 @@ function digestPostHTML(p, topics) {
         </div>
       </div>`;
   } else if (topics.length > 0) {
-    const items = topics.map(c => {
-      // Extract first meaningful sentence as the topic headline
-      const rawBody  = c.body.replace(/\*\*/g,'').replace(/\*/g,'').replace(/\n+/g,' ').trim();
-      const headline = rawBody.split(/[.!?]/)[0].trim().slice(0, 120);
-      const preview  = rawBody.slice(0, 260);
-      // Direct comment link: reddit.com/r/churning/comments/POST/SLUG/COMMENT_ID/
+    const TOPICS_INITIAL = 5;
+    const TOPICS_PAGE    = 10;
+
+    const items = topics.map((c, idx) => {
+      const rawBody    = c.body.replace(/\*\*/g,'').replace(/\*/g,'').replace(/\n+/g,' ').trim();
+      const headline   = rawBody.split(/[.!?]/)[0].trim().slice(0, 120);
+      const preview    = rawBody.slice(0, 260);
       const commentUrl = `https://www.reddit.com/r/churning/comments/${p.id}/_/${c.id}/?context=1`;
+      const hidden     = idx >= TOPICS_INITIAL ? ' topic-hidden' : '';
 
       return `
-        <div class="topic-item">
+        <div class="topic-item${hidden}">
           <div class="topic-votes">↑${c.score}</div>
           <div class="topic-content">
             <div class="topic-author">u/${esc(c.author)}</div>
@@ -1498,10 +1540,14 @@ function digestPostHTML(p, topics) {
         </div>`;
     }).join('');
 
+    const hasMore   = topics.length > TOPICS_INITIAL;
+    const firstPage = Math.min(TOPICS_PAGE, topics.length - TOPICS_INITIAL);
+
     topicsHTML = `
       <div class="topic-list">
         <div class="topic-list-label">💬 Discussion Topics (${topics.length})</div>
         ${items}
+        ${hasMore ? `<button class="topics-show-more-btn" id="topics-more-${p.id}" onclick="showMoreTopics('${p.id}')">Show ${firstPage} more ↓</button>` : ''}
       </div>`;
   }
 
