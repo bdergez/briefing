@@ -470,6 +470,33 @@
       text-decoration: none; border-top: 1px solid var(--border);
     }
     .sub-view-all:hover { background: var(--tag-bg); }
+    .sub-post-hidden { display: none; }
+    .churning-extra { display: none; }
+    .topic-hidden { display: none; }
+    .topics-show-more-btn {
+      display: block; width: 100%; text-align: center;
+      padding: 10px 14px; font-size: 12px; font-weight: 600;
+      color: var(--accent); background: none; cursor: pointer;
+      border: none; border-top: 1px solid var(--border);
+      font-family: inherit; margin-top: 4px;
+    }
+    .topics-show-more-btn:hover { background: var(--accent-light); }
+    .churning-show-more-btn {
+      display: block; width: 100%; text-align: center;
+      padding: 14px; font-size: 13px; font-weight: 600;
+      color: var(--accent); background: var(--card-bg); cursor: pointer;
+      border: 1px solid var(--border); border-radius: 14px;
+      font-family: inherit; margin-top: 4px;
+    }
+    .churning-show-more-btn:hover { background: var(--accent-light); }
+    .sub-show-more {
+      display: block; width: 100%; text-align: center;
+      padding: 10px; font-size: 12px; font-weight: 600;
+      color: var(--accent); background: none; cursor: pointer;
+      border: none; border-top: 1px solid var(--border);
+      font-family: inherit;
+    }
+    .sub-show-more:hover { background: var(--tag-bg); }
 
     /* ── NEW BADGE ──────────────────────────────────────────────── */
     .new-badge {
@@ -489,6 +516,83 @@
       animation: pulse 1.5s infinite;
     }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    /* ── DESKTOP ENHANCEMENTS (> 640px) ─────────────────────────── */
+    @media (min-width: 641px) {
+
+      /* News cards: explicit 3-column grid */
+      .grid {
+        grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+        gap: 20px;
+      }
+
+      /* Communities: subreddits side-by-side within each category */
+      .category-body {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+        gap: 14px;
+      }
+
+      /* Churning: two-panel split layout */
+      .digest-layout {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        gap: 20px;
+        align-items: start;
+      }
+      .thread-list-panel {
+        position: sticky;
+        top: 74px;
+        max-height: calc(100vh - 94px);
+        overflow-y: auto;
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        box-shadow: var(--shadow);
+        scrollbar-width: thin;
+        scrollbar-color: var(--border) transparent;
+      }
+      .thread-list-panel::-webkit-scrollbar { width: 4px; }
+      .thread-list-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    }
+
+    /* Thread list items (shared styles, visibility controlled per breakpoint) */
+    .thread-list-header {
+      padding: 10px 14px;
+      border-bottom: 2px solid var(--border);
+      font-size: 11px; font-weight: 700; color: var(--subtext);
+      text-transform: uppercase; letter-spacing: 0.5px;
+      position: sticky; top: 0;
+      background: var(--card-bg); z-index: 1;
+      border-radius: 14px 14px 0 0;
+    }
+    .thread-item {
+      padding: 10px 14px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+      display: flex; align-items: flex-start; gap: 10px;
+    }
+    .thread-item:last-child { border-bottom: none; }
+    .thread-item:hover { background: var(--tag-bg); }
+    .thread-item.active {
+      background: var(--accent-light);
+      border-left: 3px solid var(--accent);
+      padding-left: 11px;
+    }
+    .tli-score {
+      font-size: 11px; font-weight: 700; color: var(--subtext);
+      background: var(--tag-bg); border-radius: 6px;
+      padding: 2px 5px; margin-top: 3px;
+      flex-shrink: 0; min-width: 30px; text-align: center;
+    }
+    .tli-body { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+    .tli-flair {
+      font-size: 10px; font-weight: 700; padding: 1px 6px;
+      border-radius: 20px; background: var(--tag-bg); color: var(--subtext);
+      align-self: flex-start;
+    }
+    .tli-title { font-size: 12px; font-weight: 600; color: var(--text); line-height: 1.4; }
 
     /* ── MOBILE ─────────────────────────────────────────────────── */
     @media (max-width: 640px) {
@@ -556,6 +660,13 @@
       .card-title { font-size: 14px; }
       .card-desc { font-size: 12px; }
 
+      /* Churning two-panel: collapse to single column on mobile */
+      .digest-layout { display: block; }
+      .thread-list-panel { display: none; }
+
+      /* Communities: single column on mobile */
+      .category-body { display: flex; flex-direction: column; gap: 10px; }
+
       /* Reddit digest */
       .digest-header { flex-direction: column; align-items: flex-start; gap: 6px; }
       .digest-title h2 { font-size: 16px; }
@@ -575,6 +686,7 @@
       }
       .card:hover { transform: none; } /* disable hover lift on touch */
     }
+
   </style>
 </head>
 <body>
@@ -659,10 +771,15 @@
       </div>
       <div class="digest-meta" id="digestMeta">Loading threads…</div>
     </div>
-    <div class="digest-grid" id="digestGrid">
-      <div class="digest-loading">
-        <div class="spinner"></div>
-        Fetching threads and discussion topics…
+    <div class="digest-layout">
+      <div class="thread-list-panel" id="threadListPanel" style="display:none"></div>
+      <div class="thread-detail-panel">
+        <div class="digest-grid" id="digestGrid">
+          <div class="digest-loading">
+            <div class="spinner"></div>
+            Fetching threads and discussion topics…
+          </div>
+        </div>
       </div>
     </div>
 
@@ -679,7 +796,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.4';
+const VERSION = '1.5';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -750,6 +867,13 @@ let activeCategory = 'all';
 let activeSources = new Set(SOURCES.map(s => s.id));
 let sourceState = {}; // { id: 'loading'|'ok'|'error' }
 let debugLog = [];
+
+// ── Churning two-panel state ──────────────────────────────────────────────
+let digestPostsData = [];       // all fetched posts
+let digestCommentsData = {};    // postId -> topics[] (undefined = pending, [] = none)
+let selectedPostId = null;
+const CHURNING_MOBILE_INITIAL = 10;
+let churningExpanded = false;
 
 // ─── FETCH ───────────────────────────────────────────────────────────────
 async function fetchWithProxy(rssUrl) {
@@ -1076,6 +1200,145 @@ function fetchWithTimeout(url, options = {}, ms = 15000) {
 
 // ─── REDDIT DAILY DIGEST ─────────────────────────────────────────────────
 
+function isDesktop() { return window.matchMedia('(min-width: 641px)').matches; }
+
+function showMoreTopics(postId) {
+  const container = document.getElementById(`digest-post-${postId}`);
+  if (!container) return;
+  const hidden = Array.from(container.querySelectorAll('.topic-item.topic-hidden'));
+  hidden.slice(0, 10).forEach(el => {
+    el.classList.remove('topic-hidden');
+    el.classList.add('topic-shown-extra');
+  });
+  const btn = document.getElementById(`topics-more-${postId}`);
+  const stillHidden = container.querySelectorAll('.topic-item.topic-hidden').length;
+  if (stillHidden === 0) {
+    if (btn) btn.outerHTML = `<button class="topics-show-more-btn" id="topics-less-${postId}" onclick="showLessTopics('${postId}')">Show less ↑</button>`;
+  } else {
+    const next = Math.min(10, stillHidden);
+    if (btn) btn.textContent = `Show ${next} more ↓`;
+  }
+}
+
+function showLessTopics(postId) {
+  const container = document.getElementById(`digest-post-${postId}`);
+  if (!container) return;
+  container.querySelectorAll('.topic-item.topic-shown-extra').forEach(el => {
+    el.classList.remove('topic-shown-extra');
+    el.classList.add('topic-hidden');
+  });
+  const btn = document.getElementById(`topics-less-${postId}`);
+  const hidden = container.querySelectorAll('.topic-item.topic-hidden').length;
+  const next = Math.min(10, hidden);
+  if (btn) btn.outerHTML = `<button class="topics-show-more-btn" id="topics-more-${postId}" onclick="showMoreTopics('${postId}')">Show ${next} more ↓</button>`;
+}
+
+function showMoreChurning() {
+  churningExpanded = true;
+  document.querySelectorAll('#digestGrid .churning-extra').forEach(el => el.classList.remove('churning-extra'));
+  const btn = document.getElementById('churning-more-btn');
+  if (btn) btn.outerHTML = `<button class="churning-show-more-btn" id="churning-less-btn" onclick="showLessChurning()">Show less ↑</button>`;
+}
+
+function showLessChurning() {
+  churningExpanded = false;
+  document.querySelectorAll('#digestGrid .digest-post').forEach((el, i) => {
+    if (i >= CHURNING_MOBILE_INITIAL) el.classList.add('churning-extra');
+  });
+  const remaining = document.querySelectorAll('#digestGrid .churning-extra').length;
+  const btn = document.getElementById('churning-less-btn');
+  if (btn) btn.outerHTML = `<button class="churning-show-more-btn" id="churning-more-btn" onclick="showMoreChurning()">Show ${remaining} more threads ↓</button>`;
+  document.getElementById('panel-reddit')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderThreadList(posts) {
+  const panel = document.getElementById('threadListPanel');
+  if (!panel) return;
+  panel.style.display = '';
+  panel.innerHTML =
+    `<div class="thread-list-header">Threads (${posts.length})</div>` +
+    posts.map(p => {
+      const flair = p.link_flair_text ? `<div class="tli-flair">${esc(p.link_flair_text)}</div>` : '';
+      return `
+        <div class="thread-item ${p.id === selectedPostId ? 'active' : ''}"
+             data-post-id="${p.id}"
+             onclick="selectThread('${p.id}')">
+          <div class="tli-score">↑${p.score}</div>
+          <div class="tli-body">
+            ${flair}
+            <div class="tli-title">${esc(p.title)}</div>
+          </div>
+        </div>`;
+    }).join('');
+}
+
+async function fetchThreadComments(postId, limit = 25) {
+  const url = `https://www.reddit.com/r/churning/comments/${postId}.json?limit=${limit}&sort=top&raw_json=1&depth=1`;
+  let data = null;
+  const strategies = [
+    async () => {
+      const res = await fetchWithTimeout(url, { headers: { Accept: 'application/json' }, credentials: 'omit' }, 8000);
+      if (!res.ok) throw new Error();
+      return res.json();
+    },
+    async () => {
+      const res = await fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, {}, 12000);
+      if (!res.ok) throw new Error();
+      const w = await res.json();
+      return JSON.parse(w.contents);
+    },
+    async () => {
+      const res = await fetchWithTimeout(`https://corsproxy.io/?${encodeURIComponent(url)}`, {}, 12000);
+      if (!res.ok) throw new Error();
+      return res.json();
+    },
+  ];
+  for (const s of strategies) {
+    try { data = await s(); break; } catch(e) { /* try next */ }
+  }
+  return data
+    ? (data[1]?.data?.children || [])
+        .map(c => c.data)
+        .filter(c =>
+          c.body && c.body !== '[deleted]' && c.body !== '[removed]' &&
+          c.author !== 'AutoModerator' && c.score > 0 && c.body.length > 20
+        )
+    : [];
+}
+
+async function selectThread(postId) {
+  selectedPostId = postId;
+  // Update highlight in thread list
+  document.querySelectorAll('.thread-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.postId === postId);
+  });
+  const post = digestPostsData.find(p => p.id === postId);
+  if (!post) return;
+  const grid = document.getElementById('digestGrid');
+
+  // Scroll detail panel to top immediately
+  const detail = document.querySelector('.thread-detail-panel');
+  if (detail) detail.scrollTop = 0;
+
+  // If comments already cached, show immediately
+  if (digestCommentsData.hasOwnProperty(postId)) {
+    if (grid) grid.innerHTML = digestPostHTML(post, digestCommentsData[postId]);
+    return;
+  }
+
+  // Show skeleton while fetching
+  if (grid) grid.innerHTML = digestPostHTML(post, null);
+
+  // Lazy fetch 25 comments for this thread
+  const topics = await fetchThreadComments(postId, 50);
+  digestCommentsData[postId] = topics;
+
+  // Only update if user hasn't switched to another thread
+  if (selectedPostId === postId && grid) {
+    grid.innerHTML = digestPostHTML(post, topics);
+  }
+}
+
 async function loadRedditDigest() {
   const grid = document.getElementById('digestGrid');
   const meta = document.getElementById('digestMeta');
@@ -1120,7 +1383,7 @@ async function loadRedditDigest() {
         .map(c => c.data)
         .filter(p => p.created_utc >= cutoff)
         .sort((a, b) => b.score - a.score)
-        .slice(0, 30);
+        .slice(0, 50);
       allFailed = false;
       break;
     } catch (e) { /* try next */ }
@@ -1140,65 +1403,69 @@ async function loadRedditDigest() {
 
   meta.textContent = `${posts.length} threads · fetching discussions…`;
 
-  // 2. Render skeleton cards immediately so titles show up right away
-  grid.innerHTML = posts.map(p => digestPostHTML(p, null)).join('');
+  // Store posts globally for click-to-select
+  digestPostsData = posts;
+  digestCommentsData = {};
 
-  // 3. Fetch all thread comments in parallel with a hard 30s overall deadline
-  async function fetchComments(p) {
-    const commentUrl = `https://www.reddit.com/r/churning/comments/${p.id}.json?limit=15&sort=top&raw_json=1&depth=1`;
-    let data = null;
-    // Try direct first, then CORS proxies for iOS/WebKit ITP compatibility
-    const commentStrategies = [
-      async () => {
-        const res = await fetchWithTimeout(commentUrl, { headers: { Accept: 'application/json' }, credentials: 'omit' }, 8000);
-        if (!res.ok) throw new Error();
-        return res.json();
-      },
-      async () => {
-        const res = await fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(commentUrl)}`, {}, 12000);
-        if (!res.ok) throw new Error();
-        const w = await res.json();
-        return JSON.parse(w.contents);
-      },
-      async () => {
-        const res = await fetchWithTimeout(`https://corsproxy.io/?${encodeURIComponent(commentUrl)}`, {}, 12000);
-        if (!res.ok) throw new Error();
-        return res.json();
-      },
-    ];
-    for (const s of commentStrategies) {
-      try { data = await s(); break; } catch(e) { /* try next */ }
+  const desktop = isDesktop();
+
+  if (desktop) {
+    // ── Desktop: two-panel, lazy load comments on click ───────────────
+    selectedPostId = posts[0].id;
+    renderThreadList(posts);
+    grid.innerHTML = digestPostHTML(posts[0], null);
+    meta.textContent = `${posts.length} threads`;
+    // Load comments for the first thread
+    const topics = await fetchThreadComments(posts[0].id, 50);
+    digestCommentsData[posts[0].id] = topics;
+    if (selectedPostId === posts[0].id) {
+      grid.innerHTML = digestPostHTML(posts[0], topics);
+      meta.textContent = `${posts.length} threads · click any to load discussion`;
     }
+    return; // Desktop is done — no bulk pre-fetch needed
+  }
 
-    const topics = data
-      ? (data[1]?.data?.children || [])
-          .map(c => c.data)
-          .filter(c =>
-            c.body &&
-            c.body !== '[deleted]' &&
-            c.body !== '[removed]' &&
-            c.author !== 'AutoModerator' &&
-            c.score > 0 &&
-            c.body.length > 20
-          )
-          .slice(0, 8)
-      : [];
+  // ── Mobile: stacked layout, first 10 visible + show more ────────────
+  churningExpanded = false;
+  const extraCount = Math.max(0, posts.length - CHURNING_MOBILE_INITIAL);
+  grid.innerHTML =
+    posts.map(p => digestPostHTML(p, null)).join('') +
+    (extraCount > 0
+      ? `<button class="churning-show-more-btn" id="churning-more-btn" onclick="showMoreChurning()">Show ${extraCount} more threads ↓</button>`
+      : '');
+  document.querySelectorAll('#digestGrid .digest-post').forEach((el, i) => {
+    if (i >= CHURNING_MOBILE_INITIAL) el.classList.add('churning-extra');
+  });
 
+  // Pre-fetch comments only for the visible first 10 threads
+  const visiblePosts = posts.slice(0, CHURNING_MOBILE_INITIAL);
+
+  async function fetchMobileComments(p) {
+    const topics = await fetchThreadComments(p.id, 15);
+    digestCommentsData[p.id] = topics;
     const card = document.getElementById(`digest-post-${p.id}`);
-    if (card) card.outerHTML = digestPostHTML(p, topics);
+    if (card) {
+      card.outerHTML = digestPostHTML(p, topics);
+      if (!churningExpanded) {
+        const idx = digestPostsData.indexOf(p);
+        if (idx >= CHURNING_MOBILE_INITIAL) {
+          const updated = document.getElementById(`digest-post-${p.id}`);
+          if (updated) updated.classList.add('churning-extra');
+        }
+      }
+    }
     return topics.length > 0;
   }
 
-  // Race: all comment fetches vs. a 30-second hard deadline (proxies need extra time on iOS)
   const HARD_DEADLINE = 30000;
   const deadline = new Promise(resolve => setTimeout(resolve, HARD_DEADLINE));
 
   const commentResults = await Promise.race([
-    Promise.allSettled(posts.map(p => fetchComments(p))),
+    Promise.allSettled(visiblePosts.map(p => fetchMobileComments(p))),
     deadline.then(() => null),
   ]);
 
-  // If deadline fired first, clear any remaining spinners
+  // If deadline fired, clear any remaining spinners
   document.querySelectorAll('[id^="digest-post-"]').forEach(card => {
     if (card.innerHTML.includes('Loading discussion')) {
       const postId = card.id.replace('digest-post-', '');
@@ -1206,11 +1473,16 @@ async function loadRedditDigest() {
       if (post) card.outerHTML = digestPostHTML(post, []);
     }
   });
+  if (!churningExpanded) {
+    document.querySelectorAll('#digestGrid .digest-post').forEach((el, i) => {
+      if (i >= CHURNING_MOBILE_INITIAL) el.classList.add('churning-extra');
+    });
+  }
 
   const loaded = commentResults
     ? commentResults.filter(r => r.status === 'fulfilled' && r.value).length
     : '?';
-  meta.textContent = `${posts.length} threads · ${loaded} with discussion topics`;
+  meta.textContent = `${posts.length} threads · ${loaded} with discussions`;
 }
 
 function digestPostHTML(p, topics) {
@@ -1230,16 +1502,18 @@ function digestPostHTML(p, topics) {
         </div>
       </div>`;
   } else if (topics.length > 0) {
-    const items = topics.map(c => {
-      // Extract first meaningful sentence as the topic headline
-      const rawBody  = c.body.replace(/\*\*/g,'').replace(/\*/g,'').replace(/\n+/g,' ').trim();
-      const headline = rawBody.split(/[.!?]/)[0].trim().slice(0, 120);
-      const preview  = rawBody.slice(0, 260);
-      // Direct comment link: reddit.com/r/churning/comments/POST/SLUG/COMMENT_ID/
+    const TOPICS_INITIAL = 5;
+    const TOPICS_PAGE    = 10;
+
+    const items = topics.map((c, idx) => {
+      const rawBody    = c.body.replace(/\*\*/g,'').replace(/\*/g,'').replace(/\n+/g,' ').trim();
+      const headline   = rawBody.split(/[.!?]/)[0].trim().slice(0, 120);
+      const preview    = rawBody.slice(0, 260);
       const commentUrl = `https://www.reddit.com/r/churning/comments/${p.id}/_/${c.id}/?context=1`;
+      const hidden     = idx >= TOPICS_INITIAL ? ' topic-hidden' : '';
 
       return `
-        <div class="topic-item">
+        <div class="topic-item${hidden}">
           <div class="topic-votes">↑${c.score}</div>
           <div class="topic-content">
             <div class="topic-author">u/${esc(c.author)}</div>
@@ -1251,10 +1525,14 @@ function digestPostHTML(p, topics) {
         </div>`;
     }).join('');
 
+    const hasMore   = topics.length > TOPICS_INITIAL;
+    const firstPage = Math.min(TOPICS_PAGE, topics.length - TOPICS_INITIAL);
+
     topicsHTML = `
       <div class="topic-list">
         <div class="topic-list-label">💬 Discussion Topics (${topics.length})</div>
         ${items}
+        ${hasMore ? `<button class="topics-show-more-btn" id="topics-more-${p.id}" onclick="showMoreTopics('${p.id}')">Show ${firstPage} more ↓</button>` : ''}
       </div>`;
   }
 
@@ -1281,7 +1559,7 @@ function digestPostHTML(p, topics) {
 // ─── COMMUNITIES TAB ─────────────────────────────────────────────────────
 
 async function fetchSubreddit(subId) {
-  const url = `https://www.reddit.com/r/${subId}/hot.json?limit=15&raw_json=1`;
+  const url = `https://www.reddit.com/r/${subId}/hot.json?limit=25&raw_json=1`;
   const strategies = [
     // Direct — credentials:omit helps bypass iOS ITP blocking
     () => fetchWithTimeout(url, { headers: { Accept: 'application/json' }, credentials: 'omit' }, 10000).then(r => r.ok ? r.json() : Promise.reject()),
@@ -1346,7 +1624,8 @@ async function loadCommunities() {
     const posts = (data?.data?.children || [])
       .map(c => c.data)
       .filter(p => p.created_utc >= cutoff && !p.stickied)
-      .slice(0, 6);
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 20);
 
     metaEl.textContent = `${posts.length} posts`;
 
@@ -1355,25 +1634,35 @@ async function loadCommunities() {
       return;
     }
 
-    postsEl.innerHTML =
-      posts.map(p => {
-        const desc = p.selftext ? p.selftext.replace(/\n+/g,' ').trim().slice(0, 160) : '';
-        const flair = p.link_flair_text ? `<span class="sub-flair">${esc(p.link_flair_text)}</span>` : '';
-        const link  = `https://www.reddit.com${p.permalink}`;
-        return `
-          <a class="sub-post" href="${esc(link)}" target="_blank" rel="noopener">
-            <div class="sub-post-score">↑${p.score}</div>
-            <div class="sub-post-body">
-              <div class="sub-post-title">${esc(p.title)}</div>
-              ${desc ? `<div class="sub-post-desc">${esc(desc)}</div>` : ''}
-              <div class="sub-post-footer">
-                ${flair}
-                <span class="sub-post-time">${fmtDate(new Date(p.created_utc * 1000))}</span>
-                <span class="sub-post-comments">💬 ${p.num_comments}</span>
-              </div>
+    const INITIAL_SHOW = 8;
+    const renderSubPost = (p, hidden = false) => {
+      const desc = p.selftext ? p.selftext.replace(/\n+/g,' ').trim().slice(0, 160) : '';
+      const flair = p.link_flair_text ? `<span class="sub-flair">${esc(p.link_flair_text)}</span>` : '';
+      const link  = `https://www.reddit.com${p.permalink}`;
+      return `
+        <a class="sub-post${hidden ? ' sub-post-hidden' : ''}" href="${esc(link)}" target="_blank" rel="noopener">
+          <div class="sub-post-score">↑${p.score}</div>
+          <div class="sub-post-body">
+            <div class="sub-post-title">${esc(p.title)}</div>
+            ${desc ? `<div class="sub-post-desc">${esc(desc)}</div>` : ''}
+            <div class="sub-post-footer">
+              ${flair}
+              <span class="sub-post-time">${fmtDate(new Date(p.created_utc * 1000))}</span>
+              <span class="sub-post-comments">💬 ${p.num_comments}</span>
             </div>
-          </a>`;
-      }).join('') +
+          </div>
+        </a>`;
+    };
+
+    const visible = posts.slice(0, INITIAL_SHOW);
+    const hidden  = posts.slice(INITIAL_SHOW);
+
+    postsEl.innerHTML =
+      visible.map(p => renderSubPost(p)).join('') +
+      hidden.map(p => renderSubPost(p, true)).join('') +
+      (hidden.length > 0
+        ? `<button class="sub-show-more" id="sub-more-${sub.id}" onclick="showMoreSub('${sub.id}')">Show ${hidden.length} more ↓</button>`
+        : '') +
       `<a class="sub-view-all" href="https://reddit.com/r/${sub.id}" target="_blank" rel="noopener">View all of ${sub.name} →</a>`;
   }));
 
@@ -1401,6 +1690,24 @@ function toggleSub(id) {
   const hidden = posts.style.display === 'none';
   posts.style.display = hidden ? '' : 'none';
   if (chev) chev.classList.toggle('open', hidden);
+}
+
+function showMoreSub(subId) {
+  document.querySelectorAll(`#sub-posts-${subId} .sub-post-hidden`).forEach(el => {
+    el.classList.remove('sub-post-hidden');
+    el.classList.add('sub-post-expanded');
+  });
+  const btn = document.getElementById(`sub-more-${subId}`);
+  if (btn) btn.outerHTML = `<button class="sub-show-more" id="sub-less-${subId}" onclick="showLessSub('${subId}')">Show less ↑</button>`;
+}
+
+function showLessSub(subId) {
+  document.querySelectorAll(`#sub-posts-${subId} .sub-post-expanded`).forEach(el => {
+    el.classList.remove('sub-post-expanded');
+    el.classList.add('sub-post-hidden');
+  });
+  const btn = document.getElementById(`sub-less-${subId}`);
+  if (btn) btn.outerHTML = `<button class="sub-show-more" id="sub-more-${subId}" onclick="showMoreSub('${subId}')">Show more ↓</button>`;
 }
 
 // ─── THEME ───────────────────────────────────────────────────────────────
