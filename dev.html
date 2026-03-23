@@ -881,7 +881,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.22-dev';
+const VERSION = '1.5.23-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1332,14 +1332,15 @@ function showMoreChurning() {
 
 function showLessChurning() {
   churningExpanded = false;
+  // Re-hide posts beyond initial count
   document.querySelectorAll('#digestGrid .digest-post').forEach((el, i) => {
     if (i >= CHURNING_MOBILE_INITIAL) el.classList.add('churning-extra');
   });
-  // Re-hide day headers whose posts are all now hidden
+  // Re-hide day headers that have no visible posts (entirely-hidden days)
   document.querySelectorAll('#digestGrid .digest-day-header').forEach(header => {
     let el = header.nextElementSibling;
     let hasVisible = false;
-    while (el && !el.classList.contains('digest-day-header')) {
+    while (el && !el.classList.contains('digest-day-header') && !el.classList.contains('churning-show-more-btn')) {
       if (el.classList.contains('digest-post') && !el.classList.contains('churning-extra')) {
         hasVisible = true; break;
       }
@@ -1554,7 +1555,7 @@ async function loadRedditDigest() {
       const todayDay = Math.floor(Date.now() / 1000 / 86400);
       posts = children
         .map(c => c.data)
-        .filter(p => Math.floor(p.created_utc / 86400) >= todayDay - 4)  // last 5 days only
+        .filter(p => Math.floor(p.created_utc / 86400) >= todayDay - 6)  // last 7 days only
         .sort((a, b) => {
           const dayA = Math.floor(a.created_utc / 86400);
           const dayB = Math.floor(b.created_utc / 86400);
@@ -1609,35 +1610,34 @@ async function loadRedditDigest() {
   });
   const mobileSortedDays = Object.keys(mobileDayGroups).map(Number).sort((a, b) => b - a);
 
-  // Build HTML: day header + posts per group
-  let mobileHtml = '';
+  // Split posts into visible (first CHURNING_MOBILE_INITIAL) and hidden
+  const initialPostIds = new Set(posts.slice(0, CHURNING_MOBILE_INITIAL).map(p => p.id));
+
+  // Build visible HTML and hidden HTML separately — button goes between them
+  let visibleHtml = '';
+  let hiddenHtml = '';
   mobileSortedDays.forEach(day => {
-    mobileHtml += `<div class="digest-day-header" data-day="${day}"><h3>📅 ${postDayLabel(day * 86400)}</h3></div>`;
-    mobileDayGroups[day].forEach(p => { mobileHtml += digestPostHTML(p, null); });
+    const dayPosts = mobileDayGroups[day];
+    const visPosts = dayPosts.filter(p => initialPostIds.has(p.id));
+    const hidPosts = dayPosts.filter(p => !initialPostIds.has(p.id));
+
+    if (visPosts.length > 0) {
+      visibleHtml += `<div class="digest-day-header" data-day="${day}"><h3>📅 ${postDayLabel(day * 86400)}</h3></div>`;
+      visPosts.forEach(p => { visibleHtml += digestPostHTML(p, null); });
+    }
+    if (hidPosts.length > 0) {
+      // Only add a header in the hidden section for entirely-hidden days (no duplicate headers)
+      if (visPosts.length === 0) {
+        hiddenHtml += `<div class="digest-day-header churning-extra" data-day="${day}"><h3>📅 ${postDayLabel(day * 86400)}</h3></div>`;
+      }
+      hidPosts.forEach(p => { hiddenHtml += digestPostHTML(p, null).replace('class="digest-post"', 'class="digest-post churning-extra"'); });
+    }
   });
 
   const extraCount = Math.max(0, posts.length - CHURNING_MOBILE_INITIAL);
-  grid.innerHTML = mobileHtml + (extraCount > 0
-    ? `<button class="churning-show-more-btn" id="churning-more-btn" onclick="showMoreChurning()">Show ${extraCount} more threads ↓</button>`
-    : '');
-
-  // Hide posts beyond initial count
-  document.querySelectorAll('#digestGrid .digest-post').forEach((el, i) => {
-    if (i >= CHURNING_MOBILE_INITIAL) el.classList.add('churning-extra');
-  });
-
-  // Hide day headers whose posts are all hidden
-  document.querySelectorAll('#digestGrid .digest-day-header').forEach(header => {
-    let el = header.nextElementSibling;
-    let hasVisible = false;
-    while (el && !el.classList.contains('digest-day-header')) {
-      if (el.classList.contains('digest-post') && !el.classList.contains('churning-extra')) {
-        hasVisible = true; break;
-      }
-      el = el.nextElementSibling;
-    }
-    if (!hasVisible) header.classList.add('churning-extra');
-  });
+  grid.innerHTML = visibleHtml +
+    (extraCount > 0 ? `<button class="churning-show-more-btn" id="churning-more-btn" onclick="showMoreChurning()">Show ${extraCount} more threads ↓</button>` : '') +
+    hiddenHtml;
 
   // Pre-fetch comments only for the visible first 10 threads
   const visiblePosts = posts.slice(0, CHURNING_MOBILE_INITIAL);
