@@ -426,7 +426,7 @@
     }
     .sub-header:hover { background: var(--tag-bg); }
     .sub-title { display: flex; align-items: center; gap: 8px; }
-    .sub-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .sub-dot { display: none; } /* replaced by colored left border on the block */
     .sub-name { font-size: 14px; font-weight: 700; color: var(--text); }
     .sub-meta { font-size: 11px; color: var(--subtext); }
     .sub-chevron { font-size: 11px; color: var(--subtext); transition: transform 0.2s; }
@@ -516,6 +516,7 @@
 
     /* ── SECTION LABEL (above right panel on churning + communities) */
     .section-label {
+      display: flex; align-items: center; gap: 8px;
       font-size: 16px; font-weight: 800; color: var(--text);
       padding: 10px 0; margin-bottom: 14px;
       border-bottom: 2px solid var(--border);
@@ -878,7 +879,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.14-dev';
+const VERSION = '1.5.15-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1439,7 +1440,7 @@ async function selectThread(postId) {
   const post = digestPostsData.find(p => p.id === postId);
   // Update section label with the selected thread's day
   const sectionLabel = document.getElementById('digestSectionLabel');
-  if (sectionLabel && post) sectionLabel.textContent = postDayLabel(post.created_utc);
+  if (sectionLabel && post) sectionLabel.textContent = '📅 ' + postDayLabel(post.created_utc);
   if (!post) return;
   const grid = document.getElementById('digestGrid');
 
@@ -1822,10 +1823,9 @@ async function loadCommunities() {
       </div>
       <div class="category-body" id="cat-body-${ci}">
         ${cat.subs.map(sub => `
-          <div class="sub-block" id="sub-${sub.id}">
+          <div class="sub-block" id="sub-${sub.id}" style="border-left: 4px solid ${sub.color}">
             <div class="sub-header" onclick="toggleSub('${sub.id}')">
               <div class="sub-title">
-                <div class="sub-dot" style="background:${sub.color}"></div>
                 <span class="sub-name">${sub.name}</span>
               </div>
               <div style="display:flex;align-items:center;gap:8px">
