@@ -409,7 +409,7 @@
     .category-header-left { display: flex; align-items: center; gap: 10px; }
     .category-header h3 { font-size: 16px; font-weight: 800; color: var(--text); }
     .category-count { display: none; } /* count shown in left nav instead */
-    .category-toggle { font-size: 12px; color: var(--subtext); transition: transform 0.2s; }
+    .category-toggle { display: none; }
     .category-toggle.collapsed { transform: rotate(-90deg); }
     .category-body { display: flex; flex-direction: column; gap: 10px; }
     .category-body.collapsed { display: none; }
@@ -879,7 +879,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.15-dev';
+const VERSION = '1.5.18-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -955,6 +955,7 @@ let debugLog = [];
 let digestPostsData = [];       // all fetched posts
 let digestCommentsData = {};    // postId -> topics[] (undefined = pending, [] = none)
 let selectedPostId = null;
+let selectedDay = null;         // UTC day number currently shown in right panel
 const CHURNING_MOBILE_INITIAL = 10;
 let churningExpanded = false;
 
@@ -1380,15 +1381,16 @@ function renderThreadList(posts) {
     `<div class="comm-nav-header">Threads (${posts.length})</div>` +
     sortedDays.map(day => {
       const dayPosts = groups[day];
+      const isDayActive = day === selectedDay;
       return (
-        `<div class="comm-nav-item comm-nav-cat">
+        `<div class="comm-nav-item comm-nav-cat ${isDayActive ? 'active' : ''}" onclick="selectDay(${day})">
           <span>${postDayLabel(day * 86400)}</span>
           <span class="comm-nav-cat-count">${dayPosts.length}</span>
         </div>` +
         dayPosts.map(p => `
-          <div class="comm-nav-item comm-nav-sub ${p.id === selectedPostId ? 'active' : ''}"
+          <div class="comm-nav-item comm-nav-sub"
                data-post-id="${p.id}"
-               onclick="selectThread('${p.id}')">
+               onclick="scrollToThread('${p.id}')">
             <span style="flex:1;line-height:1.35">${esc(simplifyThreadTitle(p.title))}</span>
             <span class="comm-nav-cat-count" style="white-space:nowrap;margin-left:6px">💬${p.num_comments}</span>
           </div>`
@@ -1431,40 +1433,45 @@ async function fetchThreadComments(postId, limit = 25) {
     : [];
 }
 
-async function selectThread(postId) {
-  selectedPostId = postId;
-  // Update highlight in thread list
-  document.querySelectorAll('[data-post-id]').forEach(el => {
-    el.classList.toggle('active', el.dataset.postId === postId);
-  });
-  const post = digestPostsData.find(p => p.id === postId);
-  // Update section label with the selected thread's day
-  const sectionLabel = document.getElementById('digestSectionLabel');
-  if (sectionLabel && post) sectionLabel.textContent = '📅 ' + postDayLabel(post.created_utc);
-  if (!post) return;
-  const grid = document.getElementById('digestGrid');
+function selectDay(day) {
+  selectedDay = day;
+  // Re-render nav with updated active state
+  renderThreadList(digestPostsData);
 
-  // Scroll detail panel to top immediately
+  // Update section label
+  const sectionLabel = document.getElementById('digestSectionLabel');
+  if (sectionLabel) sectionLabel.textContent = '📅 ' + postDayLabel(day * 86400);
+
+  const dayPosts = digestPostsData.filter(p => Math.floor(p.created_utc / 86400) === day);
+  const grid = document.getElementById('digestGrid');
+  if (!grid) return;
+
+  // Render all posts for this day (cached or skeleton)
+  grid.innerHTML = dayPosts.map(p =>
+    digestPostHTML(p, digestCommentsData.hasOwnProperty(p.id) ? digestCommentsData[p.id] : null)
+  ).join('');
+
+  // Scroll detail panel to top
   const detail = document.querySelector('.thread-detail-panel');
   if (detail) detail.scrollTop = 0;
 
-  // If comments already cached, show immediately
-  if (digestCommentsData.hasOwnProperty(postId)) {
-    if (grid) grid.innerHTML = digestPostHTML(post, digestCommentsData[postId]);
-    return;
-  }
+  // Fetch comments for any uncached posts in this day
+  dayPosts.forEach(async p => {
+    if (!digestCommentsData.hasOwnProperty(p.id)) {
+      const topics = await fetchThreadComments(p.id, 50);
+      digestCommentsData[p.id] = topics;
+      // Only update if user is still on same day
+      if (selectedDay === day) {
+        const card = document.getElementById(`digest-post-${p.id}`);
+        if (card) card.outerHTML = digestPostHTML(p, topics);
+      }
+    }
+  });
+}
 
-  // Show skeleton while fetching
-  if (grid) grid.innerHTML = digestPostHTML(post, null);
-
-  // Lazy fetch 25 comments for this thread
-  const topics = await fetchThreadComments(postId, 50);
-  digestCommentsData[postId] = topics;
-
-  // Only update if user hasn't switched to another thread
-  if (selectedPostId === postId && grid) {
-    grid.innerHTML = digestPostHTML(post, topics);
-  }
+function scrollToThread(postId) {
+  const card = document.getElementById(`digest-post-${postId}`);
+  if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 async function loadRedditDigest() {
@@ -1541,21 +1548,13 @@ async function loadRedditDigest() {
   const desktop = isDesktop();
 
   if (desktop) {
-    // ── Desktop: two-panel, lazy load comments on click ───────────────
-    selectedPostId = posts[0].id;
+    // ── Desktop: two-panel, select day to see all threads for that day ─
+    const firstDay = Math.floor(posts[0].created_utc / 86400);
+    selectedDay = firstDay;
     renderThreadList(posts);
-    grid.innerHTML = digestPostHTML(posts[0], null);
     meta.textContent = `${posts.length} threads`;
-    const sectionLabel = document.getElementById('digestSectionLabel');
-    if (sectionLabel) sectionLabel.textContent = postDayLabel(posts[0].created_utc);
-    // Load comments for the first thread
-    const topics = await fetchThreadComments(posts[0].id, 50);
-    digestCommentsData[posts[0].id] = topics;
-    if (selectedPostId === posts[0].id) {
-      grid.innerHTML = digestPostHTML(posts[0], topics);
-      meta.textContent = `${posts.length} threads · click any to load discussion`;
-    }
-    return; // Desktop is done — no bulk pre-fetch needed
+    selectDay(firstDay);
+    return;
   }
 
   // ── Mobile: stacked layout, first 10 visible + show more ────────────
@@ -1618,8 +1617,32 @@ async function loadRedditDigest() {
   meta.textContent = `${posts.length} threads · ${loaded} with discussions`;
 }
 
+// ─── CHURNING THREAD COLOR MAP ───────────────────────────────────────────
+const CHURNING_THREAD_COLORS = [
+  { match: ['daily discussion', 'daily thread'],                    color: '#4f46e5' }, // indigo
+  { match: ['newbie', 'weekly question', 'newbie weekly'],          color: '#0891b2' }, // teal
+  { match: ['news', 'update'],                                      color: '#059669' }, // emerald
+  { match: ['off topic', 'off-topic', 'offtopic'],                  color: '#7c3aed' }, // violet
+  { match: ['frustration'],                                         color: '#dc2626' }, // red
+  { match: ['manufactured spending'],                               color: '#d97706' }, // amber
+  { match: ['data point'],                                          color: '#2563eb' }, // blue
+  { match: ['trip report', 'redemption'],                           color: '#16a34a' }, // green
+  { match: ['what card', 'card recommendation', 'card should'],     color: '#db2777' }, // pink
+  { match: ['targeted offer'],                                      color: '#ea580c' }, // orange
+];
+const CHURNING_DEFAULT_COLOR = '#ff4500';
+
+function churningThreadColor(post) {
+  const haystack = ((post.link_flair_text || '') + ' ' + (post.title || '')).toLowerCase();
+  for (const { match, color } of CHURNING_THREAD_COLORS) {
+    if (match.some(m => haystack.includes(m))) return color;
+  }
+  return CHURNING_DEFAULT_COLOR;
+}
+
 function digestPostHTML(p, topics) {
-  const flair    = p.link_flair_text ? `<span class="post-flair">${esc(p.link_flair_text)}</span>` : '';
+  const threadColor = churningThreadColor(p);
+  const flair    = p.link_flair_text ? `<span class="post-flair" style="background:${threadColor}22;color:${threadColor};border-color:${threadColor}44">${esc(p.link_flair_text)}</span>` : '';
   const timeAgo  = fmtDate(new Date(p.created_utc * 1000));
   const permalink = `https://www.reddit.com${p.permalink}`;
 
@@ -1670,7 +1693,7 @@ function digestPostHTML(p, topics) {
   }
 
   return `
-  <div class="digest-post" id="digest-post-${p.id}">
+  <div class="digest-post" id="digest-post-${p.id}" style="border-left-color:${threadColor}">
     <div class="digest-post-header">
       <div class="digest-post-meta">
         ${flair}
@@ -1678,12 +1701,12 @@ function digestPostHTML(p, topics) {
         <span class="post-time">${timeAgo}</span>
       </div>
       <div class="digest-post-title">
-        <a href="${esc(permalink)}" target="_blank" rel="noopener">${esc(p.title)}</a>
+        <a href="${esc(permalink)}" target="_blank" rel="noopener" style="color:var(--text)">${esc(p.title)}</a>
       </div>
     </div>
     ${topicsHTML}
     <div class="digest-post-footer">
-      <a class="thread-link" href="${esc(permalink)}" target="_blank" rel="noopener">Open full thread →</a>
+      <a class="thread-link" href="${esc(permalink)}" target="_blank" rel="noopener" style="color:${threadColor}">Open full thread →</a>
       <span class="comment-count">💬 ${p.num_comments} comments</span>
     </div>
   </div>`;
@@ -1698,7 +1721,6 @@ function renderCommNav() {
   panel.style.display = '';
   panel.innerHTML =
     `<div class="comm-nav-header">Filter</div>` +
-    `<div class="comm-nav-item comm-nav-all ${selectedCommCat === null ? 'active' : ''}" onclick="selectAllComm()">🌐 All Communities</div>` +
     COMMUNITIES.map((cat, ci) => {
       const countEl = document.getElementById(`cat-count-${ci}`);
       const countText = countEl?.textContent || '';
@@ -1807,8 +1829,8 @@ async function fetchSubreddit(subId) {
 
 async function loadCommunities() {
   const wrap = document.getElementById('communitiesWrap');
-  // Reset nav state on reload
-  selectedCommCat = null;
+  // Default to first category on reload
+  selectedCommCat = 0;
   selectedCommSub = null;
   renderCommNav();
   // Render category skeletons immediately
@@ -1839,6 +1861,9 @@ async function loadCommunities() {
           </div>`).join('')}
       </div>
     </div>`).join('');
+
+  // Apply initial filter (default: first category)
+  renderCommDetail();
 
   // Fetch all subreddits in parallel
   const allSubs = COMMUNITIES.flatMap(c => c.subs);
