@@ -736,9 +736,6 @@
       .comm-layout { display: block; }
       .comm-nav-panel { display: none !important; }
 
-      /* Hyatt Offers: single column on mobile */
-      .hyatt-grid { grid-template-columns: 1fr; }
-      .hyatt-toolbar { flex-direction: column; }
       .category-body { display: flex; flex-direction: column; gap: 10px; }
 
       /* Reddit digest */
@@ -760,62 +757,6 @@
       }
       .card:hover { transform: none; } /* disable hover lift on touch */
     }
-
-    /* ── HYATT OFFERS TAB ──────────────────────────────────────── */
-    .hyatt-toolbar {
-      display: flex; align-items: flex-start; justify-content: space-between;
-      margin-bottom: 20px; flex-wrap: wrap; gap: 10px;
-    }
-    .hyatt-toolbar-left h2 { font-size: 20px; font-weight: 800; color: var(--text); margin: 0; }
-    .hyatt-meta { font-size: 12px; color: var(--subtext); margin-top: 4px; display: block; }
-    .hyatt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
-    .hyatt-offer-card {
-      background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px;
-      padding: 18px; display: flex; flex-direction: column; gap: 10px;
-      transition: box-shadow 0.15s;
-    }
-    .hyatt-offer-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
-    .hyatt-offer-new-badge {
-      display: inline-block; background: #e53e3e; color: white;
-      font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px;
-      letter-spacing: 0.5px; align-self: flex-start;
-    }
-    .hyatt-offer-title { font-size: 15px; font-weight: 700; color: var(--text); line-height: 1.35; }
-    .hyatt-offer-desc { font-size: 13px; color: var(--subtext); line-height: 1.5; flex: 1; }
-    .hyatt-offer-dates { display: flex; gap: 8px; flex-wrap: wrap; }
-    .hyatt-offer-date {
-      font-size: 11px; color: var(--subtext);
-      background: var(--tag-bg); padding: 3px 8px; border-radius: 6px;
-    }
-    .hyatt-offer-footer {
-      display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 4px;
-    }
-    .hyatt-register-btn {
-      display: inline-block; background: var(--accent); color: white;
-      font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 8px;
-      text-decoration: none; transition: opacity 0.15s;
-    }
-    .hyatt-register-btn:hover { opacity: 0.85; }
-    .hyatt-view-btn {
-      display: inline-block; background: var(--tag-bg); color: var(--text);
-      font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 8px;
-      text-decoration: none; transition: opacity 0.15s;
-    }
-    .hyatt-view-btn:hover { opacity: 0.75; }
-    .hyatt-flair-pill {
-      display: inline-block; background: var(--tag-bg); color: var(--subtext);
-      font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px;
-      white-space: nowrap; max-width: 160px; overflow: hidden; text-overflow: ellipsis;
-    }
-    .hyatt-offer-meta {
-      display: flex; gap: 10px; font-size: 12px; color: var(--subtext);
-    }
-    .hyatt-fallback {
-      text-align: center; padding: 48px 24px;
-      color: var(--subtext); font-size: 14px; line-height: 1.7;
-    }
-    .hyatt-fallback a { color: var(--accent); text-decoration: none; font-weight: 600; }
-    .hyatt-fallback a:hover { text-decoration: underline; }
 
     /* ── DEV BANNER ── */
     #devBanner {
@@ -855,7 +796,6 @@
     <button class="tab-btn active" id="tab-news"        onclick="switchTab('news')">📰 News Feed</button>
     <button class="tab-btn"        id="tab-reddit"      onclick="switchTab('reddit')">🤝 r/churning</button>
     <button class="tab-btn"        id="tab-communities" onclick="switchTab('communities')">🌐 Communities</button>
-    <button class="tab-btn"        id="tab-hyatt"       onclick="switchTab('hyatt')">🏨 Hyatt Offers</button>
   </div>
 
   <!-- ══ PANEL: NEWS FEED ══ -->
@@ -937,28 +877,12 @@
     </div>
   </div><!-- /panel-communities -->
 
-  <!-- ══ PANEL: HYATT OFFERS ══ -->
-  <div id="panel-hyatt" style="display:none">
-    <div class="hyatt-toolbar">
-      <div class="hyatt-toolbar-left">
-        <h2>🏨 Hyatt Offers</h2>
-        <span class="hyatt-meta" id="hyattMeta">Loading offers…</span>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <button class="btn btn-ghost" onclick="loadHyattOffers(true)">⟳ Refresh</button>
-        <a href="https://world.hyatt.com/content/gp/en/offers.html" target="_blank" rel="noopener" class="btn btn-ghost">View on Hyatt ↗</a>
-      </div>
-    </div>
-    <div id="hyattGrid">
-      <div class="digest-loading"><div class="spinner"></div>Fetching Hyatt offers…</div>
-    </div>
-  </div><!-- /panel-hyatt -->
 
 </div>
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.29-dev';
+const VERSION = '1.5.30-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -975,6 +899,8 @@ const COMMUNITIES = [
     { id: 'awardtravel',   name: 'r/awardtravel',   color: '#6b46c1' },
     { id: 'CreditCards',   name: 'r/CreditCards',   color: '#e53e3e' },
     { id: 'ChaseSapphire', name: 'r/ChaseSapphire', color: '#1a56db' },
+    { id: 'hyatt',         name: 'r/hyatt',         color: '#2b6cb0' },
+    { id: 'marriott',      name: 'r/marriott',      color: '#c53030' },
   ]},
   { label: '💰 Finance & FIRE', color: '#2f855a', subs: [
     { id: 'personalfinance',        name: 'r/personalfinance',        color: '#2f855a' },
@@ -1043,9 +969,6 @@ let selectedCommCat = null;   // null = all, or category index
 let selectedCommSub = null;   // null = all/category, or sub id
 let communitiesLoaded = false; // only load once; skip on News Feed refreshes
 
-// ── Hyatt Offers state ────────────────────────────────────────────────────
-let hyattOffersData = [];     // parsed offer objects from last successful fetch
-let hyattLoaded = false;      // only auto-loads once; manual refresh always refetches
 
 // ─── FETCH ───────────────────────────────────────────────────────────────
 async function fetchWithProxy(rssUrl) {
@@ -1143,129 +1066,6 @@ async function fetchSource(source) {
   return articles;
 }
 
-// ─── HYATT OFFERS ────────────────────────────────────────────────────────
-
-const HYATT_OFFERS_URL = 'https://world.hyatt.com/content/gp/en/offers.html';
-
-// Keywords that indicate a r/hyatt post is about an offer/promotion
-const HYATT_OFFER_KEYWORDS = [
-  'offer', 'promo', 'promotion', 'bonus', 'register', 'registration',
-  'double points', 'triple points', 'points bonus', 'extra points',
-  'challenge', 'milestone', 'earning', 'deal', 'discount', 'sale',
-  'q1', 'q2', 'q3', 'q4', 'free night', 'globalist', 'status challenge',
-];
-
-function loadSeenHyattOffers() {
-  try { return new Set(JSON.parse(localStorage.getItem('hyattSeenOffers') || '[]')); } catch { return new Set(); }
-}
-function saveSeenHyattOffers(ids) {
-  try { localStorage.setItem('hyattSeenOffers', JSON.stringify([...ids])); } catch {}
-}
-
-function renderHyattOffers(posts, newIds) {
-  const grid = document.getElementById('hyattGrid');
-  if (!grid) return;
-
-  if (!posts || posts.length === 0) {
-    grid.innerHTML = `
-      <div class="hyatt-fallback">
-        <p style="font-size:32px;margin-bottom:12px">🔍</p>
-        <p>No recent promotion posts found on r/hyatt.<br>Check back later or browse the subreddit directly.</p>
-        <p style="margin-top:14px">
-          <a href="https://www.reddit.com/r/hyatt/" target="_blank" rel="noopener">Browse r/hyatt ↗</a>
-          &nbsp;·&nbsp;
-          <a href="${HYATT_OFFERS_URL}" target="_blank" rel="noopener">View offers on Hyatt.com ↗</a>
-        </p>
-      </div>`;
-    return;
-  }
-
-  grid.innerHTML = `<div class="hyatt-grid">` + posts.map(p => {
-    const isNew = newIds.has(p.id);
-    const age = fmtDate(new Date(p.created_utc * 1000));
-    const flair = p.link_flair_text ? `<span class="hyatt-flair-pill">${esc(p.link_flair_text)}</span>` : '';
-    const postUrl = `https://www.reddit.com${p.permalink}`;
-    // If the post itself links to an external URL (e.g. Hyatt registration page), surface it
-    const externalUrl = p.url && !p.url.includes('reddit.com') ? p.url : null;
-    return `<div class="hyatt-offer-card">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
-        ${isNew ? `<span class="hyatt-offer-new-badge">🆕 NEW</span>` : '<span></span>'}
-        ${flair}
-      </div>
-      <div class="hyatt-offer-title">${esc(p.title)}</div>
-      <div class="hyatt-offer-meta">
-        <span>👍 ${p.score}</span>
-        <span>💬 ${p.num_comments}</span>
-        <span>${age}</span>
-      </div>
-      <div class="hyatt-offer-footer">
-        ${externalUrl ? `<a href="${esc(externalUrl)}" target="_blank" rel="noopener" class="hyatt-register-btn">Register ↗</a>` : ''}
-        <a href="${esc(postUrl)}" target="_blank" rel="noopener" class="hyatt-view-btn">View Post ↗</a>
-      </div>
-    </div>`;
-  }).join('') + `</div>`;
-}
-
-function updateHyattBadge(count) {
-  const tab = document.getElementById('tab-hyatt');
-  if (!tab) return;
-  const existing = tab.querySelector('.tab-new-dot');
-  if (count > 0 && !existing) {
-    tab.innerHTML = `🏨 Hyatt Offers <span class="tab-new-dot" title="${count} new offer${count > 1 ? 's' : ''}"></span>`;
-  } else if (count === 0 && existing) {
-    tab.textContent = '🏨 Hyatt Offers';
-  }
-}
-
-async function loadHyattOffers(manual = false) {
-  if (hyattLoaded && !manual) return;
-  const meta = document.getElementById('hyattMeta');
-  const grid = document.getElementById('hyattGrid');
-
-  if (manual && grid) {
-    grid.innerHTML = `<div class="digest-loading"><div class="spinner"></div>Fetching r/hyatt promotions…</div>`;
-  }
-  if (meta) meta.textContent = 'Checking r/hyatt…';
-
-  let posts = [];
-  try {
-    // Fetch newest r/hyatt posts — Reddit JSON API, same pattern as r/churning
-    const res = await fetchWithTimeout(
-      'https://www.reddit.com/r/hyatt/new.json?limit=100',
-      { credentials: 'omit' }, 15000
-    );
-    if (res.ok) {
-      const json = await res.json();
-      const all = (json?.data?.children || []).map(c => c.data);
-      // Keep only posts from the last 90 days that mention offer-related keywords
-      const cutoff = Date.now() / 1000 - 90 * 86400;
-      posts = all.filter(p => {
-        if (p.created_utc < cutoff) return false;
-        const text = (p.title + ' ' + (p.link_flair_text || '')).toLowerCase();
-        return HYATT_OFFER_KEYWORDS.some(kw => text.includes(kw));
-      });
-    }
-  } catch(e) { /* network error — posts stays [] */ }
-
-  const seen = loadSeenHyattOffers();
-  let newIds = new Set();
-
-  if (posts.length > 0) {
-    hyattOffersData = posts;
-    if (seen.size > 0) {
-      newIds = new Set(posts.filter(p => !seen.has(p.id)).map(p => p.id));
-    }
-    saveSeenHyattOffers(new Set(posts.map(p => p.id)));
-    if (meta) meta.textContent = `${posts.length} promotion post${posts.length !== 1 ? 's' : ''} · r/hyatt · ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-  } else {
-    if (meta) meta.textContent = `No recent promos found · ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-  }
-
-  updateHyattBadge(newIds.size);
-  renderHyattOffers(posts, newIds);
-  hyattLoaded = true;
-}
-
 // ─── LOAD ALL ────────────────────────────────────────────────────────────
 async function loadAll() {
   allArticles = [];
@@ -1311,11 +1111,6 @@ async function loadAll() {
     communitiesLoaded = true;
     loadCommunities();
   }
-  // Hyatt Offers only auto-loads once — manual refresh always re-fetches
-  if (!hyattLoaded) {
-    loadHyattOffers();
-  }
-
   // Wait for all blog sources to finish
   await Promise.allSettled(sourcePromises);
 
@@ -1487,7 +1282,7 @@ function fmtDate(d) {
 
 // ─── TAB SWITCHING ───────────────────────────────────────────────────────
 function switchTab(name) {
-  ['news','reddit','communities','hyatt'].forEach(t => {
+  ['news','reddit','communities'].forEach(t => {
     document.getElementById(`panel-${t}`).style.display = name === t ? '' : 'none';
     document.getElementById(`tab-${t}`).classList.toggle('active', name === t);
   });
