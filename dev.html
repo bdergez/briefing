@@ -796,6 +796,20 @@
       text-decoration: none; transition: opacity 0.15s;
     }
     .hyatt-register-btn:hover { opacity: 0.85; }
+    .hyatt-view-btn {
+      display: inline-block; background: var(--tag-bg); color: var(--text);
+      font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 8px;
+      text-decoration: none; transition: opacity 0.15s;
+    }
+    .hyatt-view-btn:hover { opacity: 0.75; }
+    .hyatt-flair-pill {
+      display: inline-block; background: var(--tag-bg); color: var(--subtext);
+      font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px;
+      white-space: nowrap; max-width: 160px; overflow: hidden; text-overflow: ellipsis;
+    }
+    .hyatt-offer-meta {
+      display: flex; gap: 10px; font-size: 12px; color: var(--subtext);
+    }
     .hyatt-fallback {
       text-align: center; padding: 48px 24px;
       color: var(--subtext); font-size: 14px; line-height: 1.7;
@@ -944,7 +958,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.28-dev';
+const VERSION = '1.5.29-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1133,6 +1147,14 @@ async function fetchSource(source) {
 
 const HYATT_OFFERS_URL = 'https://world.hyatt.com/content/gp/en/offers.html';
 
+// Keywords that indicate a r/hyatt post is about an offer/promotion
+const HYATT_OFFER_KEYWORDS = [
+  'offer', 'promo', 'promotion', 'bonus', 'register', 'registration',
+  'double points', 'triple points', 'points bonus', 'extra points',
+  'challenge', 'milestone', 'earning', 'deal', 'discount', 'sale',
+  'q1', 'q2', 'q3', 'q4', 'free night', 'globalist', 'status challenge',
+];
+
 function loadSeenHyattOffers() {
   try { return new Set(JSON.parse(localStorage.getItem('hyattSeenOffers') || '[]')); } catch { return new Set(); }
 }
@@ -1140,87 +1162,45 @@ function saveSeenHyattOffers(ids) {
   try { localStorage.setItem('hyattSeenOffers', JSON.stringify([...ids])); } catch {}
 }
 
-// Parse offer cards from raw HTML using multiple fallback strategies.
-// Returns array of { id, title, desc, dates[], url }
-function parseHyattOffers(html) {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, 'text/html');
-  const offers = [];
-  const seen = new Set();
-
-  function addOffer(id, title, desc, dates, url) {
-    if (!title || title.length < 4 || seen.has(id)) return;
-    seen.add(id);
-    offers.push({ id, title: title.substring(0, 120), desc: (desc || '').substring(0, 250), dates, url });
-  }
-
-  // Strategy 1: anchor tags linking to individual offer pages (/offers/SLUG.html)
-  const offerLinks = [...doc.querySelectorAll('a[href]')].filter(a => {
-    const h = a.getAttribute('href') || '';
-    return /\/offers\/[^/]+\.html/.test(h);
-  });
-
-  if (offerLinks.length > 0) {
-    offerLinks.forEach(link => {
-      const href = link.getAttribute('href');
-      const slug = href.split('/').pop().replace('.html', '');
-      const card = link.closest('article, li, [class*="card"], [class*="offer"], [class*="tile"], [class*="teaser"], [class*="promo"]') || link.parentElement;
-      const title =
-        card?.querySelector('h2, h3, h4, .title, .heading, [class*="title"], [class*="heading"]')?.textContent?.trim()
-        || link.getAttribute('aria-label')?.trim()
-        || link.textContent?.trim()
-        || slug.replace(/-/g, ' ');
-      const desc = card?.querySelector('p, .description, .desc, [class*="desc"], [class*="body"]')?.textContent?.trim() || '';
-      const cardText = card?.textContent || '';
-      const dateMatches = [...cardText.matchAll(/(?:register|enroll|book|stay|valid|through|until|ends?|expires?)[^:]*:?\s*([A-Z][a-z]+ \d{1,2},?\s*\d{4}|\d{1,2}\/\d{1,2}\/\d{2,4})/gi)].map(m => m[0].trim()).slice(0, 2);
-      const url = href.startsWith('http') ? href : `https://world.hyatt.com${href}`;
-      addOffer(slug, title, desc, dateMatches, url);
-    });
-    if (offers.length > 0) return offers;
-  }
-
-  // Strategy 2: generic card/article/section structure
-  const cards = doc.querySelectorAll('article, [class*="offer-card"], [class*="promo-card"], [class*="offer-tile"], [class*="promotion"]');
-  cards.forEach(card => {
-    const heading = card.querySelector('h1, h2, h3, h4')?.textContent?.trim();
-    if (!heading) return;
-    const desc = card.querySelector('p')?.textContent?.trim() || '';
-    const link = card.querySelector('a');
-    const href = link?.getAttribute('href') || '';
-    const slug = href.split('/').pop().replace('.html', '') || heading.toLowerCase().replace(/\s+/g, '-').substring(0, 40);
-    const url = href.startsWith('http') ? href : href ? `https://world.hyatt.com${href}` : HYATT_OFFERS_URL;
-    addOffer(slug, heading, desc, [], url);
-  });
-
-  return offers;
-}
-
-function renderHyattOffers(offers, newIds) {
+function renderHyattOffers(posts, newIds) {
   const grid = document.getElementById('hyattGrid');
   if (!grid) return;
 
-  if (!offers || offers.length === 0) {
+  if (!posts || posts.length === 0) {
     grid.innerHTML = `
       <div class="hyatt-fallback">
-        <p style="font-size:32px;margin-bottom:12px">😕</p>
-        <p>Couldn't load offers automatically.<br>
-        Hyatt's site requires JavaScript to render — a plain HTML fetch returns an empty page.</p>
+        <p style="font-size:32px;margin-bottom:12px">🔍</p>
+        <p>No recent promotion posts found on r/hyatt.<br>Check back later or browse the subreddit directly.</p>
         <p style="margin-top:14px">
-          <a href="${HYATT_OFFERS_URL}" target="_blank" rel="noopener">View current offers on Hyatt.com ↗</a>
+          <a href="https://www.reddit.com/r/hyatt/" target="_blank" rel="noopener">Browse r/hyatt ↗</a>
+          &nbsp;·&nbsp;
+          <a href="${HYATT_OFFERS_URL}" target="_blank" rel="noopener">View offers on Hyatt.com ↗</a>
         </p>
       </div>`;
     return;
   }
 
-  grid.innerHTML = `<div class="hyatt-grid">` + offers.map(o => {
-    const isNew = newIds.has(o.id);
+  grid.innerHTML = `<div class="hyatt-grid">` + posts.map(p => {
+    const isNew = newIds.has(p.id);
+    const age = fmtDate(new Date(p.created_utc * 1000));
+    const flair = p.link_flair_text ? `<span class="hyatt-flair-pill">${esc(p.link_flair_text)}</span>` : '';
+    const postUrl = `https://www.reddit.com${p.permalink}`;
+    // If the post itself links to an external URL (e.g. Hyatt registration page), surface it
+    const externalUrl = p.url && !p.url.includes('reddit.com') ? p.url : null;
     return `<div class="hyatt-offer-card">
-      ${isNew ? `<span class="hyatt-offer-new-badge">🆕 NEW</span>` : ''}
-      <div class="hyatt-offer-title">${esc(o.title)}</div>
-      ${o.desc ? `<div class="hyatt-offer-desc">${esc(o.desc)}</div>` : ''}
-      ${o.dates.length > 0 ? `<div class="hyatt-offer-dates">${o.dates.map(d => `<span class="hyatt-offer-date">📅 ${esc(d)}</span>`).join('')}</div>` : ''}
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+        ${isNew ? `<span class="hyatt-offer-new-badge">🆕 NEW</span>` : '<span></span>'}
+        ${flair}
+      </div>
+      <div class="hyatt-offer-title">${esc(p.title)}</div>
+      <div class="hyatt-offer-meta">
+        <span>👍 ${p.score}</span>
+        <span>💬 ${p.num_comments}</span>
+        <span>${age}</span>
+      </div>
       <div class="hyatt-offer-footer">
-        <a href="${esc(o.url)}" target="_blank" rel="noopener" class="hyatt-register-btn">Register ↗</a>
+        ${externalUrl ? `<a href="${esc(externalUrl)}" target="_blank" rel="noopener" class="hyatt-register-btn">Register ↗</a>` : ''}
+        <a href="${esc(postUrl)}" target="_blank" rel="noopener" class="hyatt-view-btn">View Post ↗</a>
       </div>
     </div>`;
   }).join('') + `</div>`;
@@ -1243,46 +1223,46 @@ async function loadHyattOffers(manual = false) {
   const grid = document.getElementById('hyattGrid');
 
   if (manual && grid) {
-    grid.innerHTML = `<div class="digest-loading"><div class="spinner"></div>Fetching Hyatt offers…</div>`;
+    grid.innerHTML = `<div class="digest-loading"><div class="spinner"></div>Fetching r/hyatt promotions…</div>`;
   }
-  if (meta) meta.textContent = 'Checking for offers…';
+  if (meta) meta.textContent = 'Checking r/hyatt…';
 
-  let html = null;
-  for (const proxy of PROXIES) {
-    try {
-      const proxyUrl = proxy(HYATT_OFFERS_URL);
-      const res = await fetchWithTimeout(proxyUrl, { credentials: 'omit' }, 15000);
-      if (!res.ok) continue;
-      const text = await res.text();
-      // allorigins wraps response in JSON { contents, status }
-      html = proxyUrl.includes('allorigins') ? (JSON.parse(text).contents || '') : text;
-      if (html && html.length > 1000) break;
-    } catch(e) { continue; }
-  }
+  let posts = [];
+  try {
+    // Fetch newest r/hyatt posts — Reddit JSON API, same pattern as r/churning
+    const res = await fetchWithTimeout(
+      'https://www.reddit.com/r/hyatt/new.json?limit=100',
+      { credentials: 'omit' }, 15000
+    );
+    if (res.ok) {
+      const json = await res.json();
+      const all = (json?.data?.children || []).map(c => c.data);
+      // Keep only posts from the last 90 days that mention offer-related keywords
+      const cutoff = Date.now() / 1000 - 90 * 86400;
+      posts = all.filter(p => {
+        if (p.created_utc < cutoff) return false;
+        const text = (p.title + ' ' + (p.link_flair_text || '')).toLowerCase();
+        return HYATT_OFFER_KEYWORDS.some(kw => text.includes(kw));
+      });
+    }
+  } catch(e) { /* network error — posts stays [] */ }
 
   const seen = loadSeenHyattOffers();
-  let offers = [];
   let newIds = new Set();
 
-  if (html) {
-    offers = parseHyattOffers(html);
-  }
-
-  if (offers.length > 0) {
-    hyattOffersData = offers;
-    // Flag new offers only when we have a prior history (avoids false positives on first load)
+  if (posts.length > 0) {
+    hyattOffersData = posts;
     if (seen.size > 0) {
-      newIds = new Set(offers.filter(o => !seen.has(o.id)).map(o => o.id));
+      newIds = new Set(posts.filter(p => !seen.has(p.id)).map(p => p.id));
     }
-    saveSeenHyattOffers(new Set(offers.map(o => o.id)));
-    if (meta) meta.textContent = `${offers.length} offer${offers.length !== 1 ? 's' : ''} · checked ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    saveSeenHyattOffers(new Set(posts.map(p => p.id)));
+    if (meta) meta.textContent = `${posts.length} promotion post${posts.length !== 1 ? 's' : ''} · r/hyatt · ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
   } else {
-    // Fetch failed or page was JS-rendered (empty shell)
-    if (meta) meta.textContent = `Live fetch unavailable · ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    if (meta) meta.textContent = `No recent promos found · ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
   }
 
   updateHyattBadge(newIds.size);
-  renderHyattOffers(offers, newIds);
+  renderHyattOffers(posts, newIds);
   hyattLoaded = true;
 }
 
