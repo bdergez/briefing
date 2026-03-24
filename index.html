@@ -6,11 +6,11 @@
   <meta name="theme-color" content="#c0392b" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="P&M DEV" />
-  <link rel="manifest" href="manifest-dev.json" />
-  <link rel="icon" href="icon-dev.svg" type="image/svg+xml" />
-  <link rel="apple-touch-icon" href="icon-dev.svg" />
-  <title>[DEV] Points & Miles Dashboard</title>
+  <meta name="apple-mobile-web-app-title" content="P&M" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <title>Points & Miles Dashboard</title>
   <style>
     :root {
       --bg: #f0f2f5;
@@ -404,7 +404,6 @@
       display: flex; align-items: center; justify-content: space-between;
       padding: 10px 0; margin-bottom: 14px;
       border-bottom: 2px solid var(--border);
-      cursor: pointer; user-select: none;
     }
     .category-header-left { display: flex; align-items: center; gap: 10px; }
     .category-header h3 { font-size: 16px; font-weight: 800; color: var(--text); }
@@ -736,6 +735,7 @@
       /* Communities: single column on mobile, nav hidden */
       .comm-layout { display: block; }
       .comm-nav-panel { display: none !important; }
+
       .category-body { display: flex; flex-direction: column; gap: 10px; }
 
       /* Reddit digest */
@@ -758,24 +758,10 @@
       .card:hover { transform: none; } /* disable hover lift on touch */
     }
 
-    /* ── DEV BANNER ── */
-    #devBanner {
-      background: #f59e0b;
-      color: #1a1a2e;
-      text-align: center;
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      padding: 5px 16px;
-      position: sticky;
-      top: 0;
-      z-index: 200;
-    }
   </style>
 </head>
 <body>
 
-<div id="devBanner">🚧 DEV / STAGING — changes here are not live yet · <a href="index.html" style="color:#1a1a2e;text-decoration:underline">View production →</a></div>
 
 <header>
   <div>
@@ -877,11 +863,12 @@
     </div>
   </div><!-- /panel-communities -->
 
+
 </div>
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.24-dev';
+const VERSION = '1.5.30';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -898,6 +885,8 @@ const COMMUNITIES = [
     { id: 'awardtravel',   name: 'r/awardtravel',   color: '#6b46c1' },
     { id: 'CreditCards',   name: 'r/CreditCards',   color: '#e53e3e' },
     { id: 'ChaseSapphire', name: 'r/ChaseSapphire', color: '#1a56db' },
+    { id: 'hyatt',         name: 'r/hyatt',         color: '#2b6cb0' },
+    { id: 'marriott',      name: 'r/marriott',      color: '#c53030' },
   ]},
   { label: '💰 Finance & FIRE', color: '#2f855a', subs: [
     { id: 'personalfinance',        name: 'r/personalfinance',        color: '#2f855a' },
@@ -957,13 +946,15 @@ let debugLog = [];
 let digestPostsData = [];       // all fetched posts
 let digestCommentsData = {};    // postId -> topics[] (undefined = pending, [] = none)
 let selectedPostId = null;
-let selectedDay = null;         // UTC day number currently shown in right panel
+let selectedDay = null;         // local "YYYY-MM-DD" day key currently shown in right panel
 const CHURNING_MOBILE_INITIAL = 10;
 let churningExpanded = false;
 
 // ── Communities two-panel state ───────────────────────────────────────────
 let selectedCommCat = null;   // null = all, or category index
 let selectedCommSub = null;   // null = all/category, or sub id
+let communitiesLoaded = false; // only load once; skip on News Feed refreshes
+
 
 // ─── FETCH ───────────────────────────────────────────────────────────────
 async function fetchWithProxy(rssUrl) {
@@ -1099,10 +1090,13 @@ async function loadAll() {
     })
   );
 
-  // Start Reddit digest and Communities independently (don't block news feed)
+  // Start Reddit digest independently (don't block news feed)
   loadRedditDigest();
-  loadCommunities();
-
+  // Communities only loads once — skip on subsequent refreshes
+  if (!communitiesLoaded) {
+    communitiesLoaded = true;
+    loadCommunities();
+  }
   // Wait for all blog sources to finish
   await Promise.allSettled(sourcePromises);
 
@@ -1334,11 +1328,14 @@ function showMoreChurning() {
   const hiddenPosts = digestPostsData.slice(CHURNING_MOBILE_INITIAL);
   hiddenPosts.forEach(async p => {
     if (!digestCommentsData.hasOwnProperty(p.id)) {
+      // Re-render with skeleton immediately so the loading state is visible
+      const card = document.getElementById(`digest-post-${p.id}`);
+      if (card) card.outerHTML = digestPostHTML(p, null);
       const topics = await fetchThreadComments(p.id, 15);
       digestCommentsData[p.id] = topics;
       if (churningExpanded) {
-        const card = document.getElementById(`digest-post-${p.id}`);
-        if (card) card.outerHTML = digestPostHTML(p, topics);
+        const updatedCard = document.getElementById(`digest-post-${p.id}`);
+        if (updatedCard) updatedCard.outerHTML = digestPostHTML(p, topics);
       }
     }
   });
@@ -1383,13 +1380,23 @@ function simplifyThreadTitle(title) {
 }
 
 // Shared day label helper used by thread list panel and section label
-function postDayLabel(utcSeconds) {
-  const todayDay     = Math.floor(Date.now() / 1000 / 86400);
-  const yesterdayDay = todayDay - 1;
-  const day = Math.floor(utcSeconds / 86400);
-  if (day === todayDay)     return 'Today';
-  if (day === yesterdayDay) return 'Yesterday';
-  return new Date(day * 86400 * 1000).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+// Returns "YYYY-MM-DD" in the user's LOCAL timezone for a UTC timestamp
+function localDayKey(utcSeconds) {
+  const d = new Date(utcSeconds * 1000);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// Returns "Today", "Yesterday", or formatted date for a "YYYY-MM-DD" local day key
+function postDayLabel(dayKey) {
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const todayKey     = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  const yest         = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+  const yesterdayKey = `${yest.getFullYear()}-${pad(yest.getMonth()+1)}-${pad(yest.getDate())}`;
+  if (dayKey === todayKey)     return 'Today';
+  if (dayKey === yesterdayKey) return 'Yesterday';
+  const [y, m, d] = dayKey.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
 function renderThreadList(posts) {
@@ -1397,14 +1404,14 @@ function renderThreadList(posts) {
   if (!panel) return;
   panel.style.display = '';
 
-  // Group posts by UTC day
+  // Group posts by local calendar day
   const groups = {};
   posts.forEach(p => {
-    const day = Math.floor(p.created_utc / 86400);
+    const day = localDayKey(p.created_utc);
     if (!groups[day]) groups[day] = [];
     groups[day].push(p);
   });
-  const sortedDays = Object.keys(groups).map(Number).sort((a, b) => b - a);
+  const sortedDays = Object.keys(groups).sort((a, b) => b.localeCompare(a)); // ISO strings sort correctly
 
   panel.innerHTML =
     `<div class="comm-nav-header">Threads (${posts.length})</div>` +
@@ -1412,14 +1419,14 @@ function renderThreadList(posts) {
       const dayPosts = groups[day];
       const isDayActive = day === selectedDay;
       return (
-        `<div class="comm-nav-item comm-nav-cat ${isDayActive ? 'active' : ''}" onclick="selectDay(${day})">
-          <span>${postDayLabel(day * 86400)}</span>
+        `<div class="comm-nav-item comm-nav-cat ${isDayActive ? 'active' : ''}" onclick="selectDay('${day}')">
+          <span>${postDayLabel(day)}</span>
           <span class="comm-nav-cat-count">${dayPosts.length}</span>
         </div>` +
         dayPosts.map(p => `
           <div class="comm-nav-item comm-nav-sub ${selectedPostId === p.id ? 'active' : ''}"
                data-post-id="${p.id}"
-               onclick="selectThread('${p.id}', ${day})">
+               onclick="selectThread('${p.id}', '${day}')">
             <span style="flex:1;line-height:1.35">${esc(simplifyThreadTitle(p.title))}</span>
             <span class="comm-nav-cat-count" style="white-space:nowrap;margin-left:6px">💬${p.num_comments}</span>
           </div>`
@@ -1470,9 +1477,9 @@ function selectDay(day) {
 
   // Update section label
   const sectionLabel = document.getElementById('digestSectionLabel');
-  if (sectionLabel) sectionLabel.textContent = '📅 ' + postDayLabel(day * 86400);
+  if (sectionLabel) sectionLabel.textContent = '📅 ' + postDayLabel(day);
 
-  const dayPosts = digestPostsData.filter(p => Math.floor(p.created_utc / 86400) === day);
+  const dayPosts = digestPostsData.filter(p => localDayKey(p.created_utc) === day);
   const grid = document.getElementById('digestGrid');
   if (!grid) return;
 
@@ -1505,7 +1512,7 @@ function selectThread(postId, day) {
   renderThreadList(digestPostsData);
 
   const sectionLabel = document.getElementById('digestSectionLabel');
-  if (sectionLabel) sectionLabel.textContent = '📅 ' + postDayLabel(day * 86400);
+  if (sectionLabel) sectionLabel.textContent = '📅 ' + postDayLabel(day);
 
   const post = digestPostsData.find(p => p.id === postId);
   const grid = document.getElementById('digestGrid');
@@ -1566,15 +1573,16 @@ async function loadRedditDigest() {
       const data = await strategy();
       const children = data?.data?.children || [];
       if (children.length === 0) continue;
-      const todayDay = Math.floor(Date.now() / 1000 / 86400);
+      const now = new Date();
+      const cutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6); // 7 days in local time
       posts = children
         .map(c => c.data)
-        .filter(p => Math.floor(p.created_utc / 86400) >= todayDay - 6)  // last 7 days only
+        .filter(p => new Date(p.created_utc * 1000) >= cutoff)  // last 7 local days only
         .sort((a, b) => {
-          const dayA = Math.floor(a.created_utc / 86400);
-          const dayB = Math.floor(b.created_utc / 86400);
-          if (dayA !== dayB) return dayB - dayA;          // newest day first
-          return b.num_comments - a.num_comments;         // same day: most comments first
+          const dayA = localDayKey(a.created_utc);
+          const dayB = localDayKey(b.created_utc);
+          if (dayA !== dayB) return dayB.localeCompare(dayA);   // newest day first
+          return b.num_comments - a.num_comments;               // same day: most comments first
         })
         .slice(0, 50);
       allFailed = false;
@@ -1604,7 +1612,7 @@ async function loadRedditDigest() {
 
   if (desktop) {
     // ── Desktop: two-panel, select day to see all threads for that day ─
-    const firstDay = Math.floor(posts[0].created_utc / 86400);
+    const firstDay = localDayKey(posts[0].created_utc);
     selectedDay = firstDay;
     renderThreadList(posts);
     meta.textContent = `${posts.length} threads`;
@@ -1618,11 +1626,11 @@ async function loadRedditDigest() {
   // Group posts by UTC day (newest first)
   const mobileDayGroups = {};
   posts.forEach(p => {
-    const day = Math.floor(p.created_utc / 86400);
+    const day = localDayKey(p.created_utc);
     if (!mobileDayGroups[day]) mobileDayGroups[day] = [];
     mobileDayGroups[day].push(p);
   });
-  const mobileSortedDays = Object.keys(mobileDayGroups).map(Number).sort((a, b) => b - a);
+  const mobileSortedDays = Object.keys(mobileDayGroups).sort((a, b) => b.localeCompare(a));
 
   // Split posts into visible (first CHURNING_MOBILE_INITIAL) and hidden
   const initialPostIds = new Set(posts.slice(0, CHURNING_MOBILE_INITIAL).map(p => p.id));
@@ -1636,13 +1644,13 @@ async function loadRedditDigest() {
     const hidPosts = dayPosts.filter(p => !initialPostIds.has(p.id));
 
     if (visPosts.length > 0) {
-      visibleHtml += `<div class="digest-day-header" data-day="${day}"><h3>📅 ${postDayLabel(day * 86400)}</h3></div>`;
+      visibleHtml += `<div class="digest-day-header" data-day="${day}"><h3>📅 ${postDayLabel(day)}</h3></div>`;
       visPosts.forEach(p => { visibleHtml += digestPostHTML(p, null); });
     }
     if (hidPosts.length > 0) {
       // Only add a header in the hidden section for entirely-hidden days (no duplicate headers)
       if (visPosts.length === 0) {
-        hiddenHtml += `<div class="digest-day-header churning-extra" data-day="${day}"><h3>📅 ${postDayLabel(day * 86400)}</h3></div>`;
+        hiddenHtml += `<div class="digest-day-header churning-extra" data-day="${day}"><h3>📅 ${postDayLabel(day)}</h3></div>`;
       }
       hidPosts.forEach(p => { hiddenHtml += digestPostHTML(p, null).replace('class="digest-post"', 'class="digest-post churning-extra"'); });
     }
@@ -1920,7 +1928,7 @@ async function loadCommunities() {
   // Render category skeletons immediately
   wrap.innerHTML = COMMUNITIES.map((cat, ci) => `
     <div class="community-category" id="cat-${ci}">
-      <div class="category-header" onclick="toggleCategory(${ci})">
+      <div class="category-header">
         <div class="category-header-left">
           <h3>${cat.label}</h3>
           <span class="category-count" id="cat-count-${ci}">loading…</span>
@@ -2161,11 +2169,8 @@ function renderCards() {
 
 // ─── PWA SERVICE WORKER ───────────────────────────────────────────────────
 function registerSW() {
-  // Dev: unregister any existing service worker so prod SW doesn't intercept dev navigation
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then(regs => {
-      regs.forEach(r => r.unregister());
-    });
+    navigator.serviceWorker.register('service-worker.js');
   }
 }
 
