@@ -6,11 +6,11 @@
   <meta name="theme-color" content="#c0392b" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="P&M" />
-  <link rel="manifest" href="manifest.json" />
-  <link rel="icon" href="icon.svg" type="image/svg+xml" />
-  <link rel="apple-touch-icon" href="icon.svg" />
-  <title>Points & Miles Dashboard</title>
+  <meta name="apple-mobile-web-app-title" content="P&M DEV" />
+  <link rel="manifest" href="manifest-dev.json" />
+  <link rel="icon" href="icon-dev.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icon-dev.svg" />
+  <title>[DEV] Points & Miles Dashboard</title>
   <style>
     :root {
       --bg: #f0f2f5;
@@ -468,7 +468,9 @@
     }
     .sub-view-all:hover { background: var(--tag-bg); }
     .sub-post-hidden { display: none; }
-    .churning-extra { display: none; }
+    .churning-extra { display: none !important; }
+    .digest-day-header { display: flex; align-items: center; padding: 10px 0; margin-bottom: 4px; border-bottom: 2px solid var(--border); }
+    .digest-day-header h3 { font-size: 16px; font-weight: 800; color: var(--text); margin: 0; }
     .topic-hidden { display: none; }
     .topics-show-more-btn {
       display: block; width: 100%; text-align: center;
@@ -756,9 +758,24 @@
       .card:hover { transform: none; } /* disable hover lift on touch */
     }
 
+    /* ── DEV BANNER ── */
+    #devBanner {
+      background: #f59e0b;
+      color: #1a1a2e;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      padding: 5px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+    }
   </style>
 </head>
 <body>
+
+<div id="devBanner">🚧 DEV / STAGING — changes here are not live yet · <a href="index.html" style="color:#1a1a2e;text-decoration:underline">View production →</a></div>
 
 <header>
   <div>
@@ -864,7 +881,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.20';
+const VERSION = '1.5.24-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1102,18 +1119,20 @@ async function loadAll() {
 // ─── SOURCE PILLS ────────────────────────────────────────────────────────
 function buildPills() {
   const wrap = document.getElementById('sourcePills');
-  // Keep the "All" pill, append source pills after it
   SOURCES.forEach(src => {
     sourceState[src.id] = 'loading';
-    const pill = document.createElement('span');
+    let pill = document.getElementById(`pill-${src.id}`);
+    if (!pill) {
+      pill = document.createElement('span');
+      pill.id = `pill-${src.id}`;
+      pill.style.background = src.color;
+      pill.dataset.srcId = src.id;
+      pill.title = `Toggle ${src.name}`;
+      pill.onclick = () => toggleSource(src.id);
+      wrap.appendChild(pill);
+    }
     pill.className = 'src-pill loading';
-    pill.id = `pill-${src.id}`;
-    pill.style.background = src.color;
-    pill.dataset.srcId = src.id;
     pill.innerHTML = `${src.emoji} ${src.short} <span class="pill-count" id="pillcount-${src.id}">…</span>`;
-    pill.title = `Toggle ${src.name}`;
-    pill.onclick = () => toggleSource(src.id);
-    wrap.appendChild(pill);
   });
 }
 
@@ -1311,14 +1330,39 @@ function showMoreChurning() {
   document.querySelectorAll('#digestGrid .churning-extra').forEach(el => el.classList.remove('churning-extra'));
   const btn = document.getElementById('churning-more-btn');
   if (btn) btn.outerHTML = `<button class="churning-show-more-btn" id="churning-less-btn" onclick="showLessChurning()">Show less ↑</button>`;
+  // Fetch comments for hidden posts that are now visible
+  const hiddenPosts = digestPostsData.slice(CHURNING_MOBILE_INITIAL);
+  hiddenPosts.forEach(async p => {
+    if (!digestCommentsData.hasOwnProperty(p.id)) {
+      const topics = await fetchThreadComments(p.id, 15);
+      digestCommentsData[p.id] = topics;
+      if (churningExpanded) {
+        const card = document.getElementById(`digest-post-${p.id}`);
+        if (card) card.outerHTML = digestPostHTML(p, topics);
+      }
+    }
+  });
 }
 
 function showLessChurning() {
   churningExpanded = false;
+  // Re-hide posts beyond initial count
   document.querySelectorAll('#digestGrid .digest-post').forEach((el, i) => {
     if (i >= CHURNING_MOBILE_INITIAL) el.classList.add('churning-extra');
   });
-  const remaining = document.querySelectorAll('#digestGrid .churning-extra').length;
+  // Re-hide day headers that have no visible posts (entirely-hidden days)
+  document.querySelectorAll('#digestGrid .digest-day-header').forEach(header => {
+    let el = header.nextElementSibling;
+    let hasVisible = false;
+    while (el && !el.classList.contains('digest-day-header') && !el.classList.contains('churning-show-more-btn')) {
+      if (el.classList.contains('digest-post') && !el.classList.contains('churning-extra')) {
+        hasVisible = true; break;
+      }
+      el = el.nextElementSibling;
+    }
+    if (!hasVisible) header.classList.add('churning-extra');
+  });
+  const remaining = document.querySelectorAll('#digestGrid .digest-post.churning-extra').length;
   const btn = document.getElementById('churning-less-btn');
   if (btn) btn.outerHTML = `<button class="churning-show-more-btn" id="churning-more-btn" onclick="showMoreChurning()">Show ${remaining} more threads ↓</button>`;
   document.getElementById('panel-reddit')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1522,8 +1566,10 @@ async function loadRedditDigest() {
       const data = await strategy();
       const children = data?.data?.children || [];
       if (children.length === 0) continue;
+      const todayDay = Math.floor(Date.now() / 1000 / 86400);
       posts = children
         .map(c => c.data)
+        .filter(p => Math.floor(p.created_utc / 86400) >= todayDay - 6)  // last 7 days only
         .sort((a, b) => {
           const dayA = Math.floor(a.created_utc / 86400);
           const dayB = Math.floor(b.created_utc / 86400);
@@ -1566,17 +1612,46 @@ async function loadRedditDigest() {
     return;
   }
 
-  // ── Mobile: stacked layout, first 10 visible + show more ────────────
+  // ── Mobile: stacked layout with day headers, first 10 visible + show more ──
   churningExpanded = false;
-  const extraCount = Math.max(0, posts.length - CHURNING_MOBILE_INITIAL);
-  grid.innerHTML =
-    posts.map(p => digestPostHTML(p, null)).join('') +
-    (extraCount > 0
-      ? `<button class="churning-show-more-btn" id="churning-more-btn" onclick="showMoreChurning()">Show ${extraCount} more threads ↓</button>`
-      : '');
-  document.querySelectorAll('#digestGrid .digest-post').forEach((el, i) => {
-    if (i >= CHURNING_MOBILE_INITIAL) el.classList.add('churning-extra');
+
+  // Group posts by UTC day (newest first)
+  const mobileDayGroups = {};
+  posts.forEach(p => {
+    const day = Math.floor(p.created_utc / 86400);
+    if (!mobileDayGroups[day]) mobileDayGroups[day] = [];
+    mobileDayGroups[day].push(p);
   });
+  const mobileSortedDays = Object.keys(mobileDayGroups).map(Number).sort((a, b) => b - a);
+
+  // Split posts into visible (first CHURNING_MOBILE_INITIAL) and hidden
+  const initialPostIds = new Set(posts.slice(0, CHURNING_MOBILE_INITIAL).map(p => p.id));
+
+  // Build visible HTML and hidden HTML separately — button goes between them
+  let visibleHtml = '';
+  let hiddenHtml = '';
+  mobileSortedDays.forEach(day => {
+    const dayPosts = mobileDayGroups[day];
+    const visPosts = dayPosts.filter(p => initialPostIds.has(p.id));
+    const hidPosts = dayPosts.filter(p => !initialPostIds.has(p.id));
+
+    if (visPosts.length > 0) {
+      visibleHtml += `<div class="digest-day-header" data-day="${day}"><h3>📅 ${postDayLabel(day * 86400)}</h3></div>`;
+      visPosts.forEach(p => { visibleHtml += digestPostHTML(p, null); });
+    }
+    if (hidPosts.length > 0) {
+      // Only add a header in the hidden section for entirely-hidden days (no duplicate headers)
+      if (visPosts.length === 0) {
+        hiddenHtml += `<div class="digest-day-header churning-extra" data-day="${day}"><h3>📅 ${postDayLabel(day * 86400)}</h3></div>`;
+      }
+      hidPosts.forEach(p => { hiddenHtml += digestPostHTML(p, null).replace('class="digest-post"', 'class="digest-post churning-extra"'); });
+    }
+  });
+
+  const extraCount = Math.max(0, posts.length - CHURNING_MOBILE_INITIAL);
+  grid.innerHTML = visibleHtml +
+    (extraCount > 0 ? `<button class="churning-show-more-btn" id="churning-more-btn" onclick="showMoreChurning()">Show ${extraCount} more threads ↓</button>` : '') +
+    hiddenHtml;
 
   // Pre-fetch comments only for the visible first 10 threads
   const visiblePosts = posts.slice(0, CHURNING_MOBILE_INITIAL);
@@ -2086,9 +2161,11 @@ function renderCards() {
 
 // ─── PWA SERVICE WORKER ───────────────────────────────────────────────────
 function registerSW() {
+  // Dev: unregister any existing service worker so prod SW doesn't intercept dev navigation
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/briefing/service-worker.js')
-      .catch(e => console.log('SW registration skipped:', e.message));
+    navigator.serviceWorker.getRegistrations().then(regs => {
+      regs.forEach(r => r.unregister());
+    });
   }
 }
 

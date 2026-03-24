@@ -881,7 +881,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.24-dev';
+const VERSION = '1.5.25-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1119,18 +1119,20 @@ async function loadAll() {
 // ─── SOURCE PILLS ────────────────────────────────────────────────────────
 function buildPills() {
   const wrap = document.getElementById('sourcePills');
-  // Keep the "All" pill, append source pills after it
   SOURCES.forEach(src => {
     sourceState[src.id] = 'loading';
-    const pill = document.createElement('span');
+    let pill = document.getElementById(`pill-${src.id}`);
+    if (!pill) {
+      pill = document.createElement('span');
+      pill.id = `pill-${src.id}`;
+      pill.style.background = src.color;
+      pill.dataset.srcId = src.id;
+      pill.title = `Toggle ${src.name}`;
+      pill.onclick = () => toggleSource(src.id);
+      wrap.appendChild(pill);
+    }
     pill.className = 'src-pill loading';
-    pill.id = `pill-${src.id}`;
-    pill.style.background = src.color;
-    pill.dataset.srcId = src.id;
     pill.innerHTML = `${src.emoji} ${src.short} <span class="pill-count" id="pillcount-${src.id}">…</span>`;
-    pill.title = `Toggle ${src.name}`;
-    pill.onclick = () => toggleSource(src.id);
-    wrap.appendChild(pill);
   });
 }
 
