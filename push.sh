@@ -11,7 +11,7 @@ else
   msg=${msg:-"Update dashboard"}
 fi
 
-git add index.html news-dashboard.html dev.html manifest.json manifest-dev.json service-worker.js icon.svg icon-dev.svg push.sh
+git add index.html news-dashboard.html dev.html manifest.json manifest-dev.json service-worker.js icon.svg icon-dev.svg push.sh PROJECT.md
 git commit -m "$msg"
 git push
 echo ""
