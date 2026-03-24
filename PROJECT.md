@@ -23,17 +23,17 @@ No backend. Everything is fetched client-side from public APIs and RSS feeds.
 
 ## Files
 
-| File | Purpose |
-|------|---------|
-| `dev.html` | Active development file. All changes go here first. |
-| `index.html` | Production file. Promoted from dev.html when ready. Never edit directly. |
-| `manifest.json` | PWA manifest for production |
-| `manifest-dev.json` | PWA manifest for dev (separate app icon/name so both can be installed) |
-| `service-worker.js` | Production service worker (network-first caching) |
-| `icon.svg` | Production app icon |
-| `icon-dev.svg` | Dev app icon (different color so you can tell them apart on home screen) |
-| `push.sh` | Git commit + push script. Run from your local Mac terminal. |
-| `PROJECT.md` | This file. |
+| File                | Purpose                                                                  |
+| ------------------- | ------------------------------------------------------------------------ |
+| `dev.html`          | Active development file. All changes go here first.                      |
+| `index.html`        | Production file. Promoted from dev.html when ready. Never edit directly. |
+| `manifest.json`     | PWA manifest for production                                              |
+| `manifest-dev.json` | PWA manifest for dev (separate app icon/name so both can be installed)   |
+| `service-worker.js` | Production service worker (network-first caching)                        |
+| `icon.svg`          | Production app icon                                                      |
+| `icon-dev.svg`      | Dev app icon (different color so you can tell them apart on home screen) |
+| `push.sh`           | Git commit + push script. Run from your local Mac terminal.              |
+| `PROJECT.md`        | This file.                                                               |
 
 ---
 
@@ -64,7 +64,7 @@ GitHub Pages deploys in ~60 seconds.
 ```
 This way you can review the summary, then paste it straight into your terminal without having to compose the message yourself.
 
-**Version numbers:** Claude tracks versions in dev (e.g. `1.5.30-dev`). The last version you actually pushed to production was `v1.5.30`. When you push, the live site will show whatever version is in index.html.
+**Version numbers:** Claude tracks versions in dev (e.g. `1.5.32-dev`). The last version you actually pushed to production was `v1.5.30`. When you push, the live site will show whatever version is in index.html.
 
 ---
 
@@ -133,38 +133,38 @@ let selectedCommSub = null;     // subreddit id string, null = show whole catego
 
 ### Key Functions — r/churning
 
-| Function | What it does |
-|----------|-------------|
-| `loadRedditDigest()` | Fetches hot.json, filters to 7 local days, sorts by day then comments, stores in `digestPostsData` |
-| `renderThreadList(posts)` | Renders left nav panel grouped by local day with day headers and thread items |
-| `selectDay(day)` | Shows all threads for a day in right panel; sets `selectedPostId = null` |
-| `selectThread(postId, day)` | Shows only one thread in right panel; highlights it in nav |
-| `digestPostHTML(p, topics)` | Returns HTML for a single thread card with colored left border |
-| `churningThreadColor(post)` | Maps flair/title keywords → consistent color per thread type |
-| `simplifyThreadTitle(title)` | Strips date suffixes from thread names (e.g. "Daily Discussion - March 23, 2026" → "Daily Discussion") |
-| `localDayKey(utcSeconds)` | Converts UTC timestamp → `"YYYY-MM-DD"` in user's LOCAL timezone |
-| `postDayLabel(dayKey)` | Converts `"YYYY-MM-DD"` → "Today" / "Yesterday" / "Mon, Mar 23" |
-| `fetchThreadComments(postId, limit)` | Fetches top comments for a thread, 3-strategy proxy fallback |
+| Function                             | What it does                                                                                           |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------ |
+| `loadRedditDigest()`                 | Fetches hot.json, filters to 7 local days, sorts by day then comments, stores in `digestPostsData`     |
+| `renderThreadList(posts)`            | Renders left nav panel grouped by local day with day headers and thread items                          |
+| `selectDay(day)`                     | Shows all threads for a day in right panel; sets `selectedPostId = null`                               |
+| `selectThread(postId, day)`          | Shows only one thread in right panel; highlights it in nav                                             |
+| `digestPostHTML(p, topics)`          | Returns HTML for a single thread card with colored left border                                         |
+| `churningThreadColor(post)`          | Maps flair/title keywords → consistent color per thread type                                           |
+| `simplifyThreadTitle(title)`         | Strips date suffixes from thread names (e.g. "Daily Discussion - March 23, 2026" → "Daily Discussion") |
+| `localDayKey(utcSeconds)`            | Converts UTC timestamp → `"YYYY-MM-DD"` in user's LOCAL timezone                                       |
+| `postDayLabel(dayKey)`               | Converts `"YYYY-MM-DD"` → "Today" / "Yesterday" / "Mon, Mar 23"                                        |
+| `fetchThreadComments(postId, limit)` | Fetches top comments for a thread, 3-strategy proxy fallback                                           |
 
 ### Key Functions — Communities
 
-| Function | What it does |
-|----------|-------------|
-| `loadCommunities()` | Fetches all 13 subreddits in parallel, renders skeleton immediately |
-| `renderCommNav()` | Renders left nav with categories and subreddits |
-| `renderCommDetail()` | Shows/hides category and subreddit blocks based on selection state |
-| `selectCommCat(ci)` | Selects a category, shows all its subs |
-| `selectCommSub(subId, ci)` | Selects one subreddit, hides others |
+| Function                   | What it does                                                        |
+| -------------------------- | ------------------------------------------------------------------- |
+| `loadCommunities()`        | Fetches all 13 subreddits in parallel, renders skeleton immediately |
+| `renderCommNav()`          | Renders left nav with categories and subreddits                     |
+| `renderCommDetail()`       | Shows/hides category and subreddit blocks based on selection state  |
+| `selectCommCat(ci)`        | Selects a category, shows all its subs                              |
+| `selectCommSub(subId, ci)` | Selects one subreddit, hides others                                 |
 
 ### Key Functions — News Feed
 
-| Function | What it does |
-|----------|-------------|
-| `loadAll()` | Master refresh: fetches all RSS + Reddit + Communities |
-| `fetchSource(source)` | Fetches one RSS feed, parses, updates pills + cards |
-| `buildPills()` | Creates/resets source filter pills (reuses existing DOM elements on refresh) |
-| `renderCards()` | Filters + renders article cards based on active category/source/search |
-| `categorize(title, desc)` | Keyword-matches article into a category |
+| Function                  | What it does                                                                 |
+| ------------------------- | ---------------------------------------------------------------------------- |
+| `loadAll()`               | Master refresh: fetches all RSS + Reddit + Communities                       |
+| `fetchSource(source)`     | Fetches one RSS feed, parses, updates pills + cards                          |
+| `buildPills()`            | Creates/resets source filter pills (reuses existing DOM elements on refresh) |
+| `renderCards()`           | Filters + renders article cards based on active category/source/search       |
+| `categorize(title, desc)` | Keyword-matches article into a category                                      |
 
 ### CORS / Network Strategy
 
@@ -243,32 +243,34 @@ Same pattern as churning thread colors — no colored dots anywhere.
 
 ## Known Issues & Backlog
 
-| ID | Area | Description | Priority | Status |
-|----|------|-------------|----------|--------|
-| B04 | r/churning Mobile | If user taps "Show less" while background comment fetches are in-flight after "Show more", affected cards get stuck on loading skeleton. | Low | Open |
-| B06 | Communities | r/hyatt and r/marriott added but not yet validated — confirm subreddits are active and posts load correctly. | Low | Open |
-| B07 | All | LoyaltyLobby RSS feed (`loyaltylobby.com/feed/`) is a strong candidate source for hotel loyalty promos — blocked from testing in sandbox. Test manually and add if RSS is valid. | Low | Pending |
+| ID  | Area              | Description                                                                                                                                                                      | Priority | Status  |
+| --- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------- |
+| B04 | r/churning Mobile | If user taps "Show less" while background comment fetches are in-flight after "Show more", affected cards get stuck on loading skeleton.                                         | Low      | Open    |
+| B06 | Communities       | r/hyatt and r/marriott added but not yet validated — confirm subreddits are active and posts load correctly.                                                                     | Low      | Open    |
+| B07 | All               | LoyaltyLobby RSS feed (`loyaltylobby.com/feed/`) is a strong candidate source for hotel loyalty promos — blocked from testing in sandbox. Test manually and add if RSS is valid. | Low      | Pending |
 
 ---
 
 ## Recently Fixed
 
-| ID | Area | Description | Fixed In |
-|----|------|-------------|----------|
-| F13 | r/churning Desktop | No back affordance after selecting a single thread. Added "← Day" button to section label that calls `selectDay(day)`. | v1.5.31-dev |
-| F14 | News Feed | First visit: `lastVisitTime` defaulted to 0 making all articles show as 🆕 New. Now defaults to `Date.now()` on first visit. | v1.5.31-dev |
-| F10 | Communities | Category headers had `cursor:pointer` and silent `onclick` collapse even though toggle was hidden. Removed both. | v1.5.30 |
-| F11 | News Feed | Communities reloaded on every Refresh. Added `communitiesLoaded` flag — loads once on startup, skips on subsequent refreshes. | v1.5.30 |
-| F12 | r/churning Mobile | Newly revealed cards after "Show more" showed no loading skeleton. Re-render with `digestPostHTML(p, null)` before fetch ensures skeleton is always visible. | v1.5.30 |
-| F01 | r/churning | Thread dates off by one day. UTC day bucketing didn't match user's local timezone. Fixed with `localDayKey()` helper. | v1.5.26-dev |
-| F02 | News Feed | Source pills duplicated on every Refresh. `buildPills()` was appending without checking for existing ones. | v1.5.25 |
-| F03 | r/churning Mobile | Hidden day headers visible above "Show more" button due to CSS specificity. Fixed with `!important` + restructured DOM. | v1.5.24-dev |
-| F04 | r/churning Mobile | No comment previews after tapping "Show more". Added background fetches for newly revealed posts. | v1.5.24-dev |
-| F05 | r/churning | Clicking a thread in a different day did nothing. Fixed `selectThread(postId, day)` to switch days first. | v1.5.20-dev |
-| F06 | Communities | Collapse toggle (▼) was confusing after removing "All Communities" mode. Removed with `display:none`. | v1.5.18-dev |
-| F07 | r/churning | Thread type colors added — each thread type gets a consistent colored left border. | v1.5.17-dev |
-| F08 | r/churning | Thread panel redesigned to match Communities nav style with day-group headers. | v1.5.16-dev |
-| F09 | Both pages | Unified left panel width to 280px, removed colored dots, replaced with colored left borders. | v1.5.15 |
+| ID  | Area               | Description                                                                                                                                                  | Fixed In    |
+| --- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------- |
+| F15 | Communities        | No auto-refresh — data went stale after initial load. Added 60-min background timer calling `loadCommunities(true)` (quiet mode: re-fetches in place, no nav reset). | v1.5.32-dev |
+| F16 | r/churning Desktop | No way to filter threads in left panel. Added live search input — filters by title/flair, shows match count, clears on fresh load. | v1.5.32-dev |
+| F13 | r/churning Desktop | No back affordance after selecting a single thread. Added "← Day" button to section label that calls `selectDay(day)`.                                       | v1.5.31-dev |
+| F14 | News Feed          | First visit: `lastVisitTime` defaulted to 0 making all articles show as 🆕 New. Now defaults to `Date.now()` on first visit.                                  | v1.5.31-dev |
+| F10 | Communities        | Category headers had `cursor:pointer` and silent `onclick` collapse even though toggle was hidden. Removed both.                                             | v1.5.30     |
+| F11 | News Feed          | Communities reloaded on every Refresh. Added `communitiesLoaded` flag — loads once on startup, skips on subsequent refreshes.                                | v1.5.30     |
+| F12 | r/churning Mobile  | Newly revealed cards after "Show more" showed no loading skeleton. Re-render with `digestPostHTML(p, null)` before fetch ensures skeleton is always visible. | v1.5.30     |
+| F01 | r/churning         | Thread dates off by one day. UTC day bucketing didn't match user's local timezone. Fixed with `localDayKey()` helper.                                        | v1.5.26-dev |
+| F02 | News Feed          | Source pills duplicated on every Refresh. `buildPills()` was appending without checking for existing ones.                                                   | v1.5.25     |
+| F03 | r/churning Mobile  | Hidden day headers visible above "Show more" button due to CSS specificity. Fixed with `!important` + restructured DOM.                                      | v1.5.24-dev |
+| F04 | r/churning Mobile  | No comment previews after tapping "Show more". Added background fetches for newly revealed posts.                                                            | v1.5.24-dev |
+| F05 | r/churning         | Clicking a thread in a different day did nothing. Fixed `selectThread(postId, day)` to switch days first.                                                    | v1.5.20-dev |
+| F06 | Communities        | Collapse toggle (▼) was confusing after removing "All Communities" mode. Removed with `display:none`.                                                        | v1.5.18-dev |
+| F07 | r/churning         | Thread type colors added — each thread type gets a consistent colored left border.                                                                           | v1.5.17-dev |
+| F08 | r/churning         | Thread panel redesigned to match Communities nav style with day-group headers.                                                                               | v1.5.16-dev |
+| F09 | Both pages         | Unified left panel width to 280px, removed colored dots, replaced with colored left borders.                                                                 | v1.5.15     |
 
 ---
 
