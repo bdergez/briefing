@@ -899,7 +899,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.32-dev';
+const VERSION = '1.5.33-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -987,6 +987,7 @@ let selectedCommCat = null;   // null = all, or category index
 let selectedCommSub = null;   // null = all/category, or sub id
 let communitiesLoaded = false; // only load once; skip on News Feed refreshes
 let communitiesRefreshTimer = null; // background 60-min auto-refresh timer
+let commSearchQuery = ''; // current filter string in communities nav panel
 
 
 // ─── FETCH ───────────────────────────────────────────────────────────────
@@ -1873,30 +1874,60 @@ function digestPostHTML(p, topics) {
 
 // ─── COMMUNITIES NAV ─────────────────────────────────────────────────────
 
+function filterCommNav(q) {
+  commSearchQuery = q;
+  renderCommNav();
+  const input = document.getElementById('commSearch');
+  if (input) {
+    input.focus();
+    input.value = q;
+    input.setSelectionRange(q.length, q.length);
+  }
+}
+
 function renderCommNav() {
   const panel = document.getElementById('commNavPanel');
   if (!panel) return;
   if (!isDesktop()) { panel.style.display = 'none'; return; }
   panel.style.display = '';
+
+  const query = commSearchQuery.trim().toLowerCase();
+
+  const navItems = COMMUNITIES.map((cat, ci) => {
+    const filteredSubs = query
+      ? cat.subs.filter(sub => sub.name.toLowerCase().includes(query))
+      : cat.subs;
+    if (query && filteredSubs.length === 0) return ''; // hide entire category if no matches
+
+    const countEl = document.getElementById(`cat-count-${ci}`);
+    const countText = countEl?.textContent || '';
+    const isCatActive = selectedCommCat === ci && selectedCommSub === null;
+
+    const catRow = query ? '' : // hide category headers when searching — show subs directly
+      `<div class="comm-nav-item comm-nav-cat ${isCatActive ? 'active' : ''}" onclick="selectCommCat(${ci})">
+        <span>${cat.label}</span>
+        <span class="comm-nav-cat-count">${countText}</span>
+      </div>`;
+
+    return catRow + filteredSubs.map(sub => {
+      const isSubActive = selectedCommSub === sub.id;
+      return `<div class="comm-nav-item comm-nav-sub ${isSubActive ? 'active' : ''}" onclick="selectCommSub('${sub.id}', ${ci})">
+        <span style="flex:1">${sub.name}</span>
+      </div>`;
+    }).join('');
+  }).join('');
+
+  const noResults = query && !navItems.trim()
+    ? `<div style="padding:12px 14px;font-size:12px;color:var(--subtext)">No communities match "${esc(query)}"</div>`
+    : '';
+
   panel.innerHTML =
     `<div class="comm-nav-header">Filter</div>` +
-    COMMUNITIES.map((cat, ci) => {
-      const countEl = document.getElementById(`cat-count-${ci}`);
-      const countText = countEl?.textContent || '';
-      const isCatActive = selectedCommCat === ci && selectedCommSub === null;
-      return (
-        `<div class="comm-nav-item comm-nav-cat ${isCatActive ? 'active' : ''}" onclick="selectCommCat(${ci})">
-          <span>${cat.label}</span>
-          <span class="comm-nav-cat-count">${countText}</span>
-        </div>` +
-        cat.subs.map(sub => {
-          const isSubActive = selectedCommSub === sub.id;
-          return `<div class="comm-nav-item comm-nav-sub ${isSubActive ? 'active' : ''}" onclick="selectCommSub('${sub.id}', ${ci})">
-            <span style="flex:1">${sub.name}</span>
-          </div>`;
-        }).join('')
-      );
-    }).join('');
+    `<div class="churning-search-wrap">` +
+    `<input type="search" id="commSearch" class="churning-search"` +
+    ` placeholder="Filter communities…" value="${esc(commSearchQuery)}"` +
+    ` oninput="filterCommNav(this.value)"></div>` +
+    noResults + navItems;
 }
 
 function renderCommDetail() {
@@ -1992,6 +2023,7 @@ async function loadCommunities(quiet = false) {
     // Full load: reset state and build scaffold with skeletons
     selectedCommCat = 0;
     selectedCommSub = null;
+    commSearchQuery = ''; // clear any active filter on fresh load
     renderCommNav();
   }
   // Render category skeletons on full load only (quiet refresh updates in place)
