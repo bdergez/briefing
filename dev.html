@@ -1437,7 +1437,11 @@ function filterChurningThreads(q) {
   renderThreadList(digestPostsData);
   // Restore focus + cursor after re-render
   const input = document.getElementById('churningSearch');
-  if (input) { input.focus(); input.value = q; }
+  if (input) {
+    input.focus();
+    input.value = q;
+    input.setSelectionRange(q.length, q.length); // force cursor to end
+  }
 }
 
 function renderThreadList(posts) {
