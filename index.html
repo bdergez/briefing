@@ -522,6 +522,23 @@
       padding: 10px 0; margin-bottom: 14px;
       border-bottom: 2px solid var(--border);
     }
+    .back-to-day-btn {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: none; border: none; cursor: pointer;
+      font-size: 13px; font-weight: 600; color: var(--accent);
+      padding: 2px 0; text-decoration: none;
+    }
+    .back-to-day-btn:hover { text-decoration: underline; }
+    .section-label-sep { color: var(--border); font-weight: 400; }
+    .churning-search-wrap { padding: 8px 10px 4px; }
+    .churning-search {
+      width: 100%; box-sizing: border-box;
+      background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+      padding: 6px 10px; font-size: 12px; color: var(--text);
+      outline: none; transition: border-color 0.15s;
+    }
+    .churning-search:focus { border-color: var(--accent); }
+    .churning-search::placeholder { color: var(--subtext); }
 
     /* ── COMMUNITIES NAV PANEL ──────────────────────────────────── */
     .comm-nav-header {
@@ -762,7 +779,6 @@
 </head>
 <body>
 
-
 <header>
   <div>
     <div class="logo">Points &amp; Miles <span>Dash</span></div>
@@ -868,7 +884,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.30';
+const VERSION = '1.5.33';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -949,11 +965,14 @@ let selectedPostId = null;
 let selectedDay = null;         // local "YYYY-MM-DD" day key currently shown in right panel
 const CHURNING_MOBILE_INITIAL = 10;
 let churningExpanded = false;
+let churningSearchQuery = ''; // current filter string in thread list panel
 
 // ── Communities two-panel state ───────────────────────────────────────────
 let selectedCommCat = null;   // null = all, or category index
 let selectedCommSub = null;   // null = all/category, or sub id
 let communitiesLoaded = false; // only load once; skip on News Feed refreshes
+let communitiesRefreshTimer = null; // background 60-min auto-refresh timer
+let commSearchQuery = ''; // current filter string in communities nav panel
 
 
 // ─── FETCH ───────────────────────────────────────────────────────────────
@@ -1399,22 +1418,53 @@ function postDayLabel(dayKey) {
   return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
+function filterChurningThreads(q) {
+  churningSearchQuery = q;
+  renderThreadList(digestPostsData);
+  // Restore focus + cursor after re-render
+  const input = document.getElementById('churningSearch');
+  if (input) {
+    input.focus();
+    input.value = q;
+    input.setSelectionRange(q.length, q.length); // force cursor to end
+  }
+}
+
 function renderThreadList(posts) {
   const panel = document.getElementById('threadListPanel');
   if (!panel) return;
   panel.style.display = '';
 
-  // Group posts by local calendar day
+  // Apply search filter if active
+  const query = churningSearchQuery.trim().toLowerCase();
+  const filtered = query
+    ? posts.filter(p =>
+        p.title.toLowerCase().includes(query) ||
+        (p.link_flair_text || '').toLowerCase().includes(query))
+    : posts;
+
+  // Group filtered posts by local calendar day
   const groups = {};
-  posts.forEach(p => {
+  filtered.forEach(p => {
     const day = localDayKey(p.created_utc);
     if (!groups[day]) groups[day] = [];
     groups[day].push(p);
   });
   const sortedDays = Object.keys(groups).sort((a, b) => b.localeCompare(a)); // ISO strings sort correctly
 
+  const headerLabel = query
+    ? `Threads (${filtered.length} of ${posts.length})`
+    : `Threads (${posts.length})`;
+
   panel.innerHTML =
-    `<div class="comm-nav-header">Threads (${posts.length})</div>` +
+    `<div class="comm-nav-header">${headerLabel}</div>` +
+    `<div class="churning-search-wrap">` +
+    `<input type="search" id="churningSearch" class="churning-search"` +
+    ` placeholder="Filter threads…" value="${esc(churningSearchQuery)}"` +
+    ` oninput="filterChurningThreads(this.value)"></div>` +
+    (filtered.length === 0 && query
+      ? `<div style="padding:12px 10px;font-size:12px;color:var(--subtext)">No threads match "${esc(query)}"</div>`
+      : '') +
     sortedDays.map(day => {
       const dayPosts = groups[day];
       const isDayActive = day === selectedDay;
@@ -1512,7 +1562,9 @@ function selectThread(postId, day) {
   renderThreadList(digestPostsData);
 
   const sectionLabel = document.getElementById('digestSectionLabel');
-  if (sectionLabel) sectionLabel.textContent = '📅 ' + postDayLabel(day);
+  if (sectionLabel) sectionLabel.innerHTML =
+    `<button class="back-to-day-btn" onclick="selectDay('${day}')">← ${postDayLabel(day)}</button>` +
+    `<span class="section-label-sep">·</span>1 thread`;
 
   const post = digestPostsData.find(p => p.id === postId);
   const grid = document.getElementById('digestGrid');
@@ -1607,6 +1659,7 @@ async function loadRedditDigest() {
   // Store posts globally for click-to-select
   digestPostsData = posts;
   digestCommentsData = {};
+  churningSearchQuery = ''; // clear any active filter on fresh load
 
   const desktop = isDesktop();
 
@@ -1806,30 +1859,60 @@ function digestPostHTML(p, topics) {
 
 // ─── COMMUNITIES NAV ─────────────────────────────────────────────────────
 
+function filterCommNav(q) {
+  commSearchQuery = q;
+  renderCommNav();
+  const input = document.getElementById('commSearch');
+  if (input) {
+    input.focus();
+    input.value = q;
+    input.setSelectionRange(q.length, q.length);
+  }
+}
+
 function renderCommNav() {
   const panel = document.getElementById('commNavPanel');
   if (!panel) return;
   if (!isDesktop()) { panel.style.display = 'none'; return; }
   panel.style.display = '';
+
+  const query = commSearchQuery.trim().toLowerCase();
+
+  const navItems = COMMUNITIES.map((cat, ci) => {
+    const filteredSubs = query
+      ? cat.subs.filter(sub => sub.name.toLowerCase().includes(query))
+      : cat.subs;
+    if (query && filteredSubs.length === 0) return ''; // hide entire category if no matches
+
+    const countEl = document.getElementById(`cat-count-${ci}`);
+    const countText = countEl?.textContent || '';
+    const isCatActive = selectedCommCat === ci && selectedCommSub === null;
+
+    const catRow = query ? '' : // hide category headers when searching — show subs directly
+      `<div class="comm-nav-item comm-nav-cat ${isCatActive ? 'active' : ''}" onclick="selectCommCat(${ci})">
+        <span>${cat.label}</span>
+        <span class="comm-nav-cat-count">${countText}</span>
+      </div>`;
+
+    return catRow + filteredSubs.map(sub => {
+      const isSubActive = selectedCommSub === sub.id;
+      return `<div class="comm-nav-item comm-nav-sub ${isSubActive ? 'active' : ''}" onclick="selectCommSub('${sub.id}', ${ci})">
+        <span style="flex:1">${sub.name}</span>
+      </div>`;
+    }).join('');
+  }).join('');
+
+  const noResults = query && !navItems.trim()
+    ? `<div style="padding:12px 14px;font-size:12px;color:var(--subtext)">No communities match "${esc(query)}"</div>`
+    : '';
+
   panel.innerHTML =
     `<div class="comm-nav-header">Filter</div>` +
-    COMMUNITIES.map((cat, ci) => {
-      const countEl = document.getElementById(`cat-count-${ci}`);
-      const countText = countEl?.textContent || '';
-      const isCatActive = selectedCommCat === ci && selectedCommSub === null;
-      return (
-        `<div class="comm-nav-item comm-nav-cat ${isCatActive ? 'active' : ''}" onclick="selectCommCat(${ci})">
-          <span>${cat.label}</span>
-          <span class="comm-nav-cat-count">${countText}</span>
-        </div>` +
-        cat.subs.map(sub => {
-          const isSubActive = selectedCommSub === sub.id;
-          return `<div class="comm-nav-item comm-nav-sub ${isSubActive ? 'active' : ''}" onclick="selectCommSub('${sub.id}', ${ci})">
-            <span style="flex:1">${sub.name}</span>
-          </div>`;
-        }).join('')
-      );
-    }).join('');
+    `<div class="churning-search-wrap">` +
+    `<input type="search" id="commSearch" class="churning-search"` +
+    ` placeholder="Filter communities…" value="${esc(commSearchQuery)}"` +
+    ` oninput="filterCommNav(this.value)"></div>` +
+    noResults + navItems;
 }
 
 function renderCommDetail() {
@@ -1919,14 +2002,17 @@ async function fetchSubreddit(subId) {
   return null;
 }
 
-async function loadCommunities() {
+async function loadCommunities(quiet = false) {
   const wrap = document.getElementById('communitiesWrap');
-  // Default to first category on reload
-  selectedCommCat = 0;
-  selectedCommSub = null;
-  renderCommNav();
-  // Render category skeletons immediately
-  wrap.innerHTML = COMMUNITIES.map((cat, ci) => `
+  if (!quiet) {
+    // Full load: reset state and build scaffold with skeletons
+    selectedCommCat = 0;
+    selectedCommSub = null;
+    commSearchQuery = ''; // clear any active filter on fresh load
+    renderCommNav();
+  }
+  // Render category skeletons on full load only (quiet refresh updates in place)
+  if (!quiet) wrap.innerHTML = COMMUNITIES.map((cat, ci) => `
     <div class="community-category" id="cat-${ci}">
       <div class="category-header">
         <div class="category-header-left">
@@ -1955,7 +2041,7 @@ async function loadCommunities() {
     </div>`).join('');
 
   // Apply initial filter (default: first category)
-  renderCommDetail();
+  if (!quiet) renderCommDetail();
 
   // Fetch all subreddits in parallel
   const allSubs = COMMUNITIES.flatMap(c => c.subs);
@@ -2028,6 +2114,17 @@ async function loadCommunities() {
 
   // Render nav now that counts are populated
   renderCommNav();
+
+  // Schedule next background refresh (only from initial load to avoid stacking timers)
+  if (!quiet) scheduleCommunitiesRefresh();
+}
+
+function scheduleCommunitiesRefresh() {
+  if (communitiesRefreshTimer) clearTimeout(communitiesRefreshTimer);
+  communitiesRefreshTimer = setTimeout(() => {
+    loadCommunities(true); // quiet: re-fetch data in place, no nav/state reset
+    scheduleCommunitiesRefresh();
+  }, 60 * 60 * 1000); // 60 minutes
 }
 
 function toggleCategory(ci) {
@@ -2081,7 +2178,8 @@ function saveLastVisit() {
 function loadLastVisit() {
   try {
     const v = localStorage.getItem('pmDashLastVisit');
-    lastVisitTime = v ? parseInt(v) : 0;
+    // First visit: no stored value — set to now so nothing shows as 🆕 New on first load
+    lastVisitTime = v ? parseInt(v) : Date.now();
   } catch{}
 }
 
@@ -2170,7 +2268,9 @@ function renderCards() {
 // ─── PWA SERVICE WORKER ───────────────────────────────────────────────────
 function registerSW() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('service-worker.js');
+    navigator.serviceWorker.register('service-worker.js').catch(err => {
+      console.warn('SW registration failed:', err);
+    });
   }
 }
 
