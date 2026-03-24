@@ -522,6 +522,14 @@
       padding: 10px 0; margin-bottom: 14px;
       border-bottom: 2px solid var(--border);
     }
+    .back-to-day-btn {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: none; border: none; cursor: pointer;
+      font-size: 13px; font-weight: 600; color: var(--accent);
+      padding: 2px 0; text-decoration: none;
+    }
+    .back-to-day-btn:hover { text-decoration: underline; }
+    .section-label-sep { color: var(--border); font-weight: 400; }
 
     /* ── COMMUNITIES NAV PANEL ──────────────────────────────────── */
     .comm-nav-header {
@@ -882,7 +890,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.30-dev';
+const VERSION = '1.5.31-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1526,7 +1534,9 @@ function selectThread(postId, day) {
   renderThreadList(digestPostsData);
 
   const sectionLabel = document.getElementById('digestSectionLabel');
-  if (sectionLabel) sectionLabel.textContent = '📅 ' + postDayLabel(day);
+  if (sectionLabel) sectionLabel.innerHTML =
+    `<button class="back-to-day-btn" onclick="selectDay('${day}')">← ${postDayLabel(day)}</button>` +
+    `<span class="section-label-sep">·</span>1 thread`;
 
   const post = digestPostsData.find(p => p.id === postId);
   const grid = document.getElementById('digestGrid');
@@ -2095,7 +2105,8 @@ function saveLastVisit() {
 function loadLastVisit() {
   try {
     const v = localStorage.getItem('pmDashLastVisit');
-    lastVisitTime = v ? parseInt(v) : 0;
+    // First visit: no stored value — set to now so nothing shows as 🆕 New on first load
+    lastVisitTime = v ? parseInt(v) : Date.now();
   } catch{}
 }
 

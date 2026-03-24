@@ -60,11 +60,24 @@ GitHub Pages deploys in ~60 seconds.
 
 **Convention — always end a session with a ready-to-run command:** After every batch of changes Claude will always finish with a copy-pasteable `push.sh` command that includes the version number and a concise commit message summarising what changed. Example:
 ```bash
-./push.sh 'v1.5.27 fix mobile skeleton on show more; fix B-01 category header click; fix B-02 communities reload on refresh'
+./push.sh 'v1.5.31 fix B03 back-to-day button on churning desktop; fix B05 first visit New badge'
 ```
 This way you can review the summary, then paste it straight into your terminal without having to compose the message yourself.
 
-**Version numbers:** Claude tracks versions in dev (e.g. `1.5.28-dev`). The last version you actually pushed to production was `v1.5.15`. After that, multiple dev versions were built locally. When you do push, the live site will show whatever version is in index.html.
+**Version numbers:** Claude tracks versions in dev (e.g. `1.5.30-dev`). The last version you actually pushed to production was `v1.5.30`. When you push, the live site will show whatever version is in index.html.
+
+---
+
+## Scrub
+
+**What it is:** A regular session of bug review + development options discussion. Initiated by saying "scrub" or "let's do a scrub".
+
+**What happens in a scrub:**
+1. Claude reads the Known Issues backlog from this doc
+2. Reviews open bugs by priority — suggests which to fix first
+3. Proposes new improvements or features worth considering
+4. Works through fixes together in the same session if confirmed
+5. Updates this doc with any new bugs found, status changes, and fixes applied
 
 ---
 
@@ -232,11 +245,9 @@ Same pattern as churning thread colors — no colored dots anywhere.
 
 | ID | Area | Description | Priority | Status |
 |----|------|-------------|----------|--------|
-| B-01 | Communities | Category headers still have `cursor:pointer` and `onclick="toggleCategory"` even though the collapse toggle is hidden. Clicking accidentally collapses the content with no visual indicator. Fix: remove `onclick` and `cursor:pointer` from `.category-header`. | Medium | Open |
-| B-02 | News Feed | Clicking Refresh re-fetches all 13 Communities subreddits and resets nav position. Communities should load once and refresh on its own timer. | Medium | Open |
-| B-03 | r/churning Desktop | No obvious way to go back to "all threads for a day" after selecting a single thread — you have to know to click the day header again. | Low | Open |
-| B-04 | r/churning Mobile | If user taps "Show less" while background comment fetches are in-flight after "Show more", affected cards get stuck on loading skeleton. | Low | Open |
-| B-05 | News Feed | The 🆕 New filter uses `lastVisitTime`. On first visit everything shows as "New" since timestamp defaults to 0. Verify localStorage save/restore is working. | Low | Open |
+| B04 | r/churning Mobile | If user taps "Show less" while background comment fetches are in-flight after "Show more", affected cards get stuck on loading skeleton. | Low | Open |
+| B06 | Communities | r/hyatt and r/marriott added but not yet validated — confirm subreddits are active and posts load correctly. | Low | Open |
+| B07 | All | LoyaltyLobby RSS feed (`loyaltylobby.com/feed/`) is a strong candidate source for hotel loyalty promos — blocked from testing in sandbox. Test manually and add if RSS is valid. | Low | Pending |
 
 ---
 
@@ -244,15 +255,20 @@ Same pattern as churning thread colors — no colored dots anywhere.
 
 | ID | Area | Description | Fixed In |
 |----|------|-------------|----------|
-| F-01 | r/churning | Thread dates off by one day (today → yesterday). UTC day bucketing didn't match user's local timezone. Fixed with `localDayKey()` helper throughout. | v1.5.26-dev |
-| F-02 | News Feed | Source pills duplicated on every Refresh. `buildPills()` was appending new pills without checking for existing ones. | v1.5.25 |
-| F-03 | r/churning Mobile | Hidden day headers visible above "Show more" button due to CSS specificity (display:flex overriding display:none). Fixed with `!important` + restructured DOM order. | v1.5.24-dev |
-| F-04 | r/churning Mobile | No comment previews after tapping "Show more". Added background fetches for newly revealed posts. | v1.5.24-dev |
-| F-05 | r/churning | Clicking a thread in a different day did nothing. Fixed `selectThread(postId, day)` to switch days first. | v1.5.20-dev |
-| F-06 | Communities | Collapse toggle (▼) was confusing after removing "All Communities" mode. Removed with `display:none`. | v1.5.18-dev |
-| F-07 | r/churning | Thread type colors added — each thread type gets a consistent colored left border. | v1.5.17-dev |
-| F-08 | r/churning | Thread panel redesigned to match Communities nav style with day-group headers. | v1.5.16-dev |
-| F-09 | Both pages | Unified left panel width to 280px, removed colored dots, replaced with colored left borders. | v1.5.15 |
+| F13 | r/churning Desktop | No back affordance after selecting a single thread. Added "← Day" button to section label that calls `selectDay(day)`. | v1.5.31-dev |
+| F14 | News Feed | First visit: `lastVisitTime` defaulted to 0 making all articles show as 🆕 New. Now defaults to `Date.now()` on first visit. | v1.5.31-dev |
+| F10 | Communities | Category headers had `cursor:pointer` and silent `onclick` collapse even though toggle was hidden. Removed both. | v1.5.30 |
+| F11 | News Feed | Communities reloaded on every Refresh. Added `communitiesLoaded` flag — loads once on startup, skips on subsequent refreshes. | v1.5.30 |
+| F12 | r/churning Mobile | Newly revealed cards after "Show more" showed no loading skeleton. Re-render with `digestPostHTML(p, null)` before fetch ensures skeleton is always visible. | v1.5.30 |
+| F01 | r/churning | Thread dates off by one day. UTC day bucketing didn't match user's local timezone. Fixed with `localDayKey()` helper. | v1.5.26-dev |
+| F02 | News Feed | Source pills duplicated on every Refresh. `buildPills()` was appending without checking for existing ones. | v1.5.25 |
+| F03 | r/churning Mobile | Hidden day headers visible above "Show more" button due to CSS specificity. Fixed with `!important` + restructured DOM. | v1.5.24-dev |
+| F04 | r/churning Mobile | No comment previews after tapping "Show more". Added background fetches for newly revealed posts. | v1.5.24-dev |
+| F05 | r/churning | Clicking a thread in a different day did nothing. Fixed `selectThread(postId, day)` to switch days first. | v1.5.20-dev |
+| F06 | Communities | Collapse toggle (▼) was confusing after removing "All Communities" mode. Removed with `display:none`. | v1.5.18-dev |
+| F07 | r/churning | Thread type colors added — each thread type gets a consistent colored left border. | v1.5.17-dev |
+| F08 | r/churning | Thread panel redesigned to match Communities nav style with day-group headers. | v1.5.16-dev |
+| F09 | Both pages | Unified left panel width to 280px, removed colored dots, replaced with colored left borders. | v1.5.15 |
 
 ---
 
