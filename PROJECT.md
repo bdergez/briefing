@@ -58,6 +58,12 @@ GitHub Pages deploys in ~60 seconds.
 
 **Important:** `push.sh` must be run from your local Mac, not from Claude's sandbox — the script `cd`s to `/Users/bedergez/Code/Claude Code/Briefing` which only exists on your machine. Claude can prepare everything but can't push.
 
+**Convention — always end a session with a ready-to-run command:** After every batch of changes Claude will always finish with a copy-pasteable `push.sh` command that includes a concise commit message summarising what changed. Example:
+```bash
+./push.sh 'fix mobile skeleton on show more; fix B-01 category header click; fix B-02 communities reload on refresh'
+```
+This way you can review the summary, then paste it straight into your terminal without having to compose the message yourself.
+
 **Version numbers:** Claude tracks versions in dev (e.g. `1.5.26-dev`). The last version you actually pushed to production was `v1.5.15`. After that, multiple dev versions were built locally. When you do push, the live site will show whatever version is in index.html.
 
 ---

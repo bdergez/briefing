@@ -404,7 +404,6 @@
       display: flex; align-items: center; justify-content: space-between;
       padding: 10px 0; margin-bottom: 14px;
       border-bottom: 2px solid var(--border);
-      cursor: pointer; user-select: none;
     }
     .category-header-left { display: flex; align-items: center; gap: 10px; }
     .category-header h3 { font-size: 16px; font-weight: 800; color: var(--text); }
@@ -964,6 +963,7 @@ let churningExpanded = false;
 // ── Communities two-panel state ───────────────────────────────────────────
 let selectedCommCat = null;   // null = all, or category index
 let selectedCommSub = null;   // null = all/category, or sub id
+let communitiesLoaded = false; // only load once; skip on News Feed refreshes
 
 // ─── FETCH ───────────────────────────────────────────────────────────────
 async function fetchWithProxy(rssUrl) {
@@ -1099,9 +1099,13 @@ async function loadAll() {
     })
   );
 
-  // Start Reddit digest and Communities independently (don't block news feed)
+  // Start Reddit digest independently (don't block news feed)
   loadRedditDigest();
-  loadCommunities();
+  // Communities only loads once — skip on subsequent refreshes
+  if (!communitiesLoaded) {
+    communitiesLoaded = true;
+    loadCommunities();
+  }
 
   // Wait for all blog sources to finish
   await Promise.allSettled(sourcePromises);
@@ -1334,11 +1338,14 @@ function showMoreChurning() {
   const hiddenPosts = digestPostsData.slice(CHURNING_MOBILE_INITIAL);
   hiddenPosts.forEach(async p => {
     if (!digestCommentsData.hasOwnProperty(p.id)) {
+      // Re-render with skeleton immediately so the loading state is visible
+      const card = document.getElementById(`digest-post-${p.id}`);
+      if (card) card.outerHTML = digestPostHTML(p, null);
       const topics = await fetchThreadComments(p.id, 15);
       digestCommentsData[p.id] = topics;
       if (churningExpanded) {
-        const card = document.getElementById(`digest-post-${p.id}`);
-        if (card) card.outerHTML = digestPostHTML(p, topics);
+        const updatedCard = document.getElementById(`digest-post-${p.id}`);
+        if (updatedCard) updatedCard.outerHTML = digestPostHTML(p, topics);
       }
     }
   });
@@ -1931,7 +1938,7 @@ async function loadCommunities() {
   // Render category skeletons immediately
   wrap.innerHTML = COMMUNITIES.map((cat, ci) => `
     <div class="community-category" id="cat-${ci}">
-      <div class="category-header" onclick="toggleCategory(${ci})">
+      <div class="category-header">
         <div class="category-header-left">
           <h3>${cat.label}</h3>
           <span class="category-count" id="cat-count-${ci}">loading…</span>
