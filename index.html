@@ -775,6 +775,163 @@
       .card:hover { transform: none; } /* disable hover lift on touch */
     }
 
+    /* ── OFFERS STRIP ── */
+    .offers-strip {
+      margin: 0 0 16px;
+      padding: 14px 16px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    .offers-strip-header {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+    }
+    .offers-strip-title {
+      font-size: 13px; font-weight: 700; color: var(--text);
+    }
+    .offers-strip-count {
+      font-size: 11px; color: var(--subtext);
+    }
+    .offers-grid {
+      display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px;
+      scrollbar-width: thin;
+    }
+    .offers-grid::-webkit-scrollbar { height: 4px; }
+    .offers-grid::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .offer-card {
+      flex-shrink: 0; width: 200px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 12px;
+      text-decoration: none; color: inherit;
+      display: block; transition: box-shadow 0.15s;
+    }
+    .offer-card:hover { box-shadow: var(--shadow-hover); border-color: var(--accent); }
+    .offer-card-store {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.5px; color: var(--subtext); margin-bottom: 5px;
+    }
+    .offer-card-title {
+      font-size: 12px; font-weight: 600; color: var(--text);
+      line-height: 1.4; display: -webkit-box;
+      -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+    }
+
+    /* ── SETTINGS MODAL ── */
+    .settings-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 500;
+      align-items: center;
+      justify-content: center;
+    }
+    .settings-overlay.open { display: flex; }
+    .settings-modal {
+      background: var(--card-bg);
+      border-radius: 12px;
+      width: min(580px, 94vw);
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .settings-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .settings-header h2 { margin: 0; font-size: 15px; font-weight: 700; color: var(--text); }
+    .settings-close {
+      background: none; border: none; font-size: 18px; cursor: pointer;
+      color: var(--subtext); padding: 4px 8px; border-radius: 6px; line-height: 1;
+    }
+    .settings-close:hover { background: var(--tag-bg); }
+    .settings-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      padding: 0 20px;
+      flex-shrink: 0;
+    }
+    .settings-tab {
+      padding: 10px 14px; background: none; border: none; cursor: pointer;
+      font-size: 13px; font-weight: 600; color: var(--subtext);
+      border-bottom: 2px solid transparent; margin-bottom: -1px;
+    }
+    .settings-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .settings-body { overflow-y: auto; padding: 16px 20px; flex: 1; }
+    .settings-section-title {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.8px;
+      text-transform: uppercase; color: var(--subtext); margin: 16px 0 6px;
+    }
+    .settings-section-title:first-child { margin-top: 0; }
+    .settings-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 7px 8px; border-radius: 8px;
+    }
+    .settings-row:hover { background: var(--tag-bg); }
+    .settings-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+    .settings-row-info { flex: 1; min-width: 0; }
+    .settings-row-name { font-size: 13px; font-weight: 600; color: var(--text); }
+    .settings-row-url { font-size: 11px; color: var(--subtext); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .settings-toggle {
+      width: 36px; height: 20px; border-radius: 10px; border: none;
+      cursor: pointer; position: relative; flex-shrink: 0; transition: background 0.2s;
+    }
+    .settings-toggle.on { background: var(--accent); }
+    .settings-toggle.off { background: #bbb; }
+    .settings-toggle::after {
+      content: ''; position: absolute; width: 14px; height: 14px;
+      background: white; border-radius: 50%; top: 3px; transition: left 0.2s;
+    }
+    .settings-toggle.on::after { left: 19px; }
+    .settings-toggle.off::after { left: 3px; }
+    .settings-remove-btn {
+      background: none; border: none; cursor: pointer;
+      color: #e53e3e; font-size: 15px; padding: 2px 5px; border-radius: 4px; line-height: 1;
+    }
+    .settings-remove-btn:hover { background: #fff5f5; }
+    .settings-add-inline {
+      padding: 4px 10px; background: var(--accent); color: white;
+      border: none; border-radius: 6px; font-size: 12px; font-weight: 600;
+      cursor: pointer; flex-shrink: 0;
+    }
+    .settings-add-inline:hover { opacity: 0.85; }
+    .settings-add-form {
+      border: 1px dashed var(--border); border-radius: 8px; padding: 12px; margin-top: 6px;
+    }
+    .settings-add-form input {
+      width: 100%; padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px;
+      font-size: 13px; background: var(--bg); color: var(--text); box-sizing: border-box;
+      margin-bottom: 8px;
+    }
+    .settings-add-form input:focus { outline: none; border-color: var(--accent); }
+    .settings-add-form input:last-of-type { margin-bottom: 0; }
+    .settings-add-btn {
+      padding: 7px 14px; background: var(--accent); color: white; border: none;
+      border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 8px;
+    }
+    .settings-add-btn:hover { opacity: 0.85; }
+    .settings-cat-header {
+      font-size: 11px; font-weight: 700; color: var(--subtext);
+      text-transform: uppercase; letter-spacing: 0.5px; margin: 14px 0 4px;
+    }
+    .settings-cat-header:first-child { margin-top: 0; }
+    .settings-footer {
+      padding: 12px 20px; border-top: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 10px; flex-shrink: 0;
+    }
+    .settings-footer-note { font-size: 12px; color: var(--subtext); }
+    .settings-apply-btn {
+      padding: 8px 18px; background: var(--accent); color: white;
+      border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+    .settings-apply-btn:hover { opacity: 0.85; }
+
   </style>
 </head>
 <body>
@@ -788,6 +945,7 @@
     <span class="refresh-time" id="refreshTime">Not loaded</span>
     <button class="btn btn-primary" id="refreshBtn" onclick="loadAll()">⟳ Refresh</button>
     <button class="btn btn-ghost" onclick="toggleTheme()">🌓 Theme</button>
+    <button class="btn btn-ghost" onclick="openSettings()">⚙️ Sources</button>
   </div>
 </header>
 
@@ -837,6 +995,15 @@
       </div>
     </div>
 
+    <!-- OFFERS STRIP -->
+    <div class="offers-strip" id="offersStrip" style="display:none">
+      <div class="offers-strip-header">
+        <span class="offers-strip-title">🏷️ Cash Back Offers</span>
+        <span class="offers-strip-count" id="offersCount"></span>
+      </div>
+      <div class="offers-grid" id="offersGrid"></div>
+    </div>
+
     <!-- CARDS GRID -->
     <div class="grid" id="cardGrid">
       <div class="loading-wrap">
@@ -884,7 +1051,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.33';
+const VERSION = '1.5.45';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -893,6 +1060,24 @@ const SOURCES = [
   { id:'omaat',  name:'One Mile at a Time',  short:'OMAAT',  color:'#6b46c1', emoji:'🛫', url:'https://onemileatatime.com',          rss:'https://onemileatatime.com/feed/' },
   { id:'vftw',   name:'View From The Wing',  short:'VFTW',   color:'#2f855a', emoji:'🪟', url:'https://viewfromthewing.com',         rss:'https://viewfromthewing.com/feed/' },
   { id:'mtm',    name:'Miles to Memories',   short:'MtM',    color:'#d97706', emoji:'✈️', url:'https://milestomemories.com',         rss:'https://milestomemories.com/feed/' },
+  { id:'hyatt',  name:'Hyatt Newsroom',      short:'Hyatt',  color:'#2b6cb0', emoji:'🏨', url:'https://newsroom.hyatt.com',
+    rssFeeds: [
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=794',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=788',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=846',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=837',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=838',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=839',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=840',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=841',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=843',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=844',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=845',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=831',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=824',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=835',
+    ], maxAgeDays: 30 },
 ];
 
 // ─── COMMUNITIES CONFIG ───────────────────────────────────────────────────
@@ -929,6 +1114,14 @@ const COMMUNITIES = [
   ]},
 ];
 
+// ─── SUGGESTED SOURCES (for settings modal) ──────────────────────────────
+const SUGGESTED_SOURCES = [
+  { id:'tpg',  name:'The Points Guy',  short:'TPG',  color:'#b7791f', emoji:'🏆', url:'https://thepointsguy.com',    rss:'https://thepointsguy.com/feed/' },
+  { id:'up',   name:'Upgraded Points', short:'UP',   color:'#553c9a', emoji:'⬆️', url:'https://upgradedpoints.com',  rss:'https://upgradedpoints.com/feed/' },
+  { id:'ll',   name:'LoyaltyLobby',   short:'LL',   color:'#2b6cb0', emoji:'🏨', url:'https://loyaltylobby.com',    rss:'https://loyaltylobby.com/feed/' },
+  { id:'10xt', name:'10xTravel',       short:'10xT', color:'#c05621', emoji:'✈️', url:'https://10xtravel.com',       rss:'https://10xtravel.com/feed/' },
+];
+
 // CORS proxies — tried in order until one works
 const PROXIES = [
   url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
@@ -954,7 +1147,7 @@ function categorize(title, desc) {
 // ─── STATE ───────────────────────────────────────────────────────────────
 let allArticles = [];
 let activeCategory = 'all';
-let activeSources = new Set(SOURCES.map(s => s.id));
+let activeSources = new Set(); // initialized after loadSettings() in init()
 let sourceState = {}; // { id: 'loading'|'ok'|'error' }
 let debugLog = [];
 
@@ -974,6 +1167,18 @@ let communitiesLoaded = false; // only load once; skip on News Feed refreshes
 let communitiesRefreshTimer = null; // background 60-min auto-refresh timer
 let commSearchQuery = ''; // current filter string in communities nav panel
 
+
+// ── Offers state ─────────────────────────────────────────────────────────
+let offersArticles = []; // articles from isOffers sources — shown in dedicated strip
+
+// ── Settings state ────────────────────────────────────────────────────────
+let settingsDisabledSources = new Set(); // IDs of default sources turned off
+let settingsCustomSources   = [];        // user-added source objects
+let settingsDisabledSubs    = new Set(); // subreddit IDs turned off
+let settingsCustomSubs      = [];        // user-added {id, name, color}
+// Draft state (used while modal is open — changes are speculative until Applied)
+let settingsDraft = null;
+let activeSettingsTab = 'news';
 
 // ─── FETCH ───────────────────────────────────────────────────────────────
 async function fetchWithProxy(rssUrl) {
@@ -1004,17 +1209,15 @@ async function fetchWithProxy(rssUrl) {
 function parseRSS(xmlText, source) {
   try {
     const parser = new DOMParser();
-    const doc = parser.parseFromString(xmlText, 'application/xml');
+    let doc = parser.parseFromString(xmlText, 'application/xml');
+    // Fall back to HTML parser if XML is malformed (e.g. raw HTML inside <description> tags)
+    if (doc.querySelector('parsererror')) {
+      doc = parser.parseFromString(xmlText, 'text/html');
+    }
     const items = Array.from(doc.querySelectorAll('item'));
 
     return items.slice(0, 15).map(item => {
-      const title = item.querySelector('title')?.textContent?.trim() || '';
-      const link  = item.querySelector('link')?.textContent?.trim()
-                 || item.querySelector('guid')?.textContent?.trim()
-                 || source.url;
-      const pubDateStr = item.querySelector('pubDate')?.textContent?.trim()
-                      || item.querySelector('published')?.textContent?.trim()
-                      || item.querySelector('updated')?.textContent?.trim() || '';
+      let title = item.querySelector('title')?.textContent?.trim() || '';
       const rawDesc = item.querySelector('description')?.textContent?.trim()
                     || item.querySelector('summary')?.textContent?.trim()
                     || item.querySelector('content')?.textContent?.trim() || '';
@@ -1024,7 +1227,24 @@ function parseRSS(xmlText, source) {
       tmpDiv.innerHTML = rawDesc;
       const cleanDesc = tmpDiv.textContent.replace(/\s+/g,' ').trim().slice(0, 280);
 
-      const pubDate = pubDateStr ? new Date(pubDateStr) : null;
+      // For feeds where the real link lives inside description's <a href> (e.g. Rakuten)
+      let link = item.querySelector('link')?.textContent?.trim()
+              || item.querySelector('guid')?.textContent?.trim()
+              || source.url;
+      if (source.parseDescriptionLink) {
+        const hrefMatch = rawDesc.match(/href=['"]([^'"]+)['"]/);
+        if (hrefMatch) link = hrefMatch[1];
+        // Strip leading #storename - prefix from title (e.g. "#lubelife - 20% Off…" → "20% Off…")
+        title = title.replace(/^#\S+\s+-\s+/, '');
+      }
+
+      const pubDateStr = item.querySelector('pubDate')?.textContent?.trim()
+                      || item.querySelector('published')?.textContent?.trim()
+                      || item.querySelector('updated')?.textContent?.trim() || '';
+
+      const pubDate = pubDateStr ? new Date(pubDateStr)
+                   : source.defaultDateToNow  ? new Date()
+                   : null;
 
       return {
         sourceId:    source.id,
@@ -1050,16 +1270,38 @@ async function fetchSource(source) {
   debugLog.push({ id: source.id, name: source.name, status: 'loading', msg: 'Fetching…' });
   updateDebug();
 
-  // All sources use RSS via CORS proxy
-  const xml = await fetchWithProxy(source.rss);
+  let articles = [];
 
-  if (!xml) {
-    setPillState(source.id, 'error');
-    updateDebugEntry(source.id, 'error', 'All proxies failed');
-    return [];
+  if (source.rssFeeds) {
+    // Multi-feed source: fetch all in parallel, merge and deduplicate by URL
+    const results = await Promise.allSettled(source.rssFeeds.map(u => fetchWithProxy(u)));
+    const seen = new Set();
+    for (const r of results) {
+      if (r.status === 'fulfilled' && r.value) {
+        for (const a of parseRSS(r.value, source)) {
+          if (!seen.has(a.url)) { seen.add(a.url); articles.push(a); }
+        }
+      }
+    }
+    articles.sort((a, b) => (b.date || 0) - (a.date || 0));
+    articles = articles.slice(0, 60);
+  } else {
+    // Single-feed source
+    const xml = await fetchWithProxy(source.rss);
+    if (!xml) {
+      setPillState(source.id, 'error');
+      updateDebugEntry(source.id, 'error', 'All proxies failed');
+      return [];
+    }
+    articles = parseRSS(xml, source);
   }
 
-  const articles = parseRSS(xml, source);
+  // Apply optional age filter (maxAgeDays on source)
+  if (source.maxAgeDays) {
+    const cutoff = Date.now() - source.maxAgeDays * 86400 * 1000;
+    articles = articles.filter(a => !a.date || a.date.getTime() >= cutoff);
+  }
+
   if (articles.length === 0) {
     setPillState(source.id, 'error');
     updateDebugEntry(source.id, 'error', 'Fetched but 0 articles parsed');
@@ -1074,15 +1316,17 @@ async function fetchSource(source) {
 // ─── LOAD ALL ────────────────────────────────────────────────────────────
 async function loadAll() {
   allArticles = [];
+  offersArticles = [];
   debugLog = [];
   document.getElementById('statsBar').style.display = 'none';
   document.getElementById('debugBox').style.display = 'none';
   document.getElementById('refreshBtn').disabled = true;
   document.getElementById('refreshTime').textContent = 'Loading…';
+  document.getElementById('offersStrip').style.display = 'none';
   document.getElementById('cardGrid').innerHTML = `
     <div class="loading-wrap">
       <div class="spinner"></div>
-      <div class="loading-text" id="loadingText">Fetching articles from ${SOURCES.length} sources…</div>
+      <div class="loading-text" id="loadingText">Fetching articles from ${getEffectiveNewsSources().length} sources…</div>
       <div class="loading-sub">Using RSS feeds with CORS proxy — may take 10–20 seconds</div>
     </div>`;
   document.getElementById('digestGrid').innerHTML = `<div class="digest-loading"><div class="spinner"></div>Fetching r/churning threads…</div>`;
@@ -1090,9 +1334,14 @@ async function loadAll() {
 
   buildPills();
 
-  // Fetch each blog source independently and render as soon as it arrives
-  const sourcePromises = SOURCES.map(s =>
+  // Fetch each source independently; offer sources go to the offers strip, others to main feed
+  const sourcePromises = getEffectiveSources().map(s =>
     fetchSource(s).then(articles => {
+      if (s.isOffers) {
+        offersArticles.push(...articles);
+        renderOffers();
+        return;
+      }
       allArticles.push(...articles);
       allArticles.sort((a, b) => {
         if (a.date && b.date) return b.date - a.date;
@@ -1132,7 +1381,11 @@ async function loadAll() {
 // ─── SOURCE PILLS ────────────────────────────────────────────────────────
 function buildPills() {
   const wrap = document.getElementById('sourcePills');
-  SOURCES.forEach(src => {
+  // Remove pills for sources no longer in effective news list (offer sources have no pill)
+  wrap.querySelectorAll('.src-pill[data-src-id]').forEach(pill => {
+    if (!getEffectiveNewsSources().find(s => s.id === pill.dataset.srcId)) pill.remove();
+  });
+  getEffectiveNewsSources().forEach(src => {
     sourceState[src.id] = 'loading';
     let pill = document.getElementById(`pill-${src.id}`);
     if (!pill) {
@@ -1152,13 +1405,13 @@ function buildPills() {
 function updateAllPill() {
   const allPill = document.getElementById('pill-all');
   if (!allPill) return;
-  const allActive = activeSources.size === SOURCES.length;
+  const allActive = activeSources.size === getEffectiveNewsSources().length;
   allPill.classList.toggle('inactive', !allActive);
 }
 
 function selectAllSources() {
-  activeSources = new Set(SOURCES.map(s => s.id));
-  SOURCES.forEach(s => {
+  activeSources = new Set(getEffectiveNewsSources().map(s => s.id));
+  getEffectiveNewsSources().forEach(s => {
     const pill = document.getElementById(`pill-${s.id}`);
     if (pill) pill.classList.remove('inactive');
   });
@@ -1180,7 +1433,8 @@ function setPillState(id, state, count) {
 }
 
 function toggleSource(id) {
-  const allActive = activeSources.size === SOURCES.length;
+  const eff = getEffectiveNewsSources();
+  const allActive = activeSources.size === eff.length;
   if (allActive) {
     // First click from "all selected": solo this source
     activeSources = new Set([id]);
@@ -1189,13 +1443,13 @@ function toggleSource(id) {
     if (activeSources.has(id)) {
       activeSources.delete(id);
       // If nothing left, reset to all
-      if (activeSources.size === 0) activeSources = new Set(SOURCES.map(s => s.id));
+      if (activeSources.size === 0) activeSources = new Set(eff.map(s => s.id));
     } else {
       activeSources.add(id);
     }
   }
   // Update all pill visuals
-  SOURCES.forEach(s => {
+  eff.forEach(s => {
     const pill = document.getElementById(`pill-${s.id}`);
     if (pill) pill.classList.toggle('inactive', !activeSources.has(s.id));
   });
@@ -1878,7 +2132,7 @@ function renderCommNav() {
 
   const query = commSearchQuery.trim().toLowerCase();
 
-  const navItems = COMMUNITIES.map((cat, ci) => {
+  const navItems = getEffectiveCommunities().map((cat, ci) => {
     const filteredSubs = query
       ? cat.subs.filter(sub => sub.name.toLowerCase().includes(query))
       : cat.subs;
@@ -1918,7 +2172,7 @@ function renderCommNav() {
 function renderCommDetail() {
   if (!isDesktop() || (selectedCommSub === null && selectedCommCat === null)) {
     // Mobile always shows everything; desktop "All" also shows everything
-    COMMUNITIES.forEach((cat, ci) => {
+    getEffectiveCommunities().forEach((cat, ci) => {
       const catEl = document.getElementById(`cat-${ci}`);
       if (catEl) catEl.style.display = '';
       cat.subs.forEach(sub => {
@@ -1930,7 +2184,7 @@ function renderCommDetail() {
   }
   if (selectedCommSub !== null) {
     // Show only the selected subreddit's block within its category
-    COMMUNITIES.forEach((cat, ci) => {
+    getEffectiveCommunities().forEach((cat, ci) => {
       const catEl = document.getElementById(`cat-${ci}`);
       if (!catEl) return;
       if (ci !== selectedCommCat) {
@@ -1947,7 +2201,7 @@ function renderCommDetail() {
     });
   } else if (selectedCommCat !== null) {
     // Show only the selected category, all its subs
-    COMMUNITIES.forEach((cat, ci) => {
+    getEffectiveCommunities().forEach((cat, ci) => {
       const catEl = document.getElementById(`cat-${ci}`);
       if (!catEl) return;
       catEl.style.display = ci === selectedCommCat ? '' : 'none';
@@ -2012,7 +2266,7 @@ async function loadCommunities(quiet = false) {
     renderCommNav();
   }
   // Render category skeletons on full load only (quiet refresh updates in place)
-  if (!quiet) wrap.innerHTML = COMMUNITIES.map((cat, ci) => `
+  if (!quiet) wrap.innerHTML = getEffectiveCommunities().map((cat, ci) => `
     <div class="community-category" id="cat-${ci}">
       <div class="category-header">
         <div class="category-header-left">
@@ -2044,7 +2298,7 @@ async function loadCommunities(quiet = false) {
   if (!quiet) renderCommDetail();
 
   // Fetch all subreddits in parallel
-  const allSubs = COMMUNITIES.flatMap(c => c.subs);
+  const allSubs = getEffectiveCommunities().flatMap(c => c.subs);
   await Promise.allSettled(allSubs.map(async sub => {
     const data = await fetchSubreddit(sub.id);
     const postsEl  = document.getElementById(`sub-posts-${sub.id}`);
@@ -2103,7 +2357,7 @@ async function loadCommunities(quiet = false) {
   }));
 
   // Update category counts
-  COMMUNITIES.forEach((cat, ci) => {
+  getEffectiveCommunities().forEach((cat, ci) => {
     const total = cat.subs.reduce((sum, sub) => {
       const el = document.getElementById(`sub-meta-${sub.id}`);
       return sum + (parseInt(el?.textContent) || 0);
@@ -2274,6 +2528,222 @@ function registerSW() {
   }
 }
 
+// ─── OFFERS STRIP ────────────────────────────────────────────────────────
+function renderOffers() {
+  const strip = document.getElementById('offersStrip');
+  const grid  = document.getElementById('offersGrid');
+  if (!offersArticles.length) { strip.style.display = 'none'; return; }
+  strip.style.display = '';
+  document.getElementById('offersCount').textContent = `${offersArticles.length} offers`;
+  grid.innerHTML = offersArticles.map(a => `
+    <a class="offer-card" href="${esc(a.url)}" target="_blank" rel="noopener">
+      <div class="offer-card-store">${esc(a.sourceName)}</div>
+      <div class="offer-card-title">${esc(a.title)}</div>
+    </a>`).join('');
+}
+
+// ─── SETTINGS ────────────────────────────────────────────────────────────
+
+function loadSettings() {
+  try {
+    const ds   = localStorage.getItem('pmDashDisabledSources');
+    if (ds)   settingsDisabledSources = new Set(JSON.parse(ds));
+    const cs   = localStorage.getItem('pmDashCustomSources');
+    if (cs)   settingsCustomSources   = JSON.parse(cs);
+    const dsub = localStorage.getItem('pmDashDisabledSubs');
+    if (dsub) settingsDisabledSubs    = new Set(JSON.parse(dsub));
+    const csub = localStorage.getItem('pmDashCustomSubs');
+    if (csub) settingsCustomSubs      = JSON.parse(csub);
+  } catch {}
+}
+
+function saveSettings() {
+  try {
+    localStorage.setItem('pmDashDisabledSources', JSON.stringify([...settingsDisabledSources]));
+    localStorage.setItem('pmDashCustomSources',   JSON.stringify(settingsCustomSources));
+    localStorage.setItem('pmDashDisabledSubs',    JSON.stringify([...settingsDisabledSubs]));
+    localStorage.setItem('pmDashCustomSubs',      JSON.stringify(settingsCustomSubs));
+  } catch {}
+}
+
+function getEffectiveSources() {
+  return [...SOURCES, ...settingsCustomSources].filter(s => !settingsDisabledSources.has(s.id));
+}
+
+function getEffectiveNewsSources() {
+  return getEffectiveSources().filter(s => !s.isOffers);
+}
+
+function getEffectiveCommunities() {
+  const result = COMMUNITIES
+    .map(cat => ({ ...cat, subs: cat.subs.filter(s => !settingsDisabledSubs.has(s.id)) }))
+    .filter(cat => cat.subs.length > 0);
+  const activeCust = settingsCustomSubs.filter(s => !settingsDisabledSubs.has(s.id));
+  if (activeCust.length > 0) result.push({ label: '⭐ Custom', color: '#4f46e5', subs: activeCust });
+  return result;
+}
+
+function openSettings() {
+  // Copy live state into draft
+  settingsDraft = {
+    disabledSources: new Set(settingsDisabledSources),
+    customSources:   JSON.parse(JSON.stringify(settingsCustomSources)),
+    disabledSubs:    new Set(settingsDisabledSubs),
+    customSubs:      JSON.parse(JSON.stringify(settingsCustomSubs)),
+  };
+  activeSettingsTab = 'news';
+  document.getElementById('settingsNote').textContent = '';
+  document.getElementById('stab-news').classList.add('active');
+  document.getElementById('stab-comm').classList.remove('active');
+  renderSettingsBody();
+  document.getElementById('settingsOverlay').classList.add('open');
+}
+
+function closeSettings() {
+  document.getElementById('settingsOverlay').classList.remove('open');
+  settingsDraft = null; // discard draft
+}
+
+function applySettings() {
+  if (!settingsDraft) return;
+  // Copy draft → live
+  settingsDisabledSources = new Set(settingsDraft.disabledSources);
+  settingsCustomSources   = [...settingsDraft.customSources];
+  settingsDisabledSubs    = new Set(settingsDraft.disabledSubs);
+  settingsCustomSubs      = [...settingsDraft.customSubs];
+  saveSettings();
+  document.getElementById('settingsOverlay').classList.remove('open');
+  settingsDraft = null;
+  // Reload data with new effective sources
+  activeSources = new Set(getEffectiveNewsSources().map(s => s.id));
+  communitiesLoaded = false;
+  loadAll();
+}
+
+function switchSettingsTab(tab) {
+  activeSettingsTab = tab;
+  document.getElementById('stab-news').classList.toggle('active', tab === 'news');
+  document.getElementById('stab-comm').classList.toggle('active', tab === 'comm');
+  renderSettingsBody();
+}
+
+function renderSettingsBody() {
+  document.getElementById('settingsBody').innerHTML =
+    activeSettingsTab === 'news' ? renderSettingsNewsTab() : renderSettingsCommTab();
+}
+
+function renderSettingsNewsTab() {
+  if (!settingsDraft) return '';
+  const allSrcs = [...SOURCES, ...settingsDraft.customSources];
+  const suggested = SUGGESTED_SOURCES.filter(s =>
+    !SOURCES.find(d => d.id === s.id) &&
+    !settingsDraft.customSources.find(c => c.id === s.id)
+  );
+
+  let html = `<div class="settings-section-title">Sources</div>`;
+  allSrcs.forEach(src => {
+    const isOn = !settingsDraft.disabledSources.has(src.id);
+    const isCustom = !!settingsDraft.customSources.find(c => c.id === src.id);
+    html += `
+      <div class="settings-row">
+        <div class="settings-dot" style="background:${src.color}"></div>
+        <div class="settings-row-info">
+          <div class="settings-row-name">${esc(src.emoji || '📰')} ${esc(src.name)}</div>
+          <div class="settings-row-url">${src.rssFeeds ? `${src.rssFeeds.length} feeds` : esc(src.rss)}</div>
+        </div>
+        ${isCustom ? `<button class="settings-remove-btn" title="Remove" onclick="settingsDraft.customSources=settingsDraft.customSources.filter(s=>s.id!=='${src.id}');settingsDraft.disabledSources.delete('${src.id}');renderSettingsBody()">✕</button>` : ''}
+        <button class="settings-toggle ${isOn ? 'on' : 'off'}" onclick="if(settingsDraft.disabledSources.has('${src.id}'))settingsDraft.disabledSources.delete('${src.id}');else settingsDraft.disabledSources.add('${src.id}');renderSettingsBody()"></button>
+      </div>`;
+  });
+
+  if (suggested.length > 0) {
+    html += `<div class="settings-section-title">Suggested</div>`;
+    suggested.forEach(src => {
+      html += `
+        <div class="settings-row">
+          <div class="settings-dot" style="background:${src.color}"></div>
+          <div class="settings-row-info">
+            <div class="settings-row-name">${esc(src.emoji)} ${esc(src.name)}</div>
+            <div class="settings-row-url">${esc(src.rss)}</div>
+          </div>
+          <button class="settings-add-inline" onclick="settingsDraft.customSources.push(${JSON.stringify(src)});renderSettingsBody()">+ Add</button>
+        </div>`;
+    });
+  }
+
+  html += `
+    <div class="settings-section-title">Add Custom RSS</div>
+    <div class="settings-add-form">
+      <input type="text" id="csName" placeholder="Display name (e.g. My Blog)" />
+      <input type="url"  id="csRss"  placeholder="RSS feed URL (https://…/feed/)" />
+      <button class="settings-add-btn" onclick="settingsAddCustomSource()">Add Source</button>
+    </div>`;
+  return html;
+}
+
+function renderSettingsCommTab() {
+  if (!settingsDraft) return '';
+  let html = '';
+
+  COMMUNITIES.forEach(cat => {
+    html += `<div class="settings-cat-header">${esc(cat.label)}</div>`;
+    cat.subs.forEach(sub => {
+      const isOn = !settingsDraft.disabledSubs.has(sub.id);
+      html += `
+        <div class="settings-row">
+          <div class="settings-dot" style="background:${sub.color}"></div>
+          <div class="settings-row-info"><div class="settings-row-name">${esc(sub.name)}</div></div>
+          <button class="settings-toggle ${isOn ? 'on' : 'off'}" onclick="if(settingsDraft.disabledSubs.has('${sub.id}'))settingsDraft.disabledSubs.delete('${sub.id}');else settingsDraft.disabledSubs.add('${sub.id}');renderSettingsBody()"></button>
+        </div>`;
+    });
+  });
+
+  if (settingsDraft.customSubs.length > 0) {
+    html += `<div class="settings-cat-header">⭐ Custom</div>`;
+    settingsDraft.customSubs.forEach(sub => {
+      const isOn = !settingsDraft.disabledSubs.has(sub.id);
+      html += `
+        <div class="settings-row">
+          <div class="settings-dot" style="background:${sub.color}"></div>
+          <div class="settings-row-info"><div class="settings-row-name">${esc(sub.name)}</div></div>
+          <button class="settings-remove-btn" title="Remove" onclick="settingsDraft.customSubs=settingsDraft.customSubs.filter(s=>s.id!=='${sub.id}');settingsDraft.disabledSubs.delete('${sub.id}');renderSettingsBody()">✕</button>
+          <button class="settings-toggle ${isOn ? 'on' : 'off'}" onclick="if(settingsDraft.disabledSubs.has('${sub.id}'))settingsDraft.disabledSubs.delete('${sub.id}');else settingsDraft.disabledSubs.add('${sub.id}');renderSettingsBody()"></button>
+        </div>`;
+    });
+  }
+
+  html += `
+    <div class="settings-section-title">Add Subreddit</div>
+    <div class="settings-add-form">
+      <input type="text" id="csSubName" placeholder="Subreddit name (e.g. travel)" />
+      <button class="settings-add-btn" onclick="settingsAddCustomSub()">Add Subreddit</button>
+    </div>`;
+  return html;
+}
+
+function settingsAddCustomSource() {
+  const name = (document.getElementById('csName')?.value || '').trim();
+  const rss  = (document.getElementById('csRss')?.value  || '').trim();
+  if (!name || !rss) { alert('Please enter both a name and RSS URL.'); return; }
+  const id    = 'custom_' + Date.now();
+  const short = name.split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0,4) || 'SRC';
+  const palette = ['#e53e3e','#2b6cb0','#2f855a','#6b46c1','#d97706','#0891b2','#db2777','#ea580c'];
+  const color = palette[settingsDraft.customSources.length % palette.length];
+  settingsDraft.customSources.push({ id, name, short, color, emoji: '📰', url: rss, rss });
+  renderSettingsBody();
+}
+
+function settingsAddCustomSub() {
+  let raw = (document.getElementById('csSubName')?.value || '').trim().replace(/^r\//i, '');
+  if (!raw) { alert('Please enter a subreddit name.'); return; }
+  const id = raw.toLowerCase();
+  if (settingsDraft.customSubs.find(s => s.id === id)) return;
+  const palette = ['#6b46c1','#e53e3e','#2b6cb0','#2f855a','#d97706','#c53030','#0891b2'];
+  const color = palette[settingsDraft.customSubs.length % palette.length];
+  settingsDraft.customSubs.push({ id, name: `r/${raw}`, color });
+  renderSettingsBody();
+}
+
 // ─── INIT ────────────────────────────────────────────────────────────────
 (function init() {
   // 1. Theme: use saved preference, or fall back to system preference
@@ -2292,17 +2762,40 @@ function registerSW() {
     });
   } catch{}
 
-  // 2. Load last visit time, then save new visit timestamp
+  // 2. Load settings (must happen before loadAll so getEffectiveSources() is correct)
+  loadSettings();
+  activeSources = new Set(getEffectiveNewsSources().map(s => s.id));
+
+  // 3. Load last visit time, then save new visit timestamp
   loadLastVisit();
   saveLastVisit();
 
-  // 3. Register service worker for PWA
+  // 4. Register service worker for PWA
   registerSW();
 
-  // 4. Load content and start auto-refresh
+  // 5. Load content and start auto-refresh
   loadAll();
   scheduleAutoRefresh();
 })();
 </script>
+
+<!-- ══ SETTINGS MODAL ══ -->
+<div class="settings-overlay" id="settingsOverlay" onclick="if(event.target===this)closeSettings()">
+  <div class="settings-modal">
+    <div class="settings-header">
+      <h2>⚙️ Source Settings</h2>
+      <button class="settings-close" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="settings-tabs">
+      <button class="settings-tab active" id="stab-news" onclick="switchSettingsTab('news')">📰 News Sources</button>
+      <button class="settings-tab" id="stab-comm" onclick="switchSettingsTab('comm')">🌐 Communities</button>
+    </div>
+    <div class="settings-body" id="settingsBody"></div>
+    <div class="settings-footer">
+      <span class="settings-footer-note" id="settingsNote"></span>
+      <button class="settings-apply-btn" onclick="applySettings()">Apply &amp; Refresh</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
