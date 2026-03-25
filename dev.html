@@ -1016,7 +1016,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.36-dev';
+const VERSION = '1.5.37-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1025,7 +1025,24 @@ const SOURCES = [
   { id:'omaat',  name:'One Mile at a Time',  short:'OMAAT',  color:'#6b46c1', emoji:'🛫', url:'https://onemileatatime.com',          rss:'https://onemileatatime.com/feed/' },
   { id:'vftw',   name:'View From The Wing',  short:'VFTW',   color:'#2f855a', emoji:'🪟', url:'https://viewfromthewing.com',         rss:'https://viewfromthewing.com/feed/' },
   { id:'mtm',    name:'Miles to Memories',   short:'MtM',    color:'#d97706', emoji:'✈️', url:'https://milestomemories.com',         rss:'https://milestomemories.com/feed/' },
-  { id:'hyatt',  name:'Hyatt Newsroom',      short:'Hyatt',  color:'#2b6cb0', emoji:'🏨', url:'https://newsroom.hyatt.com',          rss:'https://newsroom.hyatt.com/news-releases?pagetemplate=rss' },
+  { id:'hyatt',  name:'Hyatt Newsroom',      short:'Hyatt',  color:'#2b6cb0', emoji:'🏨', url:'https://newsroom.hyatt.com',
+    rssFeeds: [
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=794',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=788',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=846',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=837',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=838',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=839',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=840',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=841',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=843',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=844',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=845',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=831',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=824',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=835',
+    ]},
 ];
 
 // ─── COMMUNITIES CONFIG ───────────────────────────────────────────────────
@@ -1214,7 +1231,7 @@ async function fetchSource(source) {
       }
     }
     articles.sort((a, b) => (b.date || 0) - (a.date || 0));
-    articles = articles.slice(0, 30);
+    articles = articles.slice(0, 60);
   } else {
     // Single-feed source
     const xml = await fetchWithProxy(source.rss);
