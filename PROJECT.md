@@ -64,7 +64,7 @@ GitHub Pages deploys in ~60 seconds.
 ```
 This way you can review the summary, then paste it straight into your terminal without having to compose the message yourself.
 
-**Version numbers:** Claude tracks versions in dev (e.g. `1.5.40-dev`). The last version you actually pushed to production was `v1.5.30`. When you push, the live site will show whatever version is in index.html.
+**Version numbers:** Claude tracks versions in dev (e.g. `1.5.41-dev`). The last version you actually pushed to production was `v1.5.30`. When you push, the live site will show whatever version is in index.html.
 
 ---
 

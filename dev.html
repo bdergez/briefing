@@ -1016,7 +1016,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.40-dev';
+const VERSION = '1.5.41-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1047,7 +1047,7 @@ const SOURCES = [
     rssFeeds: [
       'https://www.rakuten.com/feed/offer-feed.xml',
       'https://www.rakuten.com/feed/merchant-feed.xml',
-    ], maxAgeDays: 30 },
+    ], maxAgeDays: 30, parseDescriptionLink: true },
 ];
 
 // ─── COMMUNITIES CONFIG ───────────────────────────────────────────────────
@@ -1180,13 +1180,7 @@ function parseRSS(xmlText, source) {
     const items = Array.from(doc.querySelectorAll('item'));
 
     return items.slice(0, 15).map(item => {
-      const title = item.querySelector('title')?.textContent?.trim() || '';
-      const link  = item.querySelector('link')?.textContent?.trim()
-                 || item.querySelector('guid')?.textContent?.trim()
-                 || source.url;
-      const pubDateStr = item.querySelector('pubDate')?.textContent?.trim()
-                      || item.querySelector('published')?.textContent?.trim()
-                      || item.querySelector('updated')?.textContent?.trim() || '';
+      let title = item.querySelector('title')?.textContent?.trim() || '';
       const rawDesc = item.querySelector('description')?.textContent?.trim()
                     || item.querySelector('summary')?.textContent?.trim()
                     || item.querySelector('content')?.textContent?.trim() || '';
@@ -1195,6 +1189,21 @@ function parseRSS(xmlText, source) {
       const tmpDiv = document.createElement('div');
       tmpDiv.innerHTML = rawDesc;
       const cleanDesc = tmpDiv.textContent.replace(/\s+/g,' ').trim().slice(0, 280);
+
+      // For feeds where the real link lives inside description's <a href> (e.g. Rakuten)
+      let link = item.querySelector('link')?.textContent?.trim()
+              || item.querySelector('guid')?.textContent?.trim()
+              || source.url;
+      if (source.parseDescriptionLink) {
+        const hrefMatch = rawDesc.match(/href=['"]([^'"]+)['"]/);
+        if (hrefMatch) link = hrefMatch[1];
+        // Strip leading #storename - prefix from title (e.g. "#lubelife - 20% Off…" → "20% Off…")
+        title = title.replace(/^#\S+\s+-\s+/, '');
+      }
+
+      const pubDateStr = item.querySelector('pubDate')?.textContent?.trim()
+                      || item.querySelector('published')?.textContent?.trim()
+                      || item.querySelector('updated')?.textContent?.trim() || '';
 
       const pubDate = pubDateStr ? new Date(pubDateStr) : null;
 
