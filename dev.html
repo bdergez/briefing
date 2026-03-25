@@ -775,6 +775,47 @@
       .card:hover { transform: none; } /* disable hover lift on touch */
     }
 
+    /* ── OFFERS STRIP ── */
+    .offers-strip {
+      margin: 0 0 16px;
+      padding: 14px 16px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    .offers-strip-header {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+    }
+    .offers-strip-title {
+      font-size: 13px; font-weight: 700; color: var(--text);
+    }
+    .offers-strip-count {
+      font-size: 11px; color: var(--subtext);
+    }
+    .offers-grid {
+      display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px;
+      scrollbar-width: thin;
+    }
+    .offers-grid::-webkit-scrollbar { height: 4px; }
+    .offers-grid::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .offer-card {
+      flex-shrink: 0; width: 200px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 12px;
+      text-decoration: none; color: inherit;
+      display: block; transition: box-shadow 0.15s;
+    }
+    .offer-card:hover { box-shadow: var(--shadow-hover); border-color: var(--accent); }
+    .offer-card-store {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.5px; color: var(--subtext); margin-bottom: 5px;
+    }
+    .offer-card-title {
+      font-size: 12px; font-weight: 600; color: var(--text);
+      line-height: 1.4; display: -webkit-box;
+      -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+    }
+
     /* ── SETTINGS MODAL ── */
     .settings-overlay {
       display: none;
@@ -969,6 +1010,15 @@
       </div>
     </div>
 
+    <!-- OFFERS STRIP -->
+    <div class="offers-strip" id="offersStrip" style="display:none">
+      <div class="offers-strip-header">
+        <span class="offers-strip-title">🏷️ Cash Back Offers</span>
+        <span class="offers-strip-count" id="offersCount"></span>
+      </div>
+      <div class="offers-grid" id="offersGrid"></div>
+    </div>
+
     <!-- CARDS GRID -->
     <div class="grid" id="cardGrid">
       <div class="loading-wrap">
@@ -1016,7 +1066,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.42-dev';
+const VERSION = '1.5.43-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1047,7 +1097,7 @@ const SOURCES = [
     rssFeeds: [
       'https://www.rakuten.com/feed/offer-feed.xml',
       'https://www.rakuten.com/feed/merchant-feed.xml',
-    ], maxAgeDays: 30, parseDescriptionLink: true, defaultDateToNow: true },
+    ], maxAgeDays: 30, parseDescriptionLink: true, isOffers: true },
 ];
 
 // ─── COMMUNITIES CONFIG ───────────────────────────────────────────────────
@@ -1137,6 +1187,9 @@ let communitiesLoaded = false; // only load once; skip on News Feed refreshes
 let communitiesRefreshTimer = null; // background 60-min auto-refresh timer
 let commSearchQuery = ''; // current filter string in communities nav panel
 
+
+// ── Offers state ─────────────────────────────────────────────────────────
+let offersArticles = []; // articles from isOffers sources — shown in dedicated strip
 
 // ── Settings state ────────────────────────────────────────────────────────
 let settingsDisabledSources = new Set(); // IDs of default sources turned off
@@ -1279,15 +1332,17 @@ async function fetchSource(source) {
 // ─── LOAD ALL ────────────────────────────────────────────────────────────
 async function loadAll() {
   allArticles = [];
+  offersArticles = [];
   debugLog = [];
   document.getElementById('statsBar').style.display = 'none';
   document.getElementById('debugBox').style.display = 'none';
   document.getElementById('refreshBtn').disabled = true;
   document.getElementById('refreshTime').textContent = 'Loading…';
+  document.getElementById('offersStrip').style.display = 'none';
   document.getElementById('cardGrid').innerHTML = `
     <div class="loading-wrap">
       <div class="spinner"></div>
-      <div class="loading-text" id="loadingText">Fetching articles from ${getEffectiveSources().length} sources…</div>
+      <div class="loading-text" id="loadingText">Fetching articles from ${getEffectiveNewsSources().length} sources…</div>
       <div class="loading-sub">Using RSS feeds with CORS proxy — may take 10–20 seconds</div>
     </div>`;
   document.getElementById('digestGrid').innerHTML = `<div class="digest-loading"><div class="spinner"></div>Fetching r/churning threads…</div>`;
@@ -1295,9 +1350,14 @@ async function loadAll() {
 
   buildPills();
 
-  // Fetch each blog source independently and render as soon as it arrives
+  // Fetch each source independently; offer sources go to the offers strip, others to main feed
   const sourcePromises = getEffectiveSources().map(s =>
     fetchSource(s).then(articles => {
+      if (s.isOffers) {
+        offersArticles.push(...articles);
+        renderOffers();
+        return;
+      }
       allArticles.push(...articles);
       allArticles.sort((a, b) => {
         if (a.date && b.date) return b.date - a.date;
@@ -1337,11 +1397,11 @@ async function loadAll() {
 // ─── SOURCE PILLS ────────────────────────────────────────────────────────
 function buildPills() {
   const wrap = document.getElementById('sourcePills');
-  // Remove pills for sources no longer in effective list
+  // Remove pills for sources no longer in effective news list (offer sources have no pill)
   wrap.querySelectorAll('.src-pill[data-src-id]').forEach(pill => {
-    if (!getEffectiveSources().find(s => s.id === pill.dataset.srcId)) pill.remove();
+    if (!getEffectiveNewsSources().find(s => s.id === pill.dataset.srcId)) pill.remove();
   });
-  getEffectiveSources().forEach(src => {
+  getEffectiveNewsSources().forEach(src => {
     sourceState[src.id] = 'loading';
     let pill = document.getElementById(`pill-${src.id}`);
     if (!pill) {
@@ -1361,13 +1421,13 @@ function buildPills() {
 function updateAllPill() {
   const allPill = document.getElementById('pill-all');
   if (!allPill) return;
-  const allActive = activeSources.size === getEffectiveSources().length;
+  const allActive = activeSources.size === getEffectiveNewsSources().length;
   allPill.classList.toggle('inactive', !allActive);
 }
 
 function selectAllSources() {
-  activeSources = new Set(getEffectiveSources().map(s => s.id));
-  getEffectiveSources().forEach(s => {
+  activeSources = new Set(getEffectiveNewsSources().map(s => s.id));
+  getEffectiveNewsSources().forEach(s => {
     const pill = document.getElementById(`pill-${s.id}`);
     if (pill) pill.classList.remove('inactive');
   });
@@ -1389,7 +1449,7 @@ function setPillState(id, state, count) {
 }
 
 function toggleSource(id) {
-  const eff = getEffectiveSources();
+  const eff = getEffectiveNewsSources();
   const allActive = activeSources.size === eff.length;
   if (allActive) {
     // First click from "all selected": solo this source
@@ -2485,6 +2545,20 @@ function registerSW() {
   }
 }
 
+// ─── OFFERS STRIP ────────────────────────────────────────────────────────
+function renderOffers() {
+  const strip = document.getElementById('offersStrip');
+  const grid  = document.getElementById('offersGrid');
+  if (!offersArticles.length) { strip.style.display = 'none'; return; }
+  strip.style.display = '';
+  document.getElementById('offersCount').textContent = `${offersArticles.length} offers`;
+  grid.innerHTML = offersArticles.map(a => `
+    <a class="offer-card" href="${esc(a.url)}" target="_blank" rel="noopener">
+      <div class="offer-card-store">${esc(a.sourceName)}</div>
+      <div class="offer-card-title">${esc(a.title)}</div>
+    </a>`).join('');
+}
+
 // ─── SETTINGS ────────────────────────────────────────────────────────────
 
 function loadSettings() {
@@ -2511,6 +2585,10 @@ function saveSettings() {
 
 function getEffectiveSources() {
   return [...SOURCES, ...settingsCustomSources].filter(s => !settingsDisabledSources.has(s.id));
+}
+
+function getEffectiveNewsSources() {
+  return getEffectiveSources().filter(s => !s.isOffers);
 }
 
 function getEffectiveCommunities() {
@@ -2554,7 +2632,7 @@ function applySettings() {
   document.getElementById('settingsOverlay').classList.remove('open');
   settingsDraft = null;
   // Reload data with new effective sources
-  activeSources = new Set(getEffectiveSources().map(s => s.id));
+  activeSources = new Set(getEffectiveNewsSources().map(s => s.id));
   communitiesLoaded = false;
   loadAll();
 }
@@ -2703,7 +2781,7 @@ function settingsAddCustomSub() {
 
   // 2. Load settings (must happen before loadAll so getEffectiveSources() is correct)
   loadSettings();
-  activeSources = new Set(getEffectiveSources().map(s => s.id));
+  activeSources = new Set(getEffectiveNewsSources().map(s => s.id));
 
   // 3. Load last visit time, then save new visit timestamp
   loadLastVisit();
