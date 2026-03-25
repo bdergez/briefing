@@ -1016,7 +1016,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.34-dev';
+const VERSION = '1.5.35-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1025,6 +1025,12 @@ const SOURCES = [
   { id:'omaat',  name:'One Mile at a Time',  short:'OMAAT',  color:'#6b46c1', emoji:'🛫', url:'https://onemileatatime.com',          rss:'https://onemileatatime.com/feed/' },
   { id:'vftw',   name:'View From The Wing',  short:'VFTW',   color:'#2f855a', emoji:'🪟', url:'https://viewfromthewing.com',         rss:'https://viewfromthewing.com/feed/' },
   { id:'mtm',    name:'Miles to Memories',   short:'MtM',    color:'#d97706', emoji:'✈️', url:'https://milestomemories.com',         rss:'https://milestomemories.com/feed/' },
+  { id:'hyatt',  name:'Hyatt Newsroom',      short:'Hyatt',  color:'#2b6cb0', emoji:'🏨', url:'https://newsroom.hyatt.com',
+    rssFeeds: [
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=794',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=788',
+    ]},
 ];
 
 // ─── COMMUNITIES CONFIG ───────────────────────────────────────────────────
@@ -1199,16 +1205,32 @@ async function fetchSource(source) {
   debugLog.push({ id: source.id, name: source.name, status: 'loading', msg: 'Fetching…' });
   updateDebug();
 
-  // All sources use RSS via CORS proxy
-  const xml = await fetchWithProxy(source.rss);
+  let articles = [];
 
-  if (!xml) {
-    setPillState(source.id, 'error');
-    updateDebugEntry(source.id, 'error', 'All proxies failed');
-    return [];
+  if (source.rssFeeds) {
+    // Multi-feed source: fetch all in parallel, merge and deduplicate by URL
+    const results = await Promise.allSettled(source.rssFeeds.map(u => fetchWithProxy(u)));
+    const seen = new Set();
+    for (const r of results) {
+      if (r.status === 'fulfilled' && r.value) {
+        for (const a of parseRSS(r.value, source)) {
+          if (!seen.has(a.url)) { seen.add(a.url); articles.push(a); }
+        }
+      }
+    }
+    articles.sort((a, b) => (b.date || 0) - (a.date || 0));
+    articles = articles.slice(0, 30);
+  } else {
+    // Single-feed source
+    const xml = await fetchWithProxy(source.rss);
+    if (!xml) {
+      setPillState(source.id, 'error');
+      updateDebugEntry(source.id, 'error', 'All proxies failed');
+      return [];
+    }
+    articles = parseRSS(xml, source);
   }
 
-  const articles = parseRSS(xml, source);
   if (articles.length === 0) {
     setPillState(source.id, 'error');
     updateDebugEntry(source.id, 'error', 'Fetched but 0 articles parsed');
@@ -2532,7 +2554,7 @@ function renderSettingsNewsTab() {
         <div class="settings-dot" style="background:${src.color}"></div>
         <div class="settings-row-info">
           <div class="settings-row-name">${esc(src.emoji || '📰')} ${esc(src.name)}</div>
-          <div class="settings-row-url">${esc(src.rss)}</div>
+          <div class="settings-row-url">${src.rssFeeds ? `${src.rssFeeds.length} feeds` : esc(src.rss)}</div>
         </div>
         ${isCustom ? `<button class="settings-remove-btn" title="Remove" onclick="settingsDraft.customSources=settingsDraft.customSources.filter(s=>s.id!=='${src.id}');settingsDraft.disabledSources.delete('${src.id}');renderSettingsBody()">✕</button>` : ''}
         <button class="settings-toggle ${isOn ? 'on' : 'off'}" onclick="if(settingsDraft.disabledSources.has('${src.id}'))settingsDraft.disabledSources.delete('${src.id}');else settingsDraft.disabledSources.add('${src.id}');renderSettingsBody()"></button>

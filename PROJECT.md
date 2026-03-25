@@ -64,7 +64,7 @@ GitHub Pages deploys in ~60 seconds.
 ```
 This way you can review the summary, then paste it straight into your terminal without having to compose the message yourself.
 
-**Version numbers:** Claude tracks versions in dev (e.g. `1.5.34-dev`). The last version you actually pushed to production was `v1.5.30`. When you push, the live site will show whatever version is in index.html.
+**Version numbers:** Claude tracks versions in dev (e.g. `1.5.35-dev`). The last version you actually pushed to production was `v1.5.30`. When you push, the live site will show whatever version is in index.html.
 
 ---
 
@@ -255,6 +255,7 @@ Same pattern as churning thread colors — no colored dots anywhere.
 
 | ID  | Area               | Description                                                                                                                                                  | Fixed In    |
 | --- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------- |
+| F19 | News Feed          | Hyatt Newsroom added as a default source. Supports `rssFeeds` array (3 feeds: general, category 794, category 788) — fetched in parallel, deduplicated by URL, merged and sorted by date. | v1.5.35-dev |
 | F18 | All                | No way to add/remove/disable sources or subreddits. Added ⚙️ Sources modal in header — toggle defaults on/off, add from curated suggestions, add custom RSS or subreddit. Settings persist to localStorage. | v1.5.34-dev |
 | F15 | Communities        | No auto-refresh — data went stale after initial load. Added 60-min background timer calling `loadCommunities(true)` (quiet mode: re-fetches in place, no nav reset). | v1.5.32-dev |
 | F17 | Communities        | No way to filter subreddits in Communities left nav panel. Added live search input matching churning page parity. | v1.5.33-dev |
