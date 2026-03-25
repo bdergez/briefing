@@ -1066,7 +1066,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.43-dev';
+const VERSION = '1.5.44-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1229,7 +1229,11 @@ async function fetchWithProxy(rssUrl) {
 function parseRSS(xmlText, source) {
   try {
     const parser = new DOMParser();
-    const doc = parser.parseFromString(xmlText, 'application/xml');
+    let doc = parser.parseFromString(xmlText, 'application/xml');
+    // Fall back to HTML parser if XML is malformed (e.g. raw HTML inside <description> tags)
+    if (doc.querySelector('parsererror')) {
+      doc = parser.parseFromString(xmlText, 'text/html');
+    }
     const items = Array.from(doc.querySelectorAll('item'));
 
     return items.slice(0, 15).map(item => {
