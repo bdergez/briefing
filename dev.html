@@ -1016,7 +1016,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.37-dev';
+const VERSION = '1.5.38-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1042,7 +1042,7 @@ const SOURCES = [
       'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=831',
       'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=824',
       'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=835',
-    ]},
+    ], maxAgeDays: 90 },
 ];
 
 // ─── COMMUNITIES CONFIG ───────────────────────────────────────────────────
@@ -1241,6 +1241,12 @@ async function fetchSource(source) {
       return [];
     }
     articles = parseRSS(xml, source);
+  }
+
+  // Apply optional age filter (maxAgeDays on source)
+  if (source.maxAgeDays) {
+    const cutoff = Date.now() - source.maxAgeDays * 86400 * 1000;
+    articles = articles.filter(a => !a.date || a.date.getTime() >= cutoff);
   }
 
   if (articles.length === 0) {
