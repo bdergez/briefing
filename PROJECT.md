@@ -39,7 +39,11 @@ No backend. Everything is fetched client-side from public APIs and RSS feeds.
 
 ## Dev → Prod Workflow
 
-**All work happens in `dev.html`.** When changes are confirmed working:
+**All work happens in `dev.html`.** Claude makes changes to `dev.html` only, then waits for Berto to confirm the dev preview looks good before promoting to prod. Claude never promotes to prod without explicit confirmation.
+
+**Dev preview:** https://bdergez.github.io/briefing/dev.html
+
+When Berto confirms changes are working:
 
 1. Claude promotes dev.html → index.html with these transformations:
    - Remove the yellow `#devBanner` strip (CSS block + HTML element)
@@ -50,7 +54,9 @@ No backend. Everything is fetched client-side from public APIs and RSS feeds.
    - `1.x.y-dev` → `1.x.y` (VERSION string)
    - Replace SW **unregister** block with SW **register** block
 
-2. Claude runs git directly from the sandbox — no terminal action needed on your end. GitHub Pages deploys in ~60 seconds.
+2. Claude runs `git add`, `git commit`, and `git push` directly from the sandbox automatically — no terminal action needed, never run push.sh manually. GitHub Pages deploys in ~60 seconds.
+
+**Any change to any repo file** (including `PROJECT.md`, `dev.html`, config files, etc.) must be committed and pushed in the same step. Never leave uncommitted changes in the repo.
 
 **Convention — auto-push after every deploy:** Claude pushes automatically after promoting dev → prod. The commit message always includes the version number and a summary of all changes. Claude bumps the version in dev.html after every change, even small ones.
 
