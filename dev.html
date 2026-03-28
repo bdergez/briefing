@@ -1066,7 +1066,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.48-dev';
+const VERSION = '1.5.49-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -2683,7 +2683,7 @@ function renderSettingsNewsTab() {
             <div class="settings-row-name">${esc(src.emoji)} ${esc(src.name)}</div>
             <div class="settings-row-url">${esc(src.rss)}</div>
           </div>
-          <button class="settings-add-inline" onclick="settingsDraft.customSources.push(${JSON.stringify(src)});renderSettingsBody()">+ Add</button>
+          <button class="settings-add-inline" onclick="settingsAddSuggested('${src.id}')">+ Add</button>
         </div>`;
     });
   }
@@ -2736,6 +2736,12 @@ function renderSettingsCommTab() {
       <button class="settings-add-btn" onclick="settingsAddCustomSub()">Add Subreddit</button>
     </div>`;
   return html;
+}
+
+function settingsAddSuggested(id) {
+  const src = SUGGESTED_SOURCES.find(s => s.id === id);
+  if (src) settingsDraft.customSources.push(src);
+  renderSettingsBody();
 }
 
 function settingsAddCustomSource() {
