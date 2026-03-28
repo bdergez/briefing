@@ -60,7 +60,7 @@ When Berto confirms changes are working:
 
 **Convention — auto-push after every deploy:** Claude pushes automatically after promoting dev → prod. The commit message always includes the version number and a summary of all changes. Claude bumps the version in dev.html after every change, even small ones.
 
-**Version numbers:** Claude tracks versions in dev (e.g. `1.5.47-dev`). The currently live production version is `v1.5.47`. When Claude pushes, the live site updates to whatever version is in index.html.
+**Version numbers:** Claude tracks versions in dev (e.g. `1.5.49-dev`). The currently live production version is `v1.5.49`. When Claude pushes, the live site updates to whatever version is in index.html.
 
 **Known issue — git lock files:** The Cowork sandbox can create but not delete `.git/*.lock` files on the mounted folder. If a git command fails with a lock error, run this from your terminal then tell Claude "done":
 ```bash
@@ -248,7 +248,6 @@ Same pattern as churning thread colors — no colored dots anywhere.
 | --- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------- |
 | B04 | r/churning Mobile | If user taps "Show less" while background comment fetches are in-flight after "Show more", affected cards get stuck on loading skeleton.                                         | Low      | Open    |
 | B06 | Communities       | r/hyatt and r/marriott added but not yet validated — confirm subreddits are active and posts load correctly.                                                                     | Low      | Open    |
-| B07 | All               | LoyaltyLobby RSS feed (`loyaltylobby.com/feed/`) is a strong candidate source for hotel loyalty promos — blocked from testing in sandbox. Test manually and add if RSS is valid. | Low      | Pending |
 
 ---
 
@@ -256,6 +255,7 @@ Same pattern as churning thread colors — no colored dots anywhere.
 
 | ID  | Area               | Description                                                                                                                                                  | Fixed In    |
 | --- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------- |
+| B07 | News Feed          | LoyaltyLobby added as a suggested source (hotel loyalty promos). `id=loyaltylobby`, rss=`loyaltylobby.com/feed/`, color `#2C7A7B` teal. | v1.5.47 |
 | F19 | News Feed          | Hyatt Newsroom added as a default source. Supports `rssFeeds` array (3 feeds: general, category 794, category 788) — fetched in parallel, deduplicated by URL, merged and sorted by date. | v1.5.35-dev |
 | F18 | All                | No way to add/remove/disable sources or subreddits. Added ⚙️ Sources modal in header — toggle defaults on/off, add from curated suggestions, add custom RSS or subreddit. Settings persist to localStorage. | v1.5.34-dev |
 | F15 | Communities        | No auto-refresh — data went stale after initial load. Added 60-min background timer calling `loadCommunities(true)` (quiet mode: re-fetches in place, no nav reset). | v1.5.32-dev |
@@ -287,6 +287,8 @@ FrequentMiler (FM)        — #2b6cb0 blue  — frequentmiler.com/feed/
 One Mile at a Time (OMAAT)— #6b46c1 purple— onemileatatime.com/feed/
 View From The Wing (VFTW) — #2f855a green — viewfromthewing.com/feed/
 Miles to Memories (MtM)  — #d97706 amber — milestomemories.com/feed/
+LoyaltyLobby (LL)         — #2C7A7B teal  — loyaltylobby.com/feed/      (suggested source)
+BoardingArea (BA)         — #0369a1 blue  — boardingarea.com/feed/      (suggested source)
 ```
 
 ### Communities
