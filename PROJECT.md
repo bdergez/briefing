@@ -60,7 +60,12 @@ When Berto confirms changes are working:
 
 **Convention — auto-push after every deploy:** Claude pushes automatically after promoting dev → prod. The commit message always includes the version number and a summary of all changes. Claude bumps the version in dev.html after every change, even small ones.
 
-**Version numbers:** Claude tracks versions in dev (e.g. `1.5.45-dev`). The currently live production version is `v1.5.45`. When Claude pushes, the live site updates to whatever version is in index.html.
+**Version numbers:** Claude tracks versions in dev (e.g. `1.5.47-dev`). The currently live production version is `v1.5.47`. When Claude pushes, the live site updates to whatever version is in index.html.
+
+**Known issue — git lock files:** The Cowork sandbox can create but not delete `.git/*.lock` files on the mounted folder. If a git command fails with a lock error, run this from your terminal then tell Claude "done":
+```bash
+rm -f "/path/to/Briefing/.git/"*.lock
+```
 
 ---
 
