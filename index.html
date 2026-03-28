@@ -6,11 +6,11 @@
   <meta name="theme-color" content="#c0392b" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="P&M" />
-  <link rel="manifest" href="manifest.json" />
-  <link rel="icon" href="icon.svg" type="image/svg+xml" />
-  <link rel="apple-touch-icon" href="icon.svg" />
-  <title>Points & Miles Dashboard</title>
+  <meta name="apple-mobile-web-app-title" content="P&M DEV" />
+  <link rel="manifest" href="manifest-dev.json" />
+  <link rel="icon" href="icon-dev.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icon-dev.svg" />
+  <title>[DEV] Points & Miles Dashboard</title>
   <style>
     :root {
       --bg: #f0f2f5;
@@ -931,10 +931,25 @@
       border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
     }
     .settings-apply-btn:hover { opacity: 0.85; }
+
+    /* ── DEV BANNER ── */
+    #devBanner {
+      background: #f59e0b;
+      color: #1a1a2e;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      padding: 5px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+    }
   </style>
 </head>
 <body>
 
+<div id="devBanner">🚧 DEV / STAGING — changes here are not live yet · <a href="index.html" style="color:#1a1a2e;text-decoration:underline">View production →</a></div>
 
 <header>
   <div>
@@ -1051,7 +1066,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.46';
+const VERSION = '1.5.46-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1060,6 +1075,7 @@ const SOURCES = [
   { id:'omaat',  name:'One Mile at a Time',  short:'OMAAT',  color:'#6b46c1', emoji:'🛫', url:'https://onemileatatime.com',          rss:'https://onemileatatime.com/feed/' },
   { id:'vftw',   name:'View From The Wing',  short:'VFTW',   color:'#2f855a', emoji:'🪟', url:'https://viewfromthewing.com',         rss:'https://viewfromthewing.com/feed/' },
   { id:'mtm',    name:'Miles to Memories',   short:'MtM',    color:'#d97706', emoji:'✈️', url:'https://milestomemories.com',         rss:'https://milestomemories.com/feed/' },
+  { id:'loyaltylobby', name:'LoyaltyLobby', short:'LL', color:'#2C7A7B', emoji:'🛎️', url:'https://loyaltylobby.com', rss:'https://loyaltylobby.com/feed/' },
   { id:'hyatt',  name:'Hyatt Newsroom',      short:'Hyatt',  color:'#2b6cb0', emoji:'🏨', url:'https://newsroom.hyatt.com',
     rssFeeds: [
       'https://newsroom.hyatt.com/news-releases?pagetemplate=rss',
@@ -1118,7 +1134,6 @@ const COMMUNITIES = [
 const SUGGESTED_SOURCES = [
   { id:'tpg',  name:'The Points Guy',  short:'TPG',  color:'#b7791f', emoji:'🏆', url:'https://thepointsguy.com',    rss:'https://thepointsguy.com/feed/' },
   { id:'up',   name:'Upgraded Points', short:'UP',   color:'#553c9a', emoji:'⬆️', url:'https://upgradedpoints.com',  rss:'https://upgradedpoints.com/feed/' },
-  { id:'ll',   name:'LoyaltyLobby',   short:'LL',   color:'#2b6cb0', emoji:'🏨', url:'https://loyaltylobby.com',    rss:'https://loyaltylobby.com/feed/' },
   { id:'10xt', name:'10xTravel',       short:'10xT', color:'#c05621', emoji:'✈️', url:'https://10xtravel.com',       rss:'https://10xtravel.com/feed/' },
 ];
 
@@ -2521,9 +2536,10 @@ function renderCards() {
 
 // ─── PWA SERVICE WORKER ───────────────────────────────────────────────────
 function registerSW() {
+  // Dev: unregister any existing service worker so prod SW doesn't intercept dev navigation
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('service-worker.js').catch(err => {
-      console.warn('SW registration failed:', err);
+    navigator.serviceWorker.getRegistrations().then(regs => {
+      regs.forEach(r => r.unregister());
     });
   }
 }
