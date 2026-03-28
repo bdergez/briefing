@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#c0392b" />
+  <meta name="theme-color" content="#ffffff" />
+  <meta name="color-scheme" content="light dark" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="P&M" />
+  <meta name="apple-mobile-web-app-title" content="P&M Dash" />
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="icon.svg" />
@@ -932,9 +933,34 @@
     }
     .settings-apply-btn:hover { opacity: 0.85; }
   </style>
+  <script>
+    (function() {
+      try {
+        var saved = localStorage.getItem('pmDashTheme');
+        var isDark;
+        if (saved) {
+          document.documentElement.dataset.theme = saved;
+          isDark = saved === 'dark';
+        } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          document.documentElement.dataset.theme = 'dark';
+          isDark = true;
+        } else {
+          isDark = false;
+        }
+        var tc = document.querySelector('meta[name="theme-color"]');
+        if (tc) tc.setAttribute('content', isDark ? '#1a1a2e' : '#ffffff');
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+          if (!localStorage.getItem('pmDashTheme')) {
+            document.documentElement.dataset.theme = e.matches ? 'dark' : '';
+            var tc2 = document.querySelector('meta[name="theme-color"]');
+            if (tc2) tc2.setAttribute('content', e.matches ? '#1a1a2e' : '#ffffff');
+          }
+        });
+      } catch(e) {}
+    })();
+  </script>
 </head>
 <body>
-
 
 <header>
   <div>
@@ -1051,7 +1077,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.49';
+const VERSION = '1.5.49-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -2421,6 +2447,8 @@ function toggleTheme() {
   const isDark = html.dataset.theme === 'dark';
   html.dataset.theme = isDark ? '' : 'dark';
   try { localStorage.setItem('pmDashTheme', isDark ? 'light' : 'dark'); } catch{}
+  const tc = document.querySelector('meta[name="theme-color"]');
+  if (tc) tc.setAttribute('content', isDark ? '#ffffff' : '#1a1a2e');
 }
 
 // ─── LAST VISIT / NEW TRACKING ───────────────────────────────────────────
@@ -2522,9 +2550,10 @@ function renderCards() {
 
 // ─── PWA SERVICE WORKER ───────────────────────────────────────────────────
 function registerSW() {
+  // Dev: unregister any existing service worker so prod SW doesn't intercept dev navigation
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('service-worker.js').catch(err => {
-      console.warn('SW registration failed:', err);
+    navigator.serviceWorker.getRegistrations().then(regs => {
+      regs.forEach(r => r.unregister());
     });
   }
 }
@@ -2753,23 +2782,7 @@ function settingsAddCustomSub() {
 
 // ─── INIT ────────────────────────────────────────────────────────────────
 (function init() {
-  // 1. Theme: use saved preference, or fall back to system preference
-  try {
-    const saved = localStorage.getItem('pmDashTheme');
-    if (saved) {
-      document.documentElement.dataset.theme = saved;
-    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      document.documentElement.dataset.theme = 'dark';
-    }
-    // Auto-update if system theme changes and user hasn't overridden
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-      if (!localStorage.getItem('pmDashTheme')) {
-        document.documentElement.dataset.theme = e.matches ? 'dark' : '';
-      }
-    });
-  } catch{}
-
-  // 2. Load settings (must happen before loadAll so getEffectiveSources() is correct)
+  // 1. Load settings (must happen before loadAll so getEffectiveSources() is correct)
   loadSettings();
   activeSources = new Set(getEffectiveNewsSources().map(s => s.id));
 
