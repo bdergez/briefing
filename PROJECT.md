@@ -50,21 +50,11 @@ No backend. Everything is fetched client-side from public APIs and RSS feeds.
    - `1.x.y-dev` → `1.x.y` (VERSION string)
    - Replace SW **unregister** block with SW **register** block
 
-2. You run from your terminal:
-```bash
-./push.sh 'brief description of changes'
-```
-GitHub Pages deploys in ~60 seconds.
+2. Claude runs git directly from the sandbox — no terminal action needed on your end. GitHub Pages deploys in ~60 seconds.
 
-**Important:** `push.sh` must be run from your local Mac, not from Claude's sandbox — the script `cd`s to `/Users/bedergez/Code/Claude Code/Briefing` which only exists on your machine. Claude can prepare everything but can't push.
+**Convention — auto-push after every deploy:** Claude pushes automatically after promoting dev → prod. The commit message always includes the version number and a summary of all changes. Claude bumps the version in dev.html after every change, even small ones.
 
-**Convention — always end a session with a ready-to-run command:** After every batch of changes Claude will always finish with a copy-pasteable `push.sh` command that includes the version number and a concise commit message summarising what changed. Example:
-```bash
-./push.sh 'v1.5.31 fix B03 back-to-day button on churning desktop; fix B05 first visit New badge'
-```
-This way you can review the summary, then paste it straight into your terminal without having to compose the message yourself.
-
-**Version numbers:** Claude tracks versions in dev (e.g. `1.5.45-dev`). The last version you actually pushed to production was `v1.5.30`. When you push, the live site will show whatever version is in index.html.
+**Version numbers:** Claude tracks versions in dev (e.g. `1.5.45-dev`). The currently live production version is `v1.5.45`. When Claude pushes, the live site updates to whatever version is in index.html.
 
 ---
 
