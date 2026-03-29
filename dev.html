@@ -1826,6 +1826,11 @@ function formatPrice(value) {
   }).format(value);
 }
 
+function buildListingSearchUrl(title, locationLabel) {
+  const query = [title, locationLabel, 'real estate listing'].filter(Boolean).join(' ');
+  return `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+}
+
 function normalizeBackendListing(item, source) {
   const meta = [
     item.location_label,
@@ -1834,6 +1839,8 @@ function normalizeBackendListing(item, source) {
     item.baths ? `${item.baths} ba` : '',
     item.sqft ? `${item.sqft} sqft` : '',
   ].filter(Boolean).join(' · ');
+  const hasDirectUrl = item.listing_url && !/^https:\/\/www\.rentcast\.io\/?$/.test(item.listing_url);
+  const resolvedUrl = hasDirectUrl ? item.listing_url : buildListingSearchUrl(item.title, item.location_label);
 
   return {
     id: item.id,
@@ -1844,7 +1851,8 @@ function normalizeBackendListing(item, source) {
     sourceEmoji: source.emoji || '🏠',
     sourceUrl: '',
     title: item.title,
-    url: item.listing_url,
+    url: resolvedUrl,
+    isSearchLink: !hasDirectUrl,
     desc: meta,
     date: item.updated_at ? new Date(item.updated_at) : null,
     category: mapBackendPropertyType(item),
@@ -2267,6 +2275,7 @@ function listingCardHTML(item) {
     : '';
   const desc = item.desc ? `<div class="card-desc">${esc(item.desc)}</div>` : '';
   const provider = item.providerName || item.sourceName;
+  const actionLabel = item.isSearchLink ? 'Search listing →' : 'View listing →';
 
   return `
   <div class="card listing-card">
@@ -2284,7 +2293,7 @@ function listingCardHTML(item) {
       ${item.locationLabel ? `<div class="listing-location">${esc(item.locationLabel)}</div>` : ''}
       ${desc}
       <div class="card-footer">
-        <a class="read-link" href="${esc(item.url)}" target="_blank" rel="noopener">View listing →</a>
+        <a class="read-link" href="${esc(item.url)}" target="_blank" rel="noopener">${actionLabel}</a>
         <span style="font-size:11px;color:var(--subtext)">${esc(provider)}</span>
       </div>
     </div>
