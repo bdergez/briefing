@@ -1080,11 +1080,19 @@
       <span class="filter-label">Type:</span>
       <button class="filter-btn listing-filter-btn active" onclick="setListingCategory('all',this)">All</button>
       <button class="filter-btn listing-filter-btn" onclick="setListingCategory('new',this)" id="listingFilterNew">🆕 New</button>
-      <button class="filter-btn listing-filter-btn" onclick="setListingCategory('rental',this)">🏘️ Rentals</button>
+      <button class="filter-btn listing-filter-btn" onclick="setListingCategory('for-sale',this)">🏷️ For Sale</button>
+      <button class="filter-btn listing-filter-btn" onclick="setListingCategory('for-rent',this)">🏘️ For Rent</button>
       <button class="filter-btn listing-filter-btn" onclick="setListingCategory('home',this)">🏡 Homes</button>
       <button class="filter-btn listing-filter-btn" onclick="setListingCategory('condo',this)">🏢 Condos</button>
       <button class="filter-btn listing-filter-btn" onclick="setListingCategory('land',this)">🌿 Land</button>
       <button class="filter-btn listing-filter-btn" onclick="setListingCategory('commercial',this)">🏬 Commercial</button>
+      <div class="search-wrap" style="margin-left:0">
+        <select id="listingSortSelect" onchange="renderListingCards()" style="padding:8px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--card-bg);color:var(--text);font-size:13px;outline:none;cursor:pointer">
+          <option value="updated-desc">Newest</option>
+          <option value="price-asc">Price: Low to High</option>
+          <option value="price-desc">Price: High to Low</option>
+        </select>
+      </div>
       <div class="search-wrap">
         <span class="search-icon">🔍</span>
         <input type="text" id="listingSearchInput" placeholder="Search listings…" oninput="renderListingCards()" />
@@ -1137,7 +1145,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.57-dev';
+const VERSION = '1.5.58-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1270,6 +1278,7 @@ let listingDebugLog = [];
 let listingsLoaded = false;
 let listingMarkets = [];
 let houseListingsCache = null;
+let activeListingSort = 'updated-desc';
 
 // ── Churning two-panel state ──────────────────────────────────────────────
 let digestPostsData = [];       // all fetched posts
@@ -2109,10 +2118,13 @@ function renderListingCards() {
   const newCount = allListings.filter(item => item.date && item.date.getTime() > lastVisitTime).length;
   const newBtn = document.getElementById('listingFilterNew');
   if (newBtn) newBtn.textContent = newCount > 0 ? `🆕 New (${newCount})` : '🆕 New';
+  activeListingSort = document.getElementById('listingSortSelect')?.value || 'updated-desc';
 
   const filtered = allListings.filter(item => {
     if (!activeListingSources.has(item.sourceId)) return false;
     if (activeListingCategory === 'new') return item.date && item.date.getTime() > lastVisitTime;
+    if (activeListingCategory === 'for-sale') return item.status !== 'rental-active' && item.category !== 'rental';
+    if (activeListingCategory === 'for-rent') return item.status === 'rental-active' || item.category === 'rental';
     if (activeListingCategory !== 'all' && item.category !== activeListingCategory) return false;
     if (search && !item.title.toLowerCase().includes(search) && !(item.desc || '').toLowerCase().includes(search)) return false;
     return true;
@@ -2126,6 +2138,12 @@ function renderListingCards() {
     }
     return;
   }
+
+  filtered.sort((a, b) => {
+    if (activeListingSort === 'price-asc') return (a.price || Number.MAX_SAFE_INTEGER) - (b.price || Number.MAX_SAFE_INTEGER);
+    if (activeListingSort === 'price-desc') return (b.price || 0) - (a.price || 0);
+    return (b.date || 0) - (a.date || 0);
+  });
 
   grid.innerHTML = filtered.map(item => listingCardHTML(item)).join('');
 }
