@@ -950,24 +950,29 @@
   <script>
     (function() {
       try {
-        var saved = localStorage.getItem('pmDashTheme');
-        var isDark;
-        if (saved) {
-          document.documentElement.dataset.theme = saved;
-          isDark = saved === 'dark';
-        } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-          document.documentElement.dataset.theme = 'dark';
-          isDark = true;
-        } else {
-          isDark = false;
+        function applyThemeColor() {
+          var isDark = document.documentElement.dataset.theme === 'dark';
+          var tc = document.querySelector('meta[name="theme-color"]');
+          if (tc) tc.setAttribute('content', isDark ? '#1a1a2e' : '#ffffff');
         }
-        var tc = document.querySelector('meta[name="theme-color"]');
-        if (tc) tc.setAttribute('content', isDark ? '#1a1a2e' : '#ffffff');
+        var saved = localStorage.getItem('pmDashTheme');
+        if (saved === 'dark' || saved === 'light') {
+          document.documentElement.dataset.theme = saved;
+        } else {
+          document.documentElement.dataset.theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        applyThemeColor();
+        // One-time migration: clear stale 'light' override if system prefers dark
+        if (localStorage.getItem('pmDashTheme') === 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          localStorage.removeItem('pmDashTheme');
+          document.documentElement.dataset.theme = 'dark';
+          applyThemeColor();
+        }
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
-          if (!localStorage.getItem('pmDashTheme')) {
-            document.documentElement.dataset.theme = e.matches ? 'dark' : '';
-            var tc2 = document.querySelector('meta[name="theme-color"]');
-            if (tc2) tc2.setAttribute('content', e.matches ? '#1a1a2e' : '#ffffff');
+          var s = localStorage.getItem('pmDashTheme');
+          if (s !== 'dark' && s !== 'light') {
+            document.documentElement.dataset.theme = e.matches ? 'dark' : 'light';
+            applyThemeColor();
           }
         });
       } catch(e) {}
@@ -986,7 +991,7 @@
   <div class="header-right">
     <span class="refresh-time" id="refreshTime">Not loaded</span>
     <button class="btn btn-primary" id="refreshBtn" onclick="loadAll()">⟳ Refresh</button>
-    <button class="btn btn-ghost" onclick="toggleTheme()">🌓 Theme</button>
+    <button id="themeToggleBtn" class="btn btn-ghost" onclick="toggleTheme()">🌗 Auto</button>
     <button class="btn btn-ghost" onclick="openSettings()">⚙️ Sources</button>
   </div>
 </header>
@@ -2458,13 +2463,39 @@ function showLessSub(subId) {
 }
 
 // ─── THEME ───────────────────────────────────────────────────────────────
-function toggleTheme() {
-  const html = document.documentElement;
-  const isDark = html.dataset.theme === 'dark';
-  html.dataset.theme = isDark ? '' : 'dark';
-  try { localStorage.setItem('pmDashTheme', isDark ? 'light' : 'dark'); } catch{}
+function updateThemeColor() {
+  const isDark = document.documentElement.dataset.theme === 'dark';
   const tc = document.querySelector('meta[name="theme-color"]');
-  if (tc) tc.setAttribute('content', isDark ? '#ffffff' : '#1a1a2e');
+  if (tc) tc.setAttribute('content', isDark ? '#1a1a2e' : '#ffffff');
+}
+function updateThemeButton() {
+  const saved = localStorage.getItem('pmDashTheme');
+  const btn = document.getElementById('themeToggleBtn');
+  if (!btn) return;
+  if (saved === 'dark') btn.textContent = '🌙 Dark';
+  else if (saved === 'light') btn.textContent = '☀️ Light';
+  else btn.textContent = '🌗 Auto';
+}
+function toggleTheme() {
+  const saved = localStorage.getItem('pmDashTheme');
+  let next;
+  if (saved === 'dark') {
+    next = 'light';
+  } else if (saved === 'light') {
+    next = null;
+  } else {
+    next = 'dark';
+  }
+  if (next === null) {
+    localStorage.removeItem('pmDashTheme');
+    const sysDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    document.documentElement.dataset.theme = sysDark ? 'dark' : 'light';
+  } else {
+    localStorage.setItem('pmDashTheme', next);
+    document.documentElement.dataset.theme = next;
+  }
+  updateThemeColor();
+  updateThemeButton();
 }
 
 // ─── LAST VISIT / NEW TRACKING ───────────────────────────────────────────
@@ -2798,6 +2829,9 @@ function settingsAddCustomSub() {
 
 // ─── INIT ────────────────────────────────────────────────────────────────
 (function init() {
+  // Set theme button label to match current saved preference
+  updateThemeButton();
+
   // 1. Load settings (must happen before loadAll so getEffectiveSources() is correct)
   loadSettings();
   activeSources = new Set(getEffectiveNewsSources().map(s => s.id));
