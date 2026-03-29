@@ -1183,7 +1183,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.60-dev';
+const VERSION = '1.5.63-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1278,7 +1278,6 @@ const SUGGESTED_LISTING_SOURCES = [
 ];
 
 const HOUSES_MARKETS_URL = 'data/house-markets.json';
-const HOUSES_LISTINGS_URL = 'data/house-listings.json';
 const SUPABASE_PROJECT_URL = 'https://buxitxwnqhezszwqbqwh.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_1hbWeGSEuIjNJPK4lw_eKg_rr8Ycmum';
 const SUPABASE_REST_URL = `${SUPABASE_PROJECT_URL}/rest/v1`;
@@ -1318,7 +1317,6 @@ let listingSourceState = {};
 let listingDebugLog = [];
 let listingsLoaded = false;
 let listingMarkets = [];
-let houseListingsCache = null;
 let houseMarketDefaults = [];
 let activeListingSort = 'updated-desc';
 
@@ -1467,21 +1465,14 @@ async function ensureHouseMarketsLoaded() {
 }
 
 async function fetchListingsForMarket(id) {
-  try {
-    const remoteItems = await fetchSupabaseJSON('listing_cards', {
-      select: 'id,title,price,beds,baths,sqft,property_type,status,location_label,photo_url,listing_url,provider_name,updated_at',
-      market_slug: `eq.${id}`,
-      status: 'in.(active,rental-active)',
-      order: 'updated_at.desc',
-      limit: '50',
-    });
-    if (Array.isArray(remoteItems)) return remoteItems;
-  } catch (e) {
-    console.warn(`Supabase listings unavailable for ${id}, using local house listings fallback.`, e);
-  }
-
-  if (!houseListingsCache) houseListingsCache = await fetchJSON(HOUSES_LISTINGS_URL);
-  return houseListingsCache[id] || [];
+  const remoteItems = await fetchSupabaseJSON('listing_cards', {
+    select: 'id,title,price,beds,baths,sqft,property_type,status,location_label,photo_url,listing_url,provider_name,updated_at',
+    market_slug: `eq.${id}`,
+    status: 'in.(active,rental-active)',
+    order: 'updated_at.desc',
+    limit: '50',
+  });
+  return Array.isArray(remoteItems) ? remoteItems : [];
 }
 
 function parseRSS(xmlText, source) {
@@ -1804,8 +1795,8 @@ async function fetchListingSource(source) {
   try {
     const items = (await fetchListingsForMarket(source.id)).map(item => normalizeBackendListing(item, source));
     if (items.length === 0) {
-      setListingPillState(source.id, 'error');
-      updateListingDebugEntry(source.id, 'error', 'No listings returned');
+      setListingPillState(source.id, 'ok', 0);
+      updateListingDebugEntry(source.id, 'ok', 'No real listings yet');
       return [];
     }
     setListingPillState(source.id, 'ok', items.length);
@@ -1813,7 +1804,7 @@ async function fetchListingSource(source) {
     return items;
   } catch (e) {
     setListingPillState(source.id, 'error');
-    updateListingDebugEntry(source.id, 'error', 'Mock listing feed failed');
+    updateListingDebugEntry(source.id, 'error', 'Live listings unavailable');
     return [];
   }
 }
@@ -1952,7 +1943,7 @@ async function loadListings(quiet = false) {
     <div class="loading-wrap">
       <div class="spinner"></div>
       <div class="loading-text">Fetching listings from ${effectiveListingSources.length} locations…</div>
-      <div class="loading-sub">Using a backend-style mock listing feed while we prepare the real data source</div>
+      <div class="loading-sub">Showing only live imported data from the backend</div>
     </div>`;
 
   buildListingPills();
@@ -2240,7 +2231,7 @@ function renderListingCards() {
 
   if (filtered.length === 0) {
     if (allListings.length === 0) {
-      grid.innerHTML = `<div class="empty-msg">⏳ Still loading… or all listing feeds failed.<br><small>Check the location pills above.</small></div>`;
+      grid.innerHTML = `<div class="empty-msg">No real listings are available yet for the selected locations.<br><small>Miami is currently the only imported live market.</small></div>`;
     } else {
       grid.innerHTML = `<div class="empty-msg">No listings match the current filters.</div>`;
     }
