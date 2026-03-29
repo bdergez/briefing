@@ -1137,7 +1137,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.53-dev';
+const VERSION = '1.5.54-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1301,6 +1301,28 @@ async function fetchWithProxy(rssUrl) {
       }
 
       if (xmlText && xmlText.includes('<item')) return xmlText;
+    } catch (e) {
+      // try next proxy
+    }
+  }
+  return null;
+}
+
+async function fetchTextWithProxy(url) {
+  for (const makeProxy of [PROXIES[2], PROXIES[0], PROXIES[1]]) {
+    try {
+      const proxyUrl = makeProxy(url);
+      const res = await fetchWithTimeout(proxyUrl, {}, 15000);
+      if (!res.ok) continue;
+
+      const text = await res.text();
+      try {
+        const json = JSON.parse(text);
+        const content = json.contents || json.data || '';
+        if (content && typeof content === 'string') return content;
+      } catch {
+        if (text) return text;
+      }
     } catch (e) {
       // try next proxy
     }
@@ -1475,28 +1497,118 @@ function parseListingRSS(xmlText, source) {
   }
 }
 
+function listingDateFromMeta(meta) {
+  if (!meta) return null;
+  const text = meta.trim();
+  const now = new Date();
+
+  let match = text.match(/^<\s*(\d+)\s*hr/i);
+  if (match) return new Date(Date.now() - Number(match[1]) * 3600 * 1000);
+
+  match = text.match(/^(\d+)\s*hr/i);
+  if (match) return new Date(Date.now() - Number(match[1]) * 3600 * 1000);
+
+  match = text.match(/^(\d+)\s*min/i);
+  if (match) return new Date(Date.now() - Number(match[1]) * 60 * 1000);
+
+  match = text.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/);
+  if (match) {
+    const month = Number(match[1]) - 1;
+    const day = Number(match[2]);
+    const year = match[3] ? Number(match[3].length === 2 ? `20${match[3]}` : match[3]) : now.getFullYear();
+    return new Date(year, month, day);
+  }
+
+  return null;
+}
+
+function parseListingMarkdown(markdown, source) {
+  const content = markdown.includes('Markdown Content:')
+    ? markdown.split('Markdown Content:')[1]
+    : markdown;
+  const lines = content.split('\n');
+  const items = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    const match = line.match(/^\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)$/);
+    if (!match) continue;
+
+    const title = match[1].trim();
+    const url = match[2].trim();
+    if (!title || title.startsWith('!') || title.toLowerCase().startsWith('no image ![')) continue;
+
+    let meta = '';
+    let price = '';
+    for (let j = i + 1; j < Math.min(i + 6, lines.length); j++) {
+      const next = lines[j].trim();
+      if (!next) continue;
+      if (/^\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)$/.test(next)) break;
+      if (!meta && !/^[•.]+$/.test(next) && !next.startsWith('![')) {
+        meta = next;
+        continue;
+      }
+      if (!price && /^\$[\d,]+/.test(next)) {
+        price = next;
+        break;
+      }
+    }
+
+    items.push({
+      sourceId: source.id,
+      sourceName: source.name,
+      sourceShort: source.short,
+      sourceColor: source.color,
+      sourceEmoji: source.emoji,
+      sourceUrl: source.url,
+      title,
+      url,
+      desc: [meta, price].filter(Boolean).join(' · '),
+      date: listingDateFromMeta(meta),
+      category: categorizeListing(title, `${meta} ${price}`),
+    });
+  }
+
+  const deduped = [];
+  const seen = new Set();
+  items.forEach(item => {
+    if (seen.has(item.url)) return;
+    seen.add(item.url);
+    deduped.push(item);
+  });
+  return deduped.slice(0, 40);
+}
+
 async function fetchListingSource(source) {
   setListingPillState(source.id, 'loading');
   listingDebugLog.push({ id: source.id, name: source.name, status: 'loading', msg: 'Fetching…' });
   updateListingDebug();
 
   const xml = await fetchWithProxy(source.rss);
-  if (!xml) {
-    setListingPillState(source.id, 'error');
-    updateListingDebugEntry(source.id, 'error', 'All proxies failed');
-    return [];
+  if (xml) {
+    const items = parseListingRSS(xml, source);
+    if (items.length > 0) {
+      setListingPillState(source.id, 'ok', items.length);
+      updateListingDebugEntry(source.id, 'ok', `${items.length} listings loaded`);
+      return items;
+    }
   }
 
-  const items = parseListingRSS(xml, source);
-  if (items.length === 0) {
-    setListingPillState(source.id, 'error');
-    updateListingDebugEntry(source.id, 'error', 'Fetched but 0 listings parsed');
-    return [];
+  const markdown = await fetchTextWithProxy(`https://r.jina.ai/http://${source.url.replace(/^https?:\/\//, '')}`);
+  if (markdown) {
+    const items = parseListingMarkdown(markdown, source);
+    if (items.length > 0) {
+      setListingPillState(source.id, 'ok', items.length);
+      updateListingDebugEntry(source.id, 'ok', `${items.length} listings loaded via fallback`);
+      return items;
+    }
   }
 
-  setListingPillState(source.id, 'ok', items.length);
-  updateListingDebugEntry(source.id, 'ok', `${items.length} listings loaded`);
-  return items;
+  {
+    setListingPillState(source.id, 'error');
+    updateListingDebugEntry(source.id, 'error', 'Craigslist blocked RSS and fallback parsing failed');
+    return [];
+  }
 }
 
 // ─── LOAD ALL ────────────────────────────────────────────────────────────
