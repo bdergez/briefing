@@ -1137,7 +1137,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.54-dev';
+const VERSION = '1.5.55-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1574,6 +1574,70 @@ function parseListingMarkdown(markdown, source) {
   items.forEach(item => {
     if (seen.has(item.url)) return;
     seen.add(item.url);
+    deduped.push(item);
+  });
+  if (deduped.length > 0) return deduped.slice(0, 40);
+  return parseListingPlainText(content, source);
+}
+
+function parseListingPlainText(content, source) {
+  const lines = content.split('\n').map(line => line.trim()).filter(Boolean);
+  const items = [];
+
+  const isMetaLine = line =>
+    /^<\d+\s*hr/i.test(line) ||
+    /^\d+\s*hr/i.test(line) ||
+    /^\d+\s*min/i.test(line) ||
+    /^\d{1,2}\/\d{1,2}(?:\/\d{2,4})?$/i.test(line);
+
+  const isNoiseLine = line =>
+    /^[•.]+$/.test(line) ||
+    /^(CL|south florida|miami \/ dade|all south florida|housing|real estate for sale|post|acct|fair housing|avoiding scams|relevance|price|beds|baths|type|furnished|help|safety|privacy|terms|about|app|©)/i.test(line) ||
+    /^(MORE RESULTS IN|search titles only|has image|posted today|hide duplicates|MILES FROM LOCATION|use map|PRICE|BEDROOMS|BATHROOMS|SQ FT|all dates|within 30 days|beyond 30 days|housing type|laundry|parking|OPEN HOUSE DATE|reset|apply|owner|broker|all)$/i.test(line) ||
+    /^\d+\s*-\s*\d+\s*of\s*\d+/i.test(line) ||
+    /^\$?\d[\d,]*$/.test(line);
+
+  for (let i = 0; i < lines.length; i++) {
+    if (!isMetaLine(lines[i])) continue;
+
+    const meta = lines[i];
+    const location = lines[i + 1] && !isNoiseLine(lines[i + 1]) ? lines[i + 1] : '';
+    const price = lines[i + 2] && /^\$[\d,]+/.test(lines[i + 2]) ? lines[i + 2] : '';
+
+    let title = '';
+    for (let j = i - 1; j >= Math.max(0, i - 3); j--) {
+      const candidate = lines[j];
+      if (!candidate || isNoiseLine(candidate) || isMetaLine(candidate) || candidate === 'no image') continue;
+      title = candidate;
+      break;
+    }
+    if (!title) continue;
+
+    const baseSearchUrl = source.url.replace(/\?.*$/, '');
+    const queryJoin = baseSearchUrl.includes('?') ? '&' : '?';
+    const synthesizedUrl = `${baseSearchUrl}${queryJoin}query=${encodeURIComponent(title)}`;
+
+    items.push({
+      sourceId: source.id,
+      sourceName: source.name,
+      sourceShort: source.short,
+      sourceColor: source.color,
+      sourceEmoji: source.emoji,
+      sourceUrl: source.url,
+      title,
+      url: synthesizedUrl,
+      desc: [meta, location, price].filter(Boolean).join(' · '),
+      date: listingDateFromMeta(meta),
+      category: categorizeListing(title, `${meta} ${location} ${price}`),
+    });
+  }
+
+  const deduped = [];
+  const seen = new Set();
+  items.forEach(item => {
+    const key = `${item.title}|${item.desc}`;
+    if (seen.has(key)) return;
+    seen.add(key);
     deduped.push(item);
   });
   return deduped.slice(0, 40);
