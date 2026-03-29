@@ -1183,7 +1183,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.63-dev';
+const VERSION = '1.5.65-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1836,6 +1836,7 @@ function normalizeBackendListing(item, source) {
   ].filter(Boolean).join(' · ');
 
   return {
+    id: item.id,
     sourceId: source.id,
     sourceName: source.name,
     sourceShort: source.short || source.name,
@@ -1961,8 +1962,9 @@ async function loadListings(quiet = false) {
         return 0;
       })
       .forEach(item => {
-        if (seen.has(item.url)) return;
-        seen.add(item.url);
+        const dedupeKey = item.id || `${item.sourceId}|${item.title}|${item.price || ''}`;
+        if (seen.has(dedupeKey)) return;
+        seen.add(dedupeKey);
         deduped.push(item);
       });
     allListings = deduped;
@@ -2253,7 +2255,7 @@ function listingCardHTML(item) {
   const dateStr = item.date ? fmtDate(item.date) : '';
   const photo = item.photoUrl
     ? `<div class="listing-photo" style="background-image:url('${esc(item.photoUrl)}')"></div>`
-    : `<div class="listing-photo listing-photo-fallback">🏠</div>`;
+    : '';
   const price = item.price != null ? formatPrice(item.price) : 'Price on request';
   const specs = [
     item.beds ? `${item.beds} bd` : '',
