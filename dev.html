@@ -995,7 +995,8 @@
 
   <!-- TAB BAR -->
   <div class="tab-bar">
-    <button class="tab-btn active" id="tab-news"        onclick="switchTab('news')">📰 News Feed</button>
+    <button class="tab-btn active" id="tab-news"        onclick="switchTab('news')">💳 Points</button>
+    <button class="tab-btn"        id="tab-listings"    onclick="switchTab('listings')">🏠 Houses</button>
     <button class="tab-btn"        id="tab-reddit"      onclick="switchTab('reddit')">🤝 r/churning</button>
     <button class="tab-btn"        id="tab-communities" onclick="switchTab('communities')">🌐 Communities</button>
   </div>
@@ -1057,6 +1058,49 @@
 
   </div><!-- /panel-news -->
 
+  <!-- ══ PANEL: REAL ESTATE LISTINGS ══ -->
+  <div id="panel-listings" style="display:none">
+
+    <div class="source-status" id="listingSourcePills">
+      <span class="src-pill all-pill ok" id="listing-pill-all" onclick="selectAllListingSources()" title="Show all locations">All</span>
+    </div>
+
+    <div class="stats-bar" id="listingStatsBar" style="display:none">
+      <div class="stat"><div class="stat-num" id="listingStatTotal">0</div><div class="stat-label">Listings</div></div>
+      <div class="stat"><div class="stat-num" id="listingStatSources">0</div><div class="stat-label">Locations</div></div>
+      <div class="stat"><div class="stat-num" id="listingStatCategories">0</div><div class="stat-label">Types</div></div>
+    </div>
+
+    <div class="debug-box" id="listingDebugBox">
+      <h4>🔍 Listing Feed Status</h4>
+      <ul id="listingDebugList"></ul>
+    </div>
+
+    <div class="filter-bar">
+      <span class="filter-label">Type:</span>
+      <button class="filter-btn listing-filter-btn active" onclick="setListingCategory('all',this)">All</button>
+      <button class="filter-btn listing-filter-btn" onclick="setListingCategory('new',this)" id="listingFilterNew">🆕 New</button>
+      <button class="filter-btn listing-filter-btn" onclick="setListingCategory('rental',this)">🏘️ Rentals</button>
+      <button class="filter-btn listing-filter-btn" onclick="setListingCategory('home',this)">🏡 Homes</button>
+      <button class="filter-btn listing-filter-btn" onclick="setListingCategory('condo',this)">🏢 Condos</button>
+      <button class="filter-btn listing-filter-btn" onclick="setListingCategory('land',this)">🌿 Land</button>
+      <button class="filter-btn listing-filter-btn" onclick="setListingCategory('commercial',this)">🏬 Commercial</button>
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="listingSearchInput" placeholder="Search listings…" oninput="renderListingCards()" />
+      </div>
+    </div>
+
+    <div class="grid" id="listingGrid">
+      <div class="loading-wrap">
+        <div class="spinner"></div>
+        <div class="loading-text">Open the Listings tab to load real-estate feeds.</div>
+        <div class="loading-sub">Starting with Miami, Miami Beach, Boston metro, and Stamford area.</div>
+      </div>
+    </div>
+
+  </div><!-- /panel-listings -->
+
   <!-- ══ PANEL: REDDIT DIGEST ══ -->
   <div id="panel-reddit" style="display:none">
 
@@ -1093,7 +1137,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.52-dev';
+const VERSION = '1.5.53-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1167,6 +1211,13 @@ const SUGGESTED_SOURCES = [
   { id:'aw',   name:'AwardWallet',     short:'AW',   color:'#7c3aed', emoji:'🏆', url:'https://awardwallet.com/blog',   rss:'https://www.awardwallet.com/blog/feed/' },
 ];
 
+const LISTING_SOURCES = [
+  { id:'miami',       name:'Miami Area',       short:'Miami',       color:'#0f766e', emoji:'🌴', url:'https://miami.craigslist.org/search/rea', rss:'https://miami.craigslist.org/search/rea?format=rss' },
+  { id:'miami-beach', name:'Miami Beach',      short:'M. Beach',    color:'#0284c7', emoji:'🏖️', url:'https://miami.craigslist.org/search/rea?query=miami+beach', rss:'https://miami.craigslist.org/search/rea?query=miami+beach&format=rss' },
+  { id:'boston',      name:'Boston Metro',     short:'Boston',      color:'#7c3aed', emoji:'🦞', url:'https://boston.craigslist.org/search/rea', rss:'https://boston.craigslist.org/search/rea?format=rss' },
+  { id:'stamford',    name:'Stamford Area',    short:'Stamford',    color:'#dc2626', emoji:'🌆', url:'https://newyork.craigslist.org/search/fct/rea?query=stamford', rss:'https://newyork.craigslist.org/search/fct/rea?query=stamford&format=rss' },
+];
+
 // CORS proxies — tried in order until one works
 const PROXIES = [
   url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
@@ -1195,6 +1246,12 @@ let activeCategory = 'all';
 let activeSources = new Set(); // initialized after loadSettings() in init()
 let sourceState = {}; // { id: 'loading'|'ok'|'error' }
 let debugLog = [];
+let allListings = [];
+let activeListingCategory = 'all';
+let activeListingSources = new Set(LISTING_SOURCES.map(s => s.id));
+let listingSourceState = {};
+let listingDebugLog = [];
+let listingsLoaded = false;
 
 // ── Churning two-panel state ──────────────────────────────────────────────
 let digestPostsData = [];       // all fetched posts
@@ -1358,6 +1415,90 @@ async function fetchSource(source) {
   return articles;
 }
 
+const LISTING_CATEGORIES = {
+  rental:    { label:'🏘️ Rental', kw:[' rent ','rental','lease','apartment','apt','studio','1br','2br','3br','4br','per month','/mo','month'] },
+  home:      { label:'🏡 Home', kw:['single family','house','home','townhouse','townhome'] },
+  condo:     { label:'🏢 Condo', kw:['condo','condominium','co-op','coop','loft'] },
+  land:      { label:'🌿 Land', kw:['lot','land','acre','acres','buildable'] },
+  commercial:{ label:'🏬 Commercial', kw:['commercial','office','retail','warehouse','storefront','restaurant','business'] },
+};
+
+function categorizeListing(title, desc) {
+  const text = ` ${(title || '')} ${(desc || '')} `.toLowerCase();
+  for (const [cat, def] of Object.entries(LISTING_CATEGORIES)) {
+    if (def.kw.some(k => text.includes(k))) return cat;
+  }
+  return 'home';
+}
+
+function parseListingRSS(xmlText, source) {
+  try {
+    const parser = new DOMParser();
+    let doc = parser.parseFromString(xmlText, 'application/xml');
+    if (doc.querySelector('parsererror')) {
+      doc = parser.parseFromString(xmlText, 'text/html');
+    }
+
+    return Array.from(doc.querySelectorAll('item')).slice(0, 30).map(item => {
+      const title = item.querySelector('title')?.textContent?.trim() || '';
+      const rawDesc = item.querySelector('description')?.textContent?.trim()
+                    || item.querySelector('summary')?.textContent?.trim()
+                    || '';
+      const tmpDiv = document.createElement('div');
+      tmpDiv.innerHTML = rawDesc;
+      const cleanDesc = tmpDiv.textContent.replace(/\s+/g, ' ').trim().slice(0, 320);
+      const link = item.querySelector('link')?.textContent?.trim()
+                || item.querySelector('guid')?.textContent?.trim()
+                || source.url;
+      const pubDateStr = item.querySelector('pubDate')?.textContent?.trim()
+                      || item.querySelector('published')?.textContent?.trim()
+                      || item.querySelector('updated')?.textContent?.trim()
+                      || '';
+      const pubDate = pubDateStr ? new Date(pubDateStr) : null;
+
+      return {
+        sourceId: source.id,
+        sourceName: source.name,
+        sourceShort: source.short,
+        sourceColor: source.color,
+        sourceEmoji: source.emoji,
+        sourceUrl: source.url,
+        title: title.replace(/&amp;/g,'&').replace(/&#8217;/g,"'").replace(/&#8216;/g,"'"),
+        url: link,
+        desc: cleanDesc,
+        date: pubDate && !isNaN(pubDate) ? pubDate : null,
+        category: categorizeListing(title, cleanDesc),
+      };
+    }).filter(item => item.title && item.url);
+  } catch (e) {
+    return [];
+  }
+}
+
+async function fetchListingSource(source) {
+  setListingPillState(source.id, 'loading');
+  listingDebugLog.push({ id: source.id, name: source.name, status: 'loading', msg: 'Fetching…' });
+  updateListingDebug();
+
+  const xml = await fetchWithProxy(source.rss);
+  if (!xml) {
+    setListingPillState(source.id, 'error');
+    updateListingDebugEntry(source.id, 'error', 'All proxies failed');
+    return [];
+  }
+
+  const items = parseListingRSS(xml, source);
+  if (items.length === 0) {
+    setListingPillState(source.id, 'error');
+    updateListingDebugEntry(source.id, 'error', 'Fetched but 0 listings parsed');
+    return [];
+  }
+
+  setListingPillState(source.id, 'ok', items.length);
+  updateListingDebugEntry(source.id, 'ok', `${items.length} listings loaded`);
+  return items;
+}
+
 // ─── LOAD ALL ────────────────────────────────────────────────────────────
 async function loadAll() {
   allArticles = [];
@@ -1410,6 +1551,9 @@ async function loadAll() {
     communitiesLoaded = true;
     loadCommunities();
   }
+  if (listingsLoaded) {
+    loadListings(true);
+  }
   // Wait for all blog sources to finish
   await Promise.allSettled(sourcePromises);
 
@@ -1421,6 +1565,55 @@ async function loadAll() {
     document.getElementById('debugBox').style.display = 'block';
     updateDebug();
   }
+}
+
+async function loadListings(quiet = false) {
+  listingsLoaded = true;
+  allListings = [];
+  listingDebugLog = [];
+  document.getElementById('listingStatsBar').style.display = 'none';
+  document.getElementById('listingDebugBox').style.display = 'none';
+  document.getElementById('listingGrid').innerHTML = `
+    <div class="loading-wrap">
+      <div class="spinner"></div>
+      <div class="loading-text">Fetching listings from ${LISTING_SOURCES.length} locations…</div>
+      <div class="loading-sub">Using RSS feeds with CORS proxy — may take 10–20 seconds</div>
+    </div>`;
+
+  buildListingPills();
+
+  const results = await Promise.allSettled(LISTING_SOURCES.map(async source => {
+    const items = await fetchListingSource(source);
+    allListings.push(...items);
+    const deduped = [];
+    const seen = new Set();
+    allListings
+      .sort((a, b) => {
+        if (a.date && b.date) return b.date - a.date;
+        if (a.date) return -1;
+        if (b.date) return 1;
+        return 0;
+      })
+      .forEach(item => {
+        if (seen.has(item.url)) return;
+        seen.add(item.url);
+        deduped.push(item);
+      });
+    allListings = deduped;
+    document.getElementById('listingStatTotal').textContent = allListings.length;
+    document.getElementById('listingStatSources').textContent = new Set(allListings.map(a => a.sourceId)).size;
+    document.getElementById('listingStatCategories').textContent = new Set(allListings.map(a => a.category)).size;
+    document.getElementById('listingStatsBar').style.display = 'flex';
+    renderListingCards();
+  }));
+
+  const hasErrors = results.some(r => r.status === 'rejected') || listingDebugLog.some(d => d.status === 'error');
+  if (hasErrors) {
+    document.getElementById('listingDebugBox').style.display = 'block';
+    updateListingDebug();
+  }
+
+  if (!quiet) renderListingCards();
 }
 
 // ─── SOURCE PILLS ────────────────────────────────────────────────────────
@@ -1518,10 +1711,96 @@ function updateDebugEntry(id, status, msg) {
   updateDebug();
 }
 
+function buildListingPills() {
+  const wrap = document.getElementById('listingSourcePills');
+  wrap.querySelectorAll('.src-pill[data-src-id]').forEach(pill => pill.remove());
+  LISTING_SOURCES.forEach(src => {
+    listingSourceState[src.id] = 'loading';
+    const pill = document.createElement('span');
+    pill.id = `listing-pill-${src.id}`;
+    pill.style.background = src.color;
+    pill.dataset.srcId = src.id;
+    pill.title = `Toggle ${src.name}`;
+    pill.onclick = () => toggleListingSource(src.id);
+    pill.className = 'src-pill loading';
+    pill.innerHTML = `${src.emoji} ${src.short} <span class="pill-count" id="listing-pillcount-${src.id}">…</span>`;
+    wrap.appendChild(pill);
+  });
+}
+
+function updateListingAllPill() {
+  const allPill = document.getElementById('listing-pill-all');
+  if (!allPill) return;
+  const allActive = activeListingSources.size === LISTING_SOURCES.length;
+  allPill.classList.toggle('inactive', !allActive);
+}
+
+function selectAllListingSources() {
+  activeListingSources = new Set(LISTING_SOURCES.map(s => s.id));
+  LISTING_SOURCES.forEach(s => {
+    const pill = document.getElementById(`listing-pill-${s.id}`);
+    if (pill) pill.classList.remove('inactive');
+  });
+  updateListingAllPill();
+  renderListingCards();
+}
+
+function setListingPillState(id, state, count) {
+  listingSourceState[id] = state;
+  const pill = document.getElementById(`listing-pill-${id}`);
+  const cnt  = document.getElementById(`listing-pillcount-${id}`);
+  if (!pill) return;
+  pill.className = `src-pill ${state}`;
+  if (!activeListingSources.has(id)) pill.classList.add('inactive');
+  if (state === 'ok' && count != null) cnt.textContent = count;
+  if (state === 'error') cnt.textContent = '✗';
+  if (state === 'loading') cnt.textContent = '⏳';
+  updateListingAllPill();
+}
+
+function toggleListingSource(id) {
+  const allActive = activeListingSources.size === LISTING_SOURCES.length;
+  if (allActive) {
+    activeListingSources = new Set([id]);
+  } else {
+    if (activeListingSources.has(id)) {
+      activeListingSources.delete(id);
+      if (activeListingSources.size === 0) activeListingSources = new Set(LISTING_SOURCES.map(s => s.id));
+    } else {
+      activeListingSources.add(id);
+    }
+  }
+
+  LISTING_SOURCES.forEach(s => {
+    const pill = document.getElementById(`listing-pill-${s.id}`);
+    if (pill) pill.classList.toggle('inactive', !activeListingSources.has(s.id));
+  });
+  updateListingAllPill();
+  renderListingCards();
+}
+
+function updateListingDebug() {
+  const list = document.getElementById('listingDebugList');
+  list.innerHTML = listingDebugLog.map(d => `
+    <li>
+      <span class="${d.status === 'ok' ? 'debug-ok' : d.status === 'error' ? 'debug-err' : ''}">${d.status === 'ok' ? '✓' : d.status === 'error' ? '✗' : '⏳'}</span>
+      <strong>${d.name}</strong> — ${d.msg}
+    </li>`).join('');
+}
+
+function updateListingDebugEntry(id, status, msg) {
+  const entry = listingDebugLog.find(d => d.id === id);
+  if (entry) {
+    entry.status = status;
+    entry.msg = msg;
+  }
+  updateListingDebug();
+}
+
 // ─── FILTER / RENDER ─────────────────────────────────────────────────────
 function setCategory(cat, btn) {
   activeCategory = cat;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#panel-news .filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   renderCards();
 }
@@ -1547,6 +1826,64 @@ function renderCards() {
   }
 
   grid.innerHTML = filtered.map(a => cardHTML(a)).join('');
+}
+
+function setListingCategory(cat, btn) {
+  activeListingCategory = cat;
+  document.querySelectorAll('.listing-filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderListingCards();
+}
+
+function renderListingCards() {
+  const search = (document.getElementById('listingSearchInput')?.value || '').toLowerCase();
+  const grid = document.getElementById('listingGrid');
+  if (!grid) return;
+  const newCount = allListings.filter(item => item.date && item.date.getTime() > lastVisitTime).length;
+  const newBtn = document.getElementById('listingFilterNew');
+  if (newBtn) newBtn.textContent = newCount > 0 ? `🆕 New (${newCount})` : '🆕 New';
+
+  const filtered = allListings.filter(item => {
+    if (!activeListingSources.has(item.sourceId)) return false;
+    if (activeListingCategory === 'new') return item.date && item.date.getTime() > lastVisitTime;
+    if (activeListingCategory !== 'all' && item.category !== activeListingCategory) return false;
+    if (search && !item.title.toLowerCase().includes(search) && !(item.desc || '').toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    if (allListings.length === 0) {
+      grid.innerHTML = `<div class="empty-msg">⏳ Still loading… or all listing feeds failed.<br><small>Check the location pills above.</small></div>`;
+    } else {
+      grid.innerHTML = `<div class="empty-msg">No listings match the current filters.</div>`;
+    }
+    return;
+  }
+
+  grid.innerHTML = filtered.map(item => listingCardHTML(item)).join('');
+}
+
+function listingCardHTML(item) {
+  const isNew = item.date && item.date.getTime() > lastVisitTime;
+  const catLabel = LISTING_CATEGORIES[item.category]?.label || '🏠 Listing';
+  const dateStr = item.date ? fmtDate(item.date) : '';
+  const desc = item.desc ? `<div class="card-desc">${esc(item.desc)}</div>` : '';
+
+  return `
+  <div class="card">
+    <div class="card-meta">
+      <span class="source-badge" style="background:${item.sourceColor}">${item.sourceShort}</span>
+      <span class="category-tag">${catLabel}</span>
+      ${isNew ? '<span class="new-badge">New</span>' : ''}
+      <span class="card-date">${dateStr}</span>
+    </div>
+    <div class="card-title"><a href="${esc(item.url)}" target="_blank" rel="noopener">${esc(item.title)}</a></div>
+    ${desc}
+    <div class="card-footer">
+      <a class="read-link" href="${esc(item.url)}" target="_blank" rel="noopener">View listing →</a>
+      <span style="font-size:11px;color:var(--subtext)">${esc(item.sourceName)}</span>
+    </div>
+  </div>`;
 }
 
 function cardHTML(a) {
@@ -1586,10 +1923,11 @@ function fmtDate(d) {
 
 // ─── TAB SWITCHING ───────────────────────────────────────────────────────
 function switchTab(name) {
-  ['news','reddit','communities'].forEach(t => {
+  ['news','listings','reddit','communities'].forEach(t => {
     document.getElementById(`panel-${t}`).style.display = name === t ? '' : 'none';
     document.getElementById(`tab-${t}`).classList.toggle('active', name === t);
   });
+  if (name === 'listings' && !listingsLoaded) loadListings();
 }
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────
@@ -2517,9 +2855,9 @@ function updateNewBadge() {
   if (!tab) return;
   const existing = tab.querySelector('.tab-new-dot');
   if (count > 0 && !existing) {
-    tab.innerHTML = `📰 News Feed <span class="tab-new-dot" title="${count} new articles"></span>`;
+    tab.innerHTML = `💳 Points <span class="tab-new-dot" title="${count} new articles"></span>`;
   } else if (count === 0 && existing) {
-    tab.textContent = '📰 News Feed';
+    tab.textContent = '💳 Points';
   }
   // Update "New" filter button label
   const filterNew = document.getElementById('filterNew');
