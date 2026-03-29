@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Import Miami-area listings from RentCast into Supabase.
+Import South Florida listings from RentCast into Supabase.
 
 Recommended usage:
   1. Keep RENTCAST_API_KEY in .env.local
@@ -10,9 +10,9 @@ Recommended usage:
   4. Then write to Supabase:
        python3 scripts/import_rentcast_miami.py
 
-This script is intentionally scoped to Miami only to protect a low monthly
-RentCast quota. It fetches a small batch of sale listings plus a small batch of
-rental listings, normalizes them into the app's schema, and upserts them into
+This script is intentionally scoped to Miami and Miami Beach only to protect a
+low monthly RentCast quota. It fetches small batches of sale and rental
+listings, normalizes them into the app's schema, and upserts them into
 Supabase.
 """
 
@@ -36,13 +36,25 @@ RENTCAST_BASE = "https://api.rentcast.io/v1"
 DEFAULT_SUPABASE_URL = "https://buxitxwnqhezszwqbqwh.supabase.co"
 SUPABASE_REST_PATH = "/rest/v1"
 
-MARKET_SLUG = "miami"
-MARKET_NAME = "Miami Area"
-MARKET_CITY = "Miami"
-MARKET_STATE = "FL"
+MARKETS = [
+    {
+        "slug": "miami",
+        "name": "Miami Area",
+        "city": "Miami",
+        "state": "FL",
+        "sale_limit": 12,
+        "rental_limit": 8,
+    },
+    {
+        "slug": "miami-beach",
+        "name": "Miami Beach",
+        "city": "Miami Beach",
+        "state": "FL",
+        "sale_limit": 8,
+        "rental_limit": 6,
+    },
+]
 
-SALE_LIMIT = 12
-RENTAL_LIMIT = 8
 DEFAULT_DAYS_OLD = 30
 PROVIDER_NAME = "RentCast"
 MOCK_PROVIDER_NAME = "Mock Listing Feed"
@@ -159,8 +171,8 @@ def extract_address(item: dict[str, Any]) -> tuple[str | None, str | None, str |
         address.get("line1") if isinstance(address, dict) else None,
         address.get("addressLine1") if isinstance(address, dict) else None,
     )
-    city = first_non_empty(item.get("city"), address.get("city") if isinstance(address, dict) else None, MARKET_CITY)
-    state = first_non_empty(item.get("state"), address.get("state") if isinstance(address, dict) else None, MARKET_STATE)
+    city = first_non_empty(item.get("city"), address.get("city") if isinstance(address, dict) else None)
+    state = first_non_empty(item.get("state"), address.get("state") if isinstance(address, dict) else None)
     postal = first_non_empty(
         item.get("zipCode"),
         item.get("postalCode"),
@@ -194,7 +206,7 @@ def normalize_property_type(raw_type: str | None, feed_kind: str) -> str:
     return "house"
 
 
-def build_title(item: dict[str, Any], property_type: str, city: str | None, feed_kind: str) -> str:
+def build_title(item: dict[str, Any], property_type: str, city: str | None) -> str:
     explicit = first_non_empty(item.get("formattedAddress"), item.get("address"), item.get("title"))
     if isinstance(explicit, str) and explicit.strip():
         return explicit
@@ -213,10 +225,10 @@ def build_title(item: dict[str, Any], property_type: str, city: str | None, feed
         kind = "Townhome"
     else:
         kind = "Home"
-    return f"{label} {kind} in {city or MARKET_CITY}"
+    return f"{label} {kind} in {city or 'South Florida'}"
 
 
-def normalize_listing(item: dict[str, Any], feed_kind: str) -> dict[str, Any]:
+def normalize_listing(item: dict[str, Any], feed_kind: str, market: dict[str, Any]) -> dict[str, Any]:
     provider_listing_id = str(first_non_empty(item.get("id"), item.get("listingId"), item.get("propertyId")))
     if not provider_listing_id or provider_listing_id == "None":
         raise RuntimeError(f"Missing listing id in RentCast item: {json.dumps(item)[:250]}")
@@ -246,10 +258,10 @@ def normalize_listing(item: dict[str, Any], feed_kind: str) -> dict[str, Any]:
         "source_mls": first_non_empty(item.get("mlsName"), item.get("mlsNumber"), item.get("source")),
         "status": status,
         "property_type": property_type,
-        "title": build_title(item, property_type, city, feed_kind),
+        "title": build_title(item, property_type, city),
         "street_address": street,
-        "city": city or MARKET_CITY,
-        "state": state or MARKET_STATE,
+        "city": city or market["city"],
+        "state": state or market["state"],
         "postal_code": postal,
         "latitude": latitude,
         "longitude": longitude,
@@ -265,7 +277,7 @@ def normalize_listing(item: dict[str, Any], feed_kind: str) -> dict[str, Any]:
         "agent_name": first_non_empty(item.get("agentName"), item.get("listingAgent")),
         "listed_at": listed_at,
         "updated_at": updated_at,
-        "raw_payload": item,
+        "raw_payload": {"market_slug": market["slug"], "rentcast": item},
     }
 
 
@@ -305,19 +317,19 @@ class SupabaseClient:
         return http_json(f"{self.base}/{path}?{urlencode(query)}", method="DELETE", headers=headers)
 
 
-def fetch_miami_listings(days_old: int) -> list[dict[str, Any]]:
+def fetch_market_listings(market: dict[str, Any], days_old: int) -> list[dict[str, Any]]:
     common = {
-        "city": MARKET_CITY,
-        "state": MARKET_STATE,
+        "city": market["city"],
+        "state": market["state"],
         "status": "Active",
         "daysOld": str(days_old),
         "suppressLogging": "true",
     }
-    sale_raw = rentcast_get("/listings/sale", {**common, "limit": str(SALE_LIMIT)})
-    rental_raw = rentcast_get("/listings/rental/long-term", {**common, "limit": str(RENTAL_LIMIT)})
+    sale_raw = rentcast_get("/listings/sale", {**common, "limit": str(market["sale_limit"])})
+    rental_raw = rentcast_get("/listings/rental/long-term", {**common, "limit": str(market["rental_limit"])})
 
-    normalized = [normalize_listing(item, "sale") for item in sale_raw]
-    normalized.extend(normalize_listing(item, "rental") for item in rental_raw)
+    normalized = [normalize_listing(item, "sale", market) for item in sale_raw]
+    normalized.extend(normalize_listing(item, "rental", market) for item in rental_raw)
 
     deduped: dict[str, dict[str, Any]] = {}
     for listing in normalized:
@@ -325,19 +337,19 @@ def fetch_miami_listings(days_old: int) -> list[dict[str, Any]]:
     return list(deduped.values())
 
 
-def ensure_market_id(client: SupabaseClient) -> str:
-    rows = client.select("markets", {"select": "id", "slug": f"eq.{MARKET_SLUG}", "limit": "1"})
+def ensure_market_id(client: SupabaseClient, slug: str) -> str:
+    rows = client.select("markets", {"select": "id", "slug": f"eq.{slug}", "limit": "1"})
     if not rows:
-        raise RuntimeError(f"Supabase market '{MARKET_SLUG}' not found")
+        raise RuntimeError(f"Supabase market '{slug}' not found")
     return rows[0]["id"]
 
 
-def remove_market_links_for_provider(client: SupabaseClient, market_id: str, provider_name: str) -> None:
+def remove_market_links_for_provider(client: SupabaseClient, market_slug: str, market_id: str, provider_name: str) -> None:
     rows = client.select(
         "listing_cards",
         {
             "select": "id,provider_name",
-            "market_slug": f"eq.{MARKET_SLUG}",
+            "market_slug": f"eq.{market_slug}",
             "provider_name": f"eq.{provider_name}",
         },
     )
@@ -350,14 +362,10 @@ def remove_market_links_for_provider(client: SupabaseClient, market_id: str, pro
         client.delete("listings", {"id": id_filter, "provider_name": f"eq.{provider_name}"})
 
 
-def write_to_supabase(listings: list[dict[str, Any]]) -> None:
-    project_url = os.environ.get("SUPABASE_PROJECT_URL", DEFAULT_SUPABASE_URL)
-    service_role_key = require_env("SUPABASE_SERVICE_ROLE_KEY")
-    client = SupabaseClient(project_url, service_role_key)
-    market_id = ensure_market_id(client)
-
-    remove_market_links_for_provider(client, market_id, MOCK_PROVIDER_NAME)
-    remove_market_links_for_provider(client, market_id, PROVIDER_NAME)
+def write_market_to_supabase(client: SupabaseClient, market: dict[str, Any], listings: list[dict[str, Any]]) -> None:
+    market_id = ensure_market_id(client, market["slug"])
+    remove_market_links_for_provider(client, market["slug"], market_id, MOCK_PROVIDER_NAME)
+    remove_market_links_for_provider(client, market["slug"], market_id, PROVIDER_NAME)
 
     upserted = client.insert_or_upsert("listings", listings, on_conflict="provider_name,provider_listing_id")
     listing_rows = [{"listing_id": row["id"], "market_id": market_id} for row in upserted if row.get("id")]
@@ -365,10 +373,18 @@ def write_to_supabase(listings: list[dict[str, Any]]) -> None:
         client.insert_or_upsert("listing_markets", listing_rows)
 
 
-def print_summary(listings: list[dict[str, Any]], *, dry_run: bool) -> None:
+def write_to_supabase(market_results: list[tuple[dict[str, Any], list[dict[str, Any]]]]) -> None:
+    project_url = os.environ.get("SUPABASE_PROJECT_URL", DEFAULT_SUPABASE_URL)
+    service_role_key = require_env("SUPABASE_SERVICE_ROLE_KEY")
+    client = SupabaseClient(project_url, service_role_key)
+    for market, listings in market_results:
+        write_market_to_supabase(client, market, listings)
+
+
+def print_summary(market: dict[str, Any], listings: list[dict[str, Any]], *, dry_run: bool) -> None:
     sale_count = sum(1 for item in listings if item["status"] == "active")
     rental_count = sum(1 for item in listings if item["status"] == "rental-active")
-    print(f"Miami import prepared {len(listings)} listings ({sale_count} sale, {rental_count} rental).")
+    print(f"{market['name']} import prepared {len(listings)} listings ({sale_count} sale, {rental_count} rental).")
     print("Mode:", "dry-run only" if dry_run else "write to Supabase")
     for item in listings[:5]:
         print(f"- {item['title']} | {item.get('price') or 'n/a'} | {item.get('city')}, {item.get('state')}")
@@ -383,7 +399,7 @@ def maybe_write_preview(path: str | None, listings: list[dict[str, Any]]) -> Non
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Import Miami Area listings from RentCast into Supabase.")
+    parser = argparse.ArgumentParser(description="Import Miami + Miami Beach listings from RentCast into Supabase.")
     parser.add_argument("--dry-run", action="store_true", help="Fetch and normalize listings without writing to Supabase.")
     parser.add_argument("--days-old", type=int, default=DEFAULT_DAYS_OLD, help="Limit to listings no older than this many days.")
     parser.add_argument("--preview-json", help="Optional path to write normalized JSON for inspection.")
@@ -394,11 +410,18 @@ def main() -> int:
     load_env_file(ENV_FILE)
     args = parse_args()
 
-    listings = fetch_miami_listings(args.days_old)
-    print_summary(listings, dry_run=args.dry_run)
-    maybe_write_preview(args.preview_json, listings)
+    market_results: list[tuple[dict[str, Any], list[dict[str, Any]]]] = []
+    preview_payload: dict[str, list[dict[str, Any]]] = {}
+
+    for market in MARKETS:
+        listings = fetch_market_listings(market, args.days_old)
+        market_results.append((market, listings))
+        preview_payload[market["slug"]] = listings
+        print_summary(market, listings, dry_run=args.dry_run)
 
     if args.dry_run:
+        if args.preview_json:
+            maybe_write_preview(args.preview_json, preview_payload)
         return 0
 
     if not os.environ.get("SUPABASE_SERVICE_ROLE_KEY"):
@@ -407,8 +430,10 @@ def main() -> int:
             "or rerun with --dry-run."
         )
 
-    write_to_supabase(listings)
-    print("Supabase update complete for Miami Area.")
+    write_to_supabase(market_results)
+    if args.preview_json:
+        maybe_write_preview(args.preview_json, preview_payload)
+    print("Supabase update complete for Miami Area and Miami Beach.")
     return 0
 
 

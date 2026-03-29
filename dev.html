@@ -1831,6 +1831,12 @@ function buildListingSearchUrl(title, locationLabel) {
   return `https://www.google.com/search?q=${encodeURIComponent(query)}`;
 }
 
+function buildListingProviderSearchUrl(provider, title, locationLabel) {
+  const domain = provider === 'zillow' ? 'zillow.com' : provider === 'redfin' ? 'redfin.com' : '';
+  const query = [`site:${domain}`, `"${title}"`, `"${locationLabel}"`].filter(Boolean).join(' ');
+  return `https://www.google.com/search?btnI=I&q=${encodeURIComponent(query)}`;
+}
+
 function normalizeBackendListing(item, source) {
   const meta = [
     item.location_label,
@@ -1853,6 +1859,9 @@ function normalizeBackendListing(item, source) {
     title: item.title,
     url: resolvedUrl,
     isSearchLink: !hasDirectUrl,
+    zillowUrl: buildListingProviderSearchUrl('zillow', item.title, item.location_label),
+    redfinUrl: buildListingProviderSearchUrl('redfin', item.title, item.location_label),
+    googleUrl: buildListingSearchUrl(item.title, item.location_label),
     desc: meta,
     date: item.updated_at ? new Date(item.updated_at) : null,
     category: mapBackendPropertyType(item),
@@ -2241,7 +2250,7 @@ function renderListingCards() {
 
   if (filtered.length === 0) {
     if (allListings.length === 0) {
-      grid.innerHTML = `<div class="empty-msg">No real listings are available yet for the selected locations.<br><small>Miami is currently the only imported live market.</small></div>`;
+      grid.innerHTML = `<div class="empty-msg">No real listings are available yet for the selected locations.<br><small>Miami Area and Miami Beach are currently the imported live markets.</small></div>`;
     } else {
       grid.innerHTML = `<div class="empty-msg">No listings match the current filters.</div>`;
     }
@@ -2275,7 +2284,14 @@ function listingCardHTML(item) {
     : '';
   const desc = item.desc ? `<div class="card-desc">${esc(item.desc)}</div>` : '';
   const provider = item.providerName || item.sourceName;
-  const actionLabel = item.isSearchLink ? 'Search listing →' : 'View listing →';
+  const footerLinks = item.isSearchLink
+    ? `
+        <span style="display:flex;gap:10px;flex-wrap:wrap">
+          <a class="read-link" href="${esc(item.zillowUrl)}" target="_blank" rel="noopener">Zillow</a>
+          <a class="read-link" href="${esc(item.redfinUrl)}" target="_blank" rel="noopener">Redfin</a>
+          <a class="read-link" href="${esc(item.googleUrl)}" target="_blank" rel="noopener">Google</a>
+        </span>`
+    : `<a class="read-link" href="${esc(item.url)}" target="_blank" rel="noopener">View listing →</a>`;
 
   return `
   <div class="card listing-card">
@@ -2293,7 +2309,7 @@ function listingCardHTML(item) {
       ${item.locationLabel ? `<div class="listing-location">${esc(item.locationLabel)}</div>` : ''}
       ${desc}
       <div class="card-footer">
-        <a class="read-link" href="${esc(item.url)}" target="_blank" rel="noopener">${actionLabel}</a>
+        ${footerLinks}
         <span style="font-size:11px;color:var(--subtext)">${esc(provider)}</span>
       </div>
     </div>
