@@ -1137,7 +1137,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.55-dev';
+const VERSION = '1.5.56-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1218,6 +1218,19 @@ const LISTING_SOURCES = [
   { id:'stamford',    name:'Stamford Area',    short:'Stamford',    color:'#dc2626', emoji:'🌆', url:'https://newyork.craigslist.org/search/fct/rea?query=stamford', rss:'https://newyork.craigslist.org/search/fct/rea?query=stamford&format=rss' },
 ];
 
+const SUGGESTED_LISTING_SOURCES = [
+  { id:'stowe-vt',         name:'Stowe, VT',           short:'Stowe',      color:'#1d4ed8', emoji:'⛷️', season:'winter', url:'https://vermont.craigslist.org/search/rea?query=stowe', rss:'https://vermont.craigslist.org/search/rea?query=stowe&format=rss' },
+  { id:'killington-vt',    name:'Killington, VT',      short:'Killngtn',   color:'#2563eb', emoji:'🎿', season:'winter', url:'https://vermont.craigslist.org/search/rea?query=killington', rss:'https://vermont.craigslist.org/search/rea?query=killington&format=rss' },
+  { id:'sunday-river-me',  name:'Sunday River, ME',    short:'S. River',   color:'#0f766e', emoji:'🏔️', season:'winter', url:'https://maine.craigslist.org/search/rea?query=sunday+river', rss:'https://maine.craigslist.org/search/rea?query=sunday+river&format=rss' },
+  { id:'park-city-ut',     name:'Park City, UT',       short:'Park City',  color:'#7c3aed', emoji:'🏂', season:'winter', url:'https://saltlakecity.craigslist.org/search/rea?query=park+city', rss:'https://saltlakecity.craigslist.org/search/rea?query=park+city&format=rss' },
+  { id:'aspen-co',         name:'Aspen, CO',           short:'Aspen',      color:'#9333ea', emoji:'❄️', season:'winter', url:'https://rockies.craigslist.org/search/rea?query=aspen', rss:'https://rockies.craigslist.org/search/rea?query=aspen&format=rss' },
+  { id:'bar-harbor-me',    name:'Bar Harbor, ME',      short:'Bar Hbr',    color:'#059669', emoji:'🌲', season:'summer', url:'https://maine.craigslist.org/search/rea?query=bar+harbor', rss:'https://maine.craigslist.org/search/rea?query=bar+harbor&format=rss' },
+  { id:'cape-cod-ma',      name:'Cape Cod, MA',        short:'Cape Cod',   color:'#0ea5e9', emoji:'🦀', season:'summer', url:'https://capecod.craigslist.org/search/rea', rss:'https://capecod.craigslist.org/search/rea?format=rss' },
+  { id:'outer-banks-nc',   name:'Outer Banks, NC',     short:'OBX',        color:'#f97316', emoji:'🏄', season:'summer', url:'https://eastnc.craigslist.org/search/rea?query=outer+banks', rss:'https://eastnc.craigslist.org/search/rea?query=outer+banks&format=rss' },
+  { id:'myrtle-beach-sc',  name:'Myrtle Beach, SC',    short:'Myrtle',     color:'#db2777', emoji:'🌊', season:'summer', url:'https://myrtlebeach.craigslist.org/search/rea', rss:'https://myrtlebeach.craigslist.org/search/rea?format=rss' },
+  { id:'destin-fl',        name:'Destin, FL',          short:'Destin',     color:'#0891b2', emoji:'☀️', season:'summer', url:'https://okaloosa.craigslist.org/search/rea?query=destin', rss:'https://okaloosa.craigslist.org/search/rea?query=destin&format=rss' },
+];
+
 // CORS proxies — tried in order until one works
 const PROXIES = [
   url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
@@ -1248,7 +1261,7 @@ let sourceState = {}; // { id: 'loading'|'ok'|'error' }
 let debugLog = [];
 let allListings = [];
 let activeListingCategory = 'all';
-let activeListingSources = new Set(LISTING_SOURCES.map(s => s.id));
+let activeListingSources = new Set();
 let listingSourceState = {};
 let listingDebugLog = [];
 let listingsLoaded = false;
@@ -1278,6 +1291,8 @@ let settingsDisabledSources = new Set(); // IDs of default sources turned off
 let settingsCustomSources   = [];        // user-added source objects
 let settingsDisabledSubs    = new Set(); // subreddit IDs turned off
 let settingsCustomSubs      = [];        // user-added {id, name, color}
+let settingsDisabledListings = new Set(); // listing location IDs turned off
+let settingsCustomListings   = [];        // optional listing source objects enabled by user
 // Draft state (used while modal is open — changes are speculative until Applied)
 let settingsDraft = null;
 let activeSettingsTab = 'news';
@@ -1747,18 +1762,26 @@ async function loadListings(quiet = false) {
   listingsLoaded = true;
   allListings = [];
   listingDebugLog = [];
+  const effectiveListingSources = getEffectiveListingSources();
+  if (activeListingSources.size === 0 || activeListingSources.size !== effectiveListingSources.length) {
+    activeListingSources = new Set(effectiveListingSources.map(s => s.id));
+  }
   document.getElementById('listingStatsBar').style.display = 'none';
   document.getElementById('listingDebugBox').style.display = 'none';
+  if (effectiveListingSources.length === 0) {
+    document.getElementById('listingGrid').innerHTML = `<div class="empty-msg">No house locations are enabled.<br><small>Open Settings → House Locations to add some.</small></div>`;
+    return;
+  }
   document.getElementById('listingGrid').innerHTML = `
     <div class="loading-wrap">
       <div class="spinner"></div>
-      <div class="loading-text">Fetching listings from ${LISTING_SOURCES.length} locations…</div>
+      <div class="loading-text">Fetching listings from ${effectiveListingSources.length} locations…</div>
       <div class="loading-sub">Using RSS feeds with CORS proxy — may take 10–20 seconds</div>
     </div>`;
 
   buildListingPills();
 
-  const results = await Promise.allSettled(LISTING_SOURCES.map(async source => {
+  const results = await Promise.allSettled(effectiveListingSources.map(async source => {
     const items = await fetchListingSource(source);
     allListings.push(...items);
     const deduped = [];
@@ -1889,31 +1912,39 @@ function updateDebugEntry(id, status, msg) {
 
 function buildListingPills() {
   const wrap = document.getElementById('listingSourcePills');
-  wrap.querySelectorAll('.src-pill[data-src-id]').forEach(pill => pill.remove());
-  LISTING_SOURCES.forEach(src => {
+  wrap.querySelectorAll('.src-pill[data-src-id]').forEach(pill => {
+    if (!getEffectiveListingSources().find(s => s.id === pill.dataset.srcId)) pill.remove();
+  });
+  getEffectiveListingSources().forEach(src => {
     listingSourceState[src.id] = 'loading';
-    const pill = document.createElement('span');
-    pill.id = `listing-pill-${src.id}`;
+    let pill = document.getElementById(`listing-pill-${src.id}`);
+    if (!pill) {
+      pill = document.createElement('span');
+      pill.id = `listing-pill-${src.id}`;
+      pill.style.background = src.color;
+      pill.dataset.srcId = src.id;
+      pill.title = `Toggle ${src.name}`;
+      pill.onclick = () => toggleListingSource(src.id);
+      wrap.appendChild(pill);
+    }
     pill.style.background = src.color;
-    pill.dataset.srcId = src.id;
     pill.title = `Toggle ${src.name}`;
     pill.onclick = () => toggleListingSource(src.id);
     pill.className = 'src-pill loading';
     pill.innerHTML = `${src.emoji} ${src.short} <span class="pill-count" id="listing-pillcount-${src.id}">…</span>`;
-    wrap.appendChild(pill);
   });
 }
 
 function updateListingAllPill() {
   const allPill = document.getElementById('listing-pill-all');
   if (!allPill) return;
-  const allActive = activeListingSources.size === LISTING_SOURCES.length;
+  const allActive = activeListingSources.size === getEffectiveListingSources().length;
   allPill.classList.toggle('inactive', !allActive);
 }
 
 function selectAllListingSources() {
-  activeListingSources = new Set(LISTING_SOURCES.map(s => s.id));
-  LISTING_SOURCES.forEach(s => {
+  activeListingSources = new Set(getEffectiveListingSources().map(s => s.id));
+  getEffectiveListingSources().forEach(s => {
     const pill = document.getElementById(`listing-pill-${s.id}`);
     if (pill) pill.classList.remove('inactive');
   });
@@ -1935,19 +1966,20 @@ function setListingPillState(id, state, count) {
 }
 
 function toggleListingSource(id) {
-  const allActive = activeListingSources.size === LISTING_SOURCES.length;
+  const eff = getEffectiveListingSources();
+  const allActive = activeListingSources.size === eff.length;
   if (allActive) {
     activeListingSources = new Set([id]);
   } else {
     if (activeListingSources.has(id)) {
       activeListingSources.delete(id);
-      if (activeListingSources.size === 0) activeListingSources = new Set(LISTING_SOURCES.map(s => s.id));
+      if (activeListingSources.size === 0) activeListingSources = new Set(eff.map(s => s.id));
     } else {
       activeListingSources.add(id);
     }
   }
 
-  LISTING_SOURCES.forEach(s => {
+  eff.forEach(s => {
     const pill = document.getElementById(`listing-pill-${s.id}`);
     if (pill) pill.classList.toggle('inactive', !activeListingSources.has(s.id));
   });
@@ -3139,6 +3171,10 @@ function loadSettings() {
     if (dsub) settingsDisabledSubs    = new Set(JSON.parse(dsub));
     const csub = localStorage.getItem('pmDashCustomSubs');
     if (csub) settingsCustomSubs      = JSON.parse(csub);
+    const dlst = localStorage.getItem('pmDashDisabledListings');
+    if (dlst) settingsDisabledListings = new Set(JSON.parse(dlst));
+    const clst = localStorage.getItem('pmDashCustomListings');
+    if (clst) settingsCustomListings = JSON.parse(clst);
   } catch {}
 }
 
@@ -3148,6 +3184,8 @@ function saveSettings() {
     localStorage.setItem('pmDashCustomSources',   JSON.stringify(settingsCustomSources));
     localStorage.setItem('pmDashDisabledSubs',    JSON.stringify([...settingsDisabledSubs]));
     localStorage.setItem('pmDashCustomSubs',      JSON.stringify(settingsCustomSubs));
+    localStorage.setItem('pmDashDisabledListings', JSON.stringify([...settingsDisabledListings]));
+    localStorage.setItem('pmDashCustomListings',   JSON.stringify(settingsCustomListings));
   } catch {}
 }
 
@@ -3168,6 +3206,10 @@ function getEffectiveCommunities() {
   return result;
 }
 
+function getEffectiveListingSources() {
+  return [...LISTING_SOURCES, ...settingsCustomListings].filter(s => !settingsDisabledListings.has(s.id));
+}
+
 function openSettings() {
   // Copy live state into draft
   settingsDraft = {
@@ -3175,10 +3217,13 @@ function openSettings() {
     customSources:   JSON.parse(JSON.stringify(settingsCustomSources)),
     disabledSubs:    new Set(settingsDisabledSubs),
     customSubs:      JSON.parse(JSON.stringify(settingsCustomSubs)),
+    disabledListings:new Set(settingsDisabledListings),
+    customListings:  JSON.parse(JSON.stringify(settingsCustomListings)),
   };
   activeSettingsTab = 'news';
   document.getElementById('settingsNote').textContent = '';
   document.getElementById('stab-news').classList.add('active');
+  document.getElementById('stab-houses').classList.remove('active');
   document.getElementById('stab-comm').classList.remove('active');
   renderSettingsBody();
   document.getElementById('settingsOverlay').classList.add('open');
@@ -3196,11 +3241,14 @@ function applySettings() {
   settingsCustomSources   = [...settingsDraft.customSources];
   settingsDisabledSubs    = new Set(settingsDraft.disabledSubs);
   settingsCustomSubs      = [...settingsDraft.customSubs];
+  settingsDisabledListings = new Set(settingsDraft.disabledListings);
+  settingsCustomListings   = [...settingsDraft.customListings];
   saveSettings();
   document.getElementById('settingsOverlay').classList.remove('open');
   settingsDraft = null;
   // Reload data with new effective sources
   activeSources = new Set(getEffectiveNewsSources().map(s => s.id));
+  activeListingSources = new Set(getEffectiveListingSources().map(s => s.id));
   communitiesLoaded = false;
   loadAll();
 }
@@ -3208,13 +3256,16 @@ function applySettings() {
 function switchSettingsTab(tab) {
   activeSettingsTab = tab;
   document.getElementById('stab-news').classList.toggle('active', tab === 'news');
+  document.getElementById('stab-houses').classList.toggle('active', tab === 'houses');
   document.getElementById('stab-comm').classList.toggle('active', tab === 'comm');
   renderSettingsBody();
 }
 
 function renderSettingsBody() {
   document.getElementById('settingsBody').innerHTML =
-    activeSettingsTab === 'news' ? renderSettingsNewsTab() : renderSettingsCommTab();
+    activeSettingsTab === 'news' ? renderSettingsNewsTab()
+    : activeSettingsTab === 'houses' ? renderSettingsHousesTab()
+    : renderSettingsCommTab();
 }
 
 function renderSettingsNewsTab() {
@@ -3306,9 +3357,61 @@ function renderSettingsCommTab() {
   return html;
 }
 
+function renderSettingsHousesTab() {
+  if (!settingsDraft) return '';
+  const allListings = [...LISTING_SOURCES, ...settingsDraft.customListings];
+  const suggested = SUGGESTED_LISTING_SOURCES.filter(s =>
+    !LISTING_SOURCES.find(d => d.id === s.id) &&
+    !settingsDraft.customListings.find(c => c.id === s.id)
+  );
+
+  let html = `<div class="settings-section-title">Active Locations</div>`;
+  allListings.forEach(src => {
+    const isOn = !settingsDraft.disabledListings.has(src.id);
+    const isCustom = !!settingsDraft.customListings.find(c => c.id === src.id);
+    html += `
+      <div class="settings-row">
+        <div class="settings-dot" style="background:${src.color}"></div>
+        <div class="settings-row-info">
+          <div class="settings-row-name">${esc(src.emoji || '🏠')} ${esc(src.name)}</div>
+          <div class="settings-row-url">${esc(src.url)}</div>
+        </div>
+        ${isCustom ? `<button class="settings-remove-btn" title="Remove" onclick="settingsDraft.customListings=settingsDraft.customListings.filter(s=>s.id!=='${src.id}');settingsDraft.disabledListings.delete('${src.id}');renderSettingsBody()">✕</button>` : ''}
+        <button class="settings-toggle ${isOn ? 'on' : 'off'}" onclick="if(settingsDraft.disabledListings.has('${src.id}'))settingsDraft.disabledListings.delete('${src.id}');else settingsDraft.disabledListings.add('${src.id}');renderSettingsBody()"></button>
+      </div>`;
+  });
+
+  const winter = suggested.filter(s => s.season === 'winter');
+  const summer = suggested.filter(s => s.season === 'summer');
+  const renderSuggestedGroup = (title, items) => {
+    if (!items.length) return '';
+    return `<div class="settings-section-title">${title}</div>` + items.map(src => `
+      <div class="settings-row">
+        <div class="settings-dot" style="background:${src.color}"></div>
+        <div class="settings-row-info">
+          <div class="settings-row-name">${esc(src.emoji)} ${esc(src.name)}</div>
+          <div class="settings-row-url">${esc(src.url)}</div>
+        </div>
+        <button class="settings-add-inline" onclick="settingsAddSuggestedListing('${src.id}')">+ Add</button>
+      </div>`).join('');
+  };
+
+  html += renderSuggestedGroup('Winter Vacation', winter);
+  html += renderSuggestedGroup('Summer Vacation', summer);
+  return html;
+}
+
 function settingsAddSuggested(id) {
   const src = SUGGESTED_SOURCES.find(s => s.id === id);
   if (src) settingsDraft.customSources.push(src);
+  renderSettingsBody();
+}
+
+function settingsAddSuggestedListing(id) {
+  const src = SUGGESTED_LISTING_SOURCES.find(s => s.id === id);
+  if (!src) return;
+  if (!settingsDraft.customListings.find(s => s.id === id)) settingsDraft.customListings.push(src);
+  settingsDraft.disabledListings.delete(id);
   renderSettingsBody();
 }
 
@@ -3340,6 +3443,7 @@ function settingsAddCustomSub() {
   // 1. Load settings (must happen before loadAll so getEffectiveSources() is correct)
   loadSettings();
   activeSources = new Set(getEffectiveNewsSources().map(s => s.id));
+  activeListingSources = new Set(getEffectiveListingSources().map(s => s.id));
   updateThemeButton();
 
   // 3. Load last visit time, then save new visit timestamp
@@ -3364,6 +3468,7 @@ function settingsAddCustomSub() {
     </div>
     <div class="settings-tabs">
       <button class="settings-tab active" id="stab-news" onclick="switchSettingsTab('news')">📰 News Sources</button>
+      <button class="settings-tab" id="stab-houses" onclick="switchSettingsTab('houses')">🏠 House Locations</button>
       <button class="settings-tab" id="stab-comm" onclick="switchSettingsTab('comm')">🌐 Communities</button>
     </div>
     <div class="settings-body" id="settingsBody"></div>
