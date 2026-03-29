@@ -1,8 +1,8 @@
 [
   { "id": "miami", "slug": "miami", "name": "Miami Area", "short": "Miami", "color": "#0f766e", "emoji": "🌴", "season_tag": null, "is_default": true, "sort_order": 10 },
   { "id": "miami-beach", "slug": "miami-beach", "name": "Miami Beach", "short": "M. Beach", "color": "#0284c7", "emoji": "🏖️", "season_tag": null, "is_default": true, "sort_order": 20 },
-  { "id": "boston-metro", "slug": "boston-metro", "name": "Boston Metro", "short": "Boston", "color": "#7c3aed", "emoji": "🦞", "season_tag": null, "is_default": true, "sort_order": 30 },
-  { "id": "stamford-ct", "slug": "stamford-ct", "name": "Stamford Area", "short": "Stamford", "color": "#dc2626", "emoji": "🌆", "season_tag": null, "is_default": true, "sort_order": 40 },
+  { "id": "boston-metro", "slug": "boston-metro", "name": "Boston Metro", "short": "Boston", "color": "#7c3aed", "emoji": "🦞", "season_tag": null, "is_default": false, "sort_order": 30 },
+  { "id": "stamford-ct", "slug": "stamford-ct", "name": "Stamford Area", "short": "Stamford", "color": "#dc2626", "emoji": "🌆", "season_tag": null, "is_default": false, "sort_order": 40 },
   { "id": "stowe-vt", "slug": "stowe-vt", "name": "Stowe, VT", "short": "Stowe", "color": "#1d4ed8", "emoji": "⛷️", "season_tag": "winter", "is_default": false, "sort_order": 100 },
   { "id": "killington-vt", "slug": "killington-vt", "name": "Killington, VT", "short": "Killngtn", "color": "#2563eb", "emoji": "🎿", "season_tag": "winter", "is_default": false, "sort_order": 110 },
   { "id": "sunday-river-me", "slug": "sunday-river-me", "name": "Sunday River, ME", "short": "S. River", "color": "#0f766e", "emoji": "🏔️", "season_tag": "winter", "is_default": false, "sort_order": 120 },
