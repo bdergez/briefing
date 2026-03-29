@@ -204,6 +204,44 @@
       text-decoration: none;
     }
     .read-link:hover { text-decoration: underline; }
+    .listing-card {
+      padding: 0;
+      overflow: hidden;
+      gap: 0;
+    }
+    .listing-photo {
+      aspect-ratio: 16 / 10;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      border-bottom: 1px solid var(--border);
+    }
+    .listing-photo-fallback {
+      display: flex; align-items: center; justify-content: center;
+      font-size: 40px; color: var(--subtext);
+      background: linear-gradient(135deg, var(--accent-light), var(--tag-bg));
+    }
+    .listing-card-body {
+      padding: 16px 18px 18px;
+      display: flex; flex-direction: column; gap: 10px;
+      height: 100%;
+    }
+    .listing-price {
+      font-size: 24px; font-weight: 800; color: var(--text);
+      letter-spacing: -0.4px; line-height: 1.1;
+    }
+    .listing-specs {
+      display: flex; flex-wrap: wrap; gap: 8px;
+    }
+    .listing-spec-pill {
+      background: var(--tag-bg); color: var(--text);
+      border-radius: 999px; padding: 5px 10px;
+      font-size: 12px; font-weight: 600;
+    }
+    .listing-location {
+      font-size: 12px; color: var(--subtext); font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.4px;
+    }
 
     /* LOADING */
     .loading-wrap { grid-column: 1/-1; display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 60px 0; }
@@ -1145,7 +1183,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.58-dev';
+const VERSION = '1.5.59-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -2152,21 +2190,40 @@ function listingCardHTML(item) {
   const isNew = item.date && item.date.getTime() > lastVisitTime;
   const catLabel = LISTING_CATEGORIES[item.category]?.label || '🏠 Listing';
   const dateStr = item.date ? fmtDate(item.date) : '';
+  const photo = item.photoUrl
+    ? `<div class="listing-photo" style="background-image:url('${esc(item.photoUrl)}')"></div>`
+    : `<div class="listing-photo listing-photo-fallback">🏠</div>`;
+  const price = item.price != null ? formatPrice(item.price) : 'Price on request';
+  const specs = [
+    item.beds ? `${item.beds} bd` : '',
+    item.baths ? `${item.baths} ba` : '',
+    item.sqft ? `${item.sqft} sqft` : '',
+  ].filter(Boolean);
+  const specsHTML = specs.length
+    ? `<div class="listing-specs">${specs.map(spec => `<span class="listing-spec-pill">${esc(spec)}</span>`).join('')}</div>`
+    : '';
   const desc = item.desc ? `<div class="card-desc">${esc(item.desc)}</div>` : '';
+  const provider = item.providerName || item.sourceName;
 
   return `
-  <div class="card">
-    <div class="card-meta">
-      <span class="source-badge" style="background:${item.sourceColor}">${item.sourceShort}</span>
-      <span class="category-tag">${catLabel}</span>
-      ${isNew ? '<span class="new-badge">New</span>' : ''}
-      <span class="card-date">${dateStr}</span>
-    </div>
-    <div class="card-title"><a href="${esc(item.url)}" target="_blank" rel="noopener">${esc(item.title)}</a></div>
-    ${desc}
-    <div class="card-footer">
-      <a class="read-link" href="${esc(item.url)}" target="_blank" rel="noopener">View listing →</a>
-      <span style="font-size:11px;color:var(--subtext)">${esc(item.sourceName)}</span>
+  <div class="card listing-card">
+    ${photo}
+    <div class="listing-card-body">
+      <div class="card-meta">
+        <span class="source-badge" style="background:${item.sourceColor}">${item.sourceShort}</span>
+        <span class="category-tag">${catLabel}</span>
+        ${isNew ? '<span class="new-badge">New</span>' : ''}
+        <span class="card-date">${dateStr}</span>
+      </div>
+      <div class="listing-price">${esc(price)}</div>
+      <div class="card-title"><a href="${esc(item.url)}" target="_blank" rel="noopener">${esc(item.title)}</a></div>
+      ${specsHTML}
+      ${item.locationLabel ? `<div class="listing-location">${esc(item.locationLabel)}</div>` : ''}
+      ${desc}
+      <div class="card-footer">
+        <a class="read-link" href="${esc(item.url)}" target="_blank" rel="noopener">View listing →</a>
+        <span style="font-size:11px;color:var(--subtext)">${esc(provider)}</span>
+      </div>
     </div>
   </div>`;
 }
