@@ -1093,7 +1093,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.49-dev';
+const VERSION = '1.5.51-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -2458,13 +2458,36 @@ function showLessSub(subId) {
 }
 
 // ─── THEME ───────────────────────────────────────────────────────────────
+// 3-state cycle: Auto (system) → Dark → Light → Auto
 function toggleTheme() {
+  const saved = localStorage.getItem('pmDashTheme'); // 'dark', 'light', or null
+  let next;
+  if (!saved)          next = 'dark';
+  else if (saved === 'dark') next = 'light';
+  else                 next = null; // back to auto
+
   const html = document.documentElement;
-  const isDark = html.dataset.theme === 'dark';
-  html.dataset.theme = isDark ? '' : 'dark';
-  try { localStorage.setItem('pmDashTheme', isDark ? 'light' : 'dark'); } catch{}
   const tc = document.querySelector('meta[name="theme-color"]');
-  if (tc) tc.setAttribute('content', isDark ? '#ffffff' : '#1a1a2e');
+  if (next === null) {
+    try { localStorage.removeItem('pmDashTheme'); } catch{}
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    html.dataset.theme = prefersDark ? 'dark' : '';
+    if (tc) tc.setAttribute('content', prefersDark ? '#1a1a2e' : '#ffffff');
+  } else {
+    try { localStorage.setItem('pmDashTheme', next); } catch{}
+    html.dataset.theme = next === 'dark' ? 'dark' : '';
+    if (tc) tc.setAttribute('content', next === 'dark' ? '#1a1a2e' : '#ffffff');
+  }
+  updateThemeButton();
+}
+
+function updateThemeButton() {
+  const btn = document.querySelector('button[onclick="toggleTheme()"]');
+  if (!btn) return;
+  const saved = localStorage.getItem('pmDashTheme');
+  if (!saved)              btn.textContent = '🌓 Auto';
+  else if (saved === 'dark') btn.textContent = '🌑 Dark';
+  else                     btn.textContent = '☀️ Light';
 }
 
 // ─── LAST VISIT / NEW TRACKING ───────────────────────────────────────────
@@ -2801,6 +2824,7 @@ function settingsAddCustomSub() {
   // 1. Load settings (must happen before loadAll so getEffectiveSources() is correct)
   loadSettings();
   activeSources = new Set(getEffectiveNewsSources().map(s => s.id));
+  updateThemeButton();
 
   // 3. Load last visit time, then save new visit timestamp
   loadLastVisit();
