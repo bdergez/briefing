@@ -1183,7 +1183,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.70-dev';
+const VERSION = '1.5.71-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1840,7 +1840,7 @@ function buildListingProviderSearchUrl(provider, title, locationLabel) {
     return `https://www.zillow.com/homes/${encodeURIComponent(slug)}_rb/`;
   }
   if (provider === 'redfin') {
-    return `https://www.google.com/search?q=${encodeURIComponent(`site:redfin.com "${fullAddress}"`)}`;
+    return `https://www.google.com/search?btnI=I&q=${encodeURIComponent(`site:redfin.com "${fullAddress}"`)}`;
   }
   return buildListingSearchUrl(title, locationLabel);
 }
