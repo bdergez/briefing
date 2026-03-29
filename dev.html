@@ -1137,7 +1137,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.56-dev';
+const VERSION = '1.5.57-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1231,6 +1231,9 @@ const SUGGESTED_LISTING_SOURCES = [
   { id:'destin-fl',        name:'Destin, FL',          short:'Destin',     color:'#0891b2', emoji:'☀️', season:'summer', url:'https://okaloosa.craigslist.org/search/rea?query=destin', rss:'https://okaloosa.craigslist.org/search/rea?query=destin&format=rss' },
 ];
 
+const HOUSES_MARKETS_URL = 'data/house-markets.json';
+const HOUSES_LISTINGS_URL = 'data/house-listings.json';
+
 // CORS proxies — tried in order until one works
 const PROXIES = [
   url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
@@ -1265,6 +1268,8 @@ let activeListingSources = new Set();
 let listingSourceState = {};
 let listingDebugLog = [];
 let listingsLoaded = false;
+let listingMarkets = [];
+let houseListingsCache = null;
 
 // ── Churning two-panel state ──────────────────────────────────────────────
 let digestPostsData = [];       // all fetched posts
@@ -1292,7 +1297,7 @@ let settingsCustomSources   = [];        // user-added source objects
 let settingsDisabledSubs    = new Set(); // subreddit IDs turned off
 let settingsCustomSubs      = [];        // user-added {id, name, color}
 let settingsDisabledListings = new Set(); // listing location IDs turned off
-let settingsCustomListings   = [];        // optional listing source objects enabled by user
+let settingsCustomListings   = [];        // optional listing location IDs enabled by user
 // Draft state (used while modal is open — changes are speculative until Applied)
 let settingsDraft = null;
 let activeSettingsTab = 'news';
@@ -1343,6 +1348,23 @@ async function fetchTextWithProxy(url) {
     }
   }
   return null;
+}
+
+async function fetchJSON(url) {
+  const res = await fetchWithTimeout(url, { credentials: 'omit' }, 15000);
+  if (!res.ok) throw new Error(`Failed to fetch ${url}`);
+  return res.json();
+}
+
+async function ensureHouseMarketsLoaded() {
+  if (listingMarkets.length > 0) return;
+  listingMarkets = await fetchJSON(HOUSES_MARKETS_URL);
+  listingMarkets.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+}
+
+async function fetchListingsForMarket(id) {
+  if (!houseListingsCache) houseListingsCache = await fetchJSON(HOUSES_LISTINGS_URL);
+  return houseListingsCache[id] || [];
 }
 
 function parseRSS(xmlText, source) {
@@ -1662,32 +1684,68 @@ async function fetchListingSource(source) {
   setListingPillState(source.id, 'loading');
   listingDebugLog.push({ id: source.id, name: source.name, status: 'loading', msg: 'Fetching…' });
   updateListingDebug();
-
-  const xml = await fetchWithProxy(source.rss);
-  if (xml) {
-    const items = parseListingRSS(xml, source);
-    if (items.length > 0) {
-      setListingPillState(source.id, 'ok', items.length);
-      updateListingDebugEntry(source.id, 'ok', `${items.length} listings loaded`);
-      return items;
+  try {
+    const items = (await fetchListingsForMarket(source.id)).map(item => normalizeBackendListing(item, source));
+    if (items.length === 0) {
+      setListingPillState(source.id, 'error');
+      updateListingDebugEntry(source.id, 'error', 'No listings returned');
+      return [];
     }
-  }
-
-  const markdown = await fetchTextWithProxy(`https://r.jina.ai/http://${source.url.replace(/^https?:\/\//, '')}`);
-  if (markdown) {
-    const items = parseListingMarkdown(markdown, source);
-    if (items.length > 0) {
-      setListingPillState(source.id, 'ok', items.length);
-      updateListingDebugEntry(source.id, 'ok', `${items.length} listings loaded via fallback`);
-      return items;
-    }
-  }
-
-  {
+    setListingPillState(source.id, 'ok', items.length);
+    updateListingDebugEntry(source.id, 'ok', `${items.length} listings loaded`);
+    return items;
+  } catch (e) {
     setListingPillState(source.id, 'error');
-    updateListingDebugEntry(source.id, 'error', 'Craigslist blocked RSS and fallback parsing failed');
+    updateListingDebugEntry(source.id, 'error', 'Mock listing feed failed');
     return [];
   }
+}
+
+function mapBackendPropertyType(item) {
+  if (item.status === 'rental-active' || item.property_type === 'rental') return 'rental';
+  if (item.property_type === 'condo') return 'condo';
+  if (item.property_type === 'land') return 'land';
+  if (item.property_type === 'commercial') return 'commercial';
+  return 'home';
+}
+
+function formatPrice(value) {
+  if (value == null || value === '') return '';
+  return new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+function normalizeBackendListing(item, source) {
+  const meta = [
+    item.location_label,
+    item.price != null ? formatPrice(item.price) : '',
+    item.beds ? `${item.beds} bd` : '',
+    item.baths ? `${item.baths} ba` : '',
+    item.sqft ? `${item.sqft} sqft` : '',
+  ].filter(Boolean).join(' · ');
+
+  return {
+    sourceId: source.id,
+    sourceName: source.name,
+    sourceShort: source.short || source.name,
+    sourceColor: source.color || '#0f766e',
+    sourceEmoji: source.emoji || '🏠',
+    sourceUrl: '',
+    title: item.title,
+    url: item.listing_url,
+    desc: meta,
+    date: item.updated_at ? new Date(item.updated_at) : null,
+    category: mapBackendPropertyType(item),
+    providerName: item.provider_name,
+    price: item.price,
+    beds: item.beds,
+    baths: item.baths,
+    sqft: item.sqft,
+    locationLabel: item.location_label,
+  };
 }
 
 // ─── LOAD ALL ────────────────────────────────────────────────────────────
@@ -1759,6 +1817,7 @@ async function loadAll() {
 }
 
 async function loadListings(quiet = false) {
+  await ensureHouseMarketsLoaded();
   listingsLoaded = true;
   allListings = [];
   listingDebugLog = [];
@@ -1776,7 +1835,7 @@ async function loadListings(quiet = false) {
     <div class="loading-wrap">
       <div class="spinner"></div>
       <div class="loading-text">Fetching listings from ${effectiveListingSources.length} locations…</div>
-      <div class="loading-sub">Using RSS feeds with CORS proxy — may take 10–20 seconds</div>
+      <div class="loading-sub">Using a backend-style mock listing feed while we prepare the real data source</div>
     </div>`;
 
   buildListingPills();
@@ -3174,7 +3233,12 @@ function loadSettings() {
     const dlst = localStorage.getItem('pmDashDisabledListings');
     if (dlst) settingsDisabledListings = new Set(JSON.parse(dlst));
     const clst = localStorage.getItem('pmDashCustomListings');
-    if (clst) settingsCustomListings = JSON.parse(clst);
+    if (clst) {
+      const parsed = JSON.parse(clst);
+      settingsCustomListings = Array.isArray(parsed)
+        ? parsed.map(v => typeof v === 'string' ? v : (v?.id || v?.slug)).filter(Boolean)
+        : [];
+    }
   } catch {}
 }
 
@@ -3207,7 +3271,10 @@ function getEffectiveCommunities() {
 }
 
 function getEffectiveListingSources() {
-  return [...LISTING_SOURCES, ...settingsCustomListings].filter(s => !settingsDisabledListings.has(s.id));
+  return listingMarkets.filter(m =>
+    (m.is_default || settingsCustomListings.includes(m.id)) &&
+    !settingsDisabledListings.has(m.id)
+  );
 }
 
 function openSettings() {
@@ -3218,7 +3285,7 @@ function openSettings() {
     disabledSubs:    new Set(settingsDisabledSubs),
     customSubs:      JSON.parse(JSON.stringify(settingsCustomSubs)),
     disabledListings:new Set(settingsDisabledListings),
-    customListings:  JSON.parse(JSON.stringify(settingsCustomListings)),
+    customListings:  [...settingsCustomListings],
   };
   activeSettingsTab = 'news';
   document.getElementById('settingsNote').textContent = '';
@@ -3359,41 +3426,38 @@ function renderSettingsCommTab() {
 
 function renderSettingsHousesTab() {
   if (!settingsDraft) return '';
-  const allListings = [...LISTING_SOURCES, ...settingsDraft.customListings];
-  const suggested = SUGGESTED_LISTING_SOURCES.filter(s =>
-    !LISTING_SOURCES.find(d => d.id === s.id) &&
-    !settingsDraft.customListings.find(c => c.id === s.id)
-  );
+  const activeLocations = listingMarkets.filter(m => m.is_default || settingsDraft.customListings.includes(m.id));
+  const suggested = listingMarkets.filter(m => !m.is_default && !settingsDraft.customListings.includes(m.id));
 
   let html = `<div class="settings-section-title">Active Locations</div>`;
-  allListings.forEach(src => {
+  activeLocations.forEach(src => {
     const isOn = !settingsDraft.disabledListings.has(src.id);
-    const isCustom = !!settingsDraft.customListings.find(c => c.id === src.id);
+    const isCustom = settingsDraft.customListings.includes(src.id);
     html += `
       <div class="settings-row">
         <div class="settings-dot" style="background:${src.color}"></div>
         <div class="settings-row-info">
           <div class="settings-row-name">${esc(src.emoji || '🏠')} ${esc(src.name)}</div>
-          <div class="settings-row-url">${esc(src.url)}</div>
+          <div class="settings-row-url">${src.season_tag ? `${src.season_tag[0].toUpperCase()}${src.season_tag.slice(1)} vacation market` : 'Default market'}</div>
         </div>
-        ${isCustom ? `<button class="settings-remove-btn" title="Remove" onclick="settingsDraft.customListings=settingsDraft.customListings.filter(s=>s.id!=='${src.id}');settingsDraft.disabledListings.delete('${src.id}');renderSettingsBody()">✕</button>` : ''}
+        ${isCustom ? `<button class="settings-remove-btn" title="Remove" onclick="settingsDraft.customListings=settingsDraft.customListings.filter(id=>id!=='${src.id}');settingsDraft.disabledListings.delete('${src.id}');renderSettingsBody()">✕</button>` : ''}
         <button class="settings-toggle ${isOn ? 'on' : 'off'}" onclick="if(settingsDraft.disabledListings.has('${src.id}'))settingsDraft.disabledListings.delete('${src.id}');else settingsDraft.disabledListings.add('${src.id}');renderSettingsBody()"></button>
       </div>`;
   });
 
-  const winter = suggested.filter(s => s.season === 'winter');
-  const summer = suggested.filter(s => s.season === 'summer');
+  const winter = suggested.filter(s => s.season_tag === 'winter');
+  const summer = suggested.filter(s => s.season_tag === 'summer');
   const renderSuggestedGroup = (title, items) => {
     if (!items.length) return '';
     return `<div class="settings-section-title">${title}</div>` + items.map(src => `
       <div class="settings-row">
         <div class="settings-dot" style="background:${src.color}"></div>
-        <div class="settings-row-info">
-          <div class="settings-row-name">${esc(src.emoji)} ${esc(src.name)}</div>
-          <div class="settings-row-url">${esc(src.url)}</div>
-        </div>
-        <button class="settings-add-inline" onclick="settingsAddSuggestedListing('${src.id}')">+ Add</button>
-      </div>`).join('');
+          <div class="settings-row-info">
+            <div class="settings-row-name">${esc(src.emoji)} ${esc(src.name)}</div>
+            <div class="settings-row-url">${src.season_tag === 'winter' ? 'Winter vacation market' : 'Summer vacation market'}</div>
+          </div>
+          <button class="settings-add-inline" onclick="settingsAddSuggestedListing('${src.id}')">+ Add</button>
+        </div>`).join('');
   };
 
   html += renderSuggestedGroup('Winter Vacation', winter);
@@ -3408,9 +3472,9 @@ function settingsAddSuggested(id) {
 }
 
 function settingsAddSuggestedListing(id) {
-  const src = SUGGESTED_LISTING_SOURCES.find(s => s.id === id);
+  const src = listingMarkets.find(s => s.id === id);
   if (!src) return;
-  if (!settingsDraft.customListings.find(s => s.id === id)) settingsDraft.customListings.push(src);
+  if (!settingsDraft.customListings.includes(id)) settingsDraft.customListings.push(id);
   settingsDraft.disabledListings.delete(id);
   renderSettingsBody();
 }
@@ -3439,10 +3503,15 @@ function settingsAddCustomSub() {
 }
 
 // ─── INIT ────────────────────────────────────────────────────────────────
-(function init() {
+(async function init() {
   // 1. Load settings (must happen before loadAll so getEffectiveSources() is correct)
   loadSettings();
   activeSources = new Set(getEffectiveNewsSources().map(s => s.id));
+  try {
+    await ensureHouseMarketsLoaded();
+  } catch (e) {
+    console.error('Failed to load house markets', e);
+  }
   activeListingSources = new Set(getEffectiveListingSources().map(s => s.id));
   updateThemeButton();
 
