@@ -1167,7 +1167,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.78';
+const VERSION = 'homes-1.0.0';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1940,6 +1940,10 @@ async function loadListings(quiet = false) {
   listingsLoaded = true;
   allListings = [];
   listingDebugLog = [];
+  const refreshTime = document.getElementById('refreshTime');
+  const refreshBtn = document.getElementById('refreshBtn');
+  if (refreshBtn) refreshBtn.disabled = true;
+  if (refreshTime) refreshTime.textContent = quiet ? `v${VERSION} · Refreshing…` : 'Loading…';
   const effectiveListingSources = getEffectiveListingSources();
   if (activeListingSources.size === 0 || activeListingSources.size !== effectiveListingSources.length) {
     activeListingSources = new Set(effectiveListingSources.map(s => s.id));
@@ -1992,6 +1996,8 @@ async function loadListings(quiet = false) {
   }
 
   if (!quiet) renderListingCards();
+  if (refreshBtn) refreshBtn.disabled = false;
+  if (refreshTime) refreshTime.textContent = `v${VERSION} · Updated ${new Date().toLocaleTimeString()}`;
 }
 
 // ─── SOURCE PILLS ────────────────────────────────────────────────────────
@@ -3290,7 +3296,7 @@ function scheduleAutoRefresh() {
       // Show pulsing dot while refreshing silently
       const rt = document.getElementById('refreshTime');
       if (rt) rt.innerHTML = `v${VERSION} · <span class="refresh-dot"></span> Refreshing…`;
-      await loadAll();
+      await loadListings(true);
     }
     scheduleAutoRefresh(); // schedule next
   }, 30 * 60 * 1000); // 30 minutes
