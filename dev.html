@@ -1183,7 +1183,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.72-dev';
+const VERSION = '1.5.73-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1854,7 +1854,9 @@ function normalizeBackendListing(item, source) {
     item.sqft ? `${item.sqft} sqft` : '',
   ].filter(Boolean).join(' · ');
   const hasDirectUrl = item.listing_url && !/^https:\/\/www\.rentcast\.io\/?$/.test(item.listing_url);
-  const resolvedUrl = hasDirectUrl ? item.listing_url : buildListingSearchUrl(item.title, item.location_label);
+  const zillowUrl = buildListingProviderSearchUrl('zillow', item.title, item.location_label);
+  const googleUrl = buildListingSearchUrl(item.title, item.location_label);
+  const resolvedUrl = zillowUrl || (hasDirectUrl ? item.listing_url : googleUrl);
 
   return {
     id: item.id,
@@ -1867,9 +1869,8 @@ function normalizeBackendListing(item, source) {
     title: item.title,
     url: resolvedUrl,
     isSearchLink: !hasDirectUrl,
-    zillowUrl: buildListingProviderSearchUrl('zillow', item.title, item.location_label),
-    redfinUrl: buildListingProviderSearchUrl('redfin', item.title, item.location_label),
-    googleUrl: buildListingSearchUrl(item.title, item.location_label),
+    zillowUrl,
+    googleUrl,
     desc: meta,
     date: item.updated_at ? new Date(item.updated_at) : null,
     category: mapBackendPropertyType(item),
@@ -2292,14 +2293,7 @@ function listingCardHTML(item) {
     : '';
   const desc = item.desc ? `<div class="card-desc">${esc(item.desc)}</div>` : '';
   const provider = item.providerName || item.sourceName;
-  const footerLinks = item.isSearchLink
-    ? `
-        <span style="display:flex;gap:10px;flex-wrap:wrap">
-          <a class="read-link" href="${esc(item.zillowUrl)}" target="_blank" rel="noopener">Zillow</a>
-          <a class="read-link" href="${esc(item.redfinUrl)}" target="_blank" rel="noopener">Redfin</a>
-          <a class="read-link" href="${esc(item.googleUrl)}" target="_blank" rel="noopener">Google</a>
-        </span>`
-    : `<a class="read-link" href="${esc(item.url)}" target="_blank" rel="noopener">View listing →</a>`;
+  const actionLabel = item.zillowUrl ? 'View on Zillow →' : 'Search listing →';
 
   return `
   <div class="card listing-card">
@@ -2317,7 +2311,7 @@ function listingCardHTML(item) {
       ${item.locationLabel ? `<div class="listing-location">${esc(item.locationLabel)}</div>` : ''}
       ${desc}
       <div class="card-footer">
-        ${footerLinks}
+        <a class="read-link" href="${esc(item.url)}" target="_blank" rel="noopener">${actionLabel}</a>
         <span style="font-size:11px;color:var(--subtext)">${esc(provider)}</span>
       </div>
     </div>
