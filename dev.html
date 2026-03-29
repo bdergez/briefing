@@ -1183,7 +1183,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.68-dev';
+const VERSION = '1.5.69-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1832,9 +1832,17 @@ function buildListingSearchUrl(title, locationLabel) {
 }
 
 function buildListingProviderSearchUrl(provider, title, locationLabel) {
-  const domain = provider === 'zillow' ? 'zillow.com' : provider === 'redfin' ? 'redfin.com' : '';
-  const query = [`site:${domain}`, `"${title}"`, `"${locationLabel}"`].filter(Boolean).join(' ');
-  return `https://www.google.com/search?btnI=I&q=${encodeURIComponent(query)}`;
+  const fullAddress = [title, locationLabel].filter(Boolean).join(', ');
+  if (provider === 'zillow') {
+    const slug = fullAddress
+      .replace(/[^a-zA-Z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    return `https://www.zillow.com/homes/${encodeURIComponent(slug)}_rb/`;
+  }
+  if (provider === 'redfin') {
+    return `https://www.redfin.com/search?q=${encodeURIComponent(fullAddress)}`;
+  }
+  return buildListingSearchUrl(title, locationLabel);
 }
 
 function normalizeBackendListing(item, source) {
