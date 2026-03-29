@@ -1183,7 +1183,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.59-dev';
+const VERSION = '1.5.60-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1279,6 +1279,9 @@ const SUGGESTED_LISTING_SOURCES = [
 
 const HOUSES_MARKETS_URL = 'data/house-markets.json';
 const HOUSES_LISTINGS_URL = 'data/house-listings.json';
+const SUPABASE_PROJECT_URL = 'https://buxitxwnqhezszwqbqwh.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_1hbWeGSEuIjNJPK4lw_eKg_rr8Ycmum';
+const SUPABASE_REST_URL = `${SUPABASE_PROJECT_URL}/rest/v1`;
 
 // CORS proxies — tried in order until one works
 const PROXIES = [
@@ -1316,6 +1319,7 @@ let listingDebugLog = [];
 let listingsLoaded = false;
 let listingMarkets = [];
 let houseListingsCache = null;
+let houseMarketDefaults = [];
 let activeListingSort = 'updated-desc';
 
 // ── Churning two-panel state ──────────────────────────────────────────────
@@ -1403,13 +1407,79 @@ async function fetchJSON(url) {
   return res.json();
 }
 
+async function fetchSupabaseJSON(path, searchParams = {}) {
+  const url = new URL(`${SUPABASE_REST_URL}/${path}`);
+  Object.entries(searchParams).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') url.searchParams.set(key, value);
+  });
+
+  const res = await fetchWithTimeout(url.toString(), {
+    method: 'GET',
+    headers: {
+      apikey: SUPABASE_PUBLISHABLE_KEY,
+      Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
+      Accept: 'application/json',
+    },
+    credentials: 'omit',
+  }, 15000);
+
+  if (!res.ok) throw new Error(`Supabase request failed (${res.status})`);
+  return res.json();
+}
+
+function mergeHouseMarketRecords(defaults, remote = []) {
+  const bySlug = new Map(defaults.map(item => [item.slug || item.id, { ...item }]));
+  remote.forEach(item => {
+    const slug = item.slug || item.id;
+    if (!slug) return;
+    const existing = bySlug.get(slug) || {};
+    bySlug.set(slug, {
+      ...existing,
+      ...item,
+      id: existing.id || slug,
+      remote_id: item.id || existing.remote_id || null,
+      slug,
+      short: item.short || existing.short || item.name || slug,
+      color: item.color || existing.color || '#0f766e',
+      emoji: item.emoji || existing.emoji || '🏠',
+      name: item.name || existing.name || slug,
+    });
+  });
+  return [...bySlug.values()].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+}
+
 async function ensureHouseMarketsLoaded() {
   if (listingMarkets.length > 0) return;
-  listingMarkets = await fetchJSON(HOUSES_MARKETS_URL);
-  listingMarkets.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+  houseMarketDefaults = await fetchJSON(HOUSES_MARKETS_URL);
+  listingMarkets = [...houseMarketDefaults].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+
+  try {
+    const remoteMarkets = await fetchSupabaseJSON('markets', {
+      select: 'id,slug,name,short,color,emoji,season_tag,is_default,sort_order',
+      order: 'sort_order.asc',
+    });
+    if (Array.isArray(remoteMarkets) && remoteMarkets.length > 0) {
+      listingMarkets = mergeHouseMarketRecords(houseMarketDefaults, remoteMarkets);
+    }
+  } catch (e) {
+    console.warn('Supabase markets unavailable, using local house markets fallback.', e);
+  }
 }
 
 async function fetchListingsForMarket(id) {
+  try {
+    const remoteItems = await fetchSupabaseJSON('listing_cards', {
+      select: 'id,title,price,beds,baths,sqft,property_type,status,location_label,photo_url,listing_url,provider_name,updated_at',
+      market_slug: `eq.${id}`,
+      status: 'in.(active,rental-active)',
+      order: 'updated_at.desc',
+      limit: '50',
+    });
+    if (Array.isArray(remoteItems)) return remoteItems;
+  } catch (e) {
+    console.warn(`Supabase listings unavailable for ${id}, using local house listings fallback.`, e);
+  }
+
   if (!houseListingsCache) houseListingsCache = await fetchJSON(HOUSES_LISTINGS_URL);
   return houseListingsCache[id] || [];
 }
