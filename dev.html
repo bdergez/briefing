@@ -1034,7 +1034,7 @@
   <!-- TAB BAR -->
   <div class="tab-bar">
     <button class="tab-btn active" id="tab-news"        onclick="switchTab('news')">💳 Points</button>
-    <button class="tab-btn"        id="tab-listings"    onclick="switchTab('listings')">🏠 Homes</button>
+    <button class="tab-btn" id="tab-listings" onclick="switchTab('listings')" style="display:none">🏠 Homes</button>
     <button class="tab-btn"        id="tab-reddit"      onclick="switchTab('reddit')">🤝 Churning</button>
     <button class="tab-btn"        id="tab-communities" onclick="switchTab('communities')">🌐 Reddit</button>
   </div>
@@ -1183,7 +1183,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.74-dev';
+const VERSION = '1.5.75-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -3702,7 +3702,7 @@ function settingsAddCustomSub() {
     </div>
     <div class="settings-tabs">
       <button class="settings-tab active" id="stab-news" onclick="switchSettingsTab('news')">📰 News Sources</button>
-      <button class="settings-tab" id="stab-houses" onclick="switchSettingsTab('houses')">🏠 House Locations</button>
+      <button class="settings-tab" id="stab-houses" onclick="switchSettingsTab('houses')" style="display:none">🏠 House Locations</button>
       <button class="settings-tab" id="stab-comm" onclick="switchSettingsTab('comm')">🌐 Reddit</button>
     </div>
     <div class="settings-body" id="settingsBody"></div>

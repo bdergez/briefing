@@ -7,11 +7,11 @@
   <meta name="color-scheme" content="light dark" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="P&M" />
+  <meta name="apple-mobile-web-app-title" content="Homes" />
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="icon.svg" />
-  <title>Points & Miles Dashboard</title>
+  <title>Homes Dashboard</title>
   <style>
     :root {
       --bg: #f0f2f5;
@@ -1010,7 +1010,7 @@
   </div>
   <div class="header-right">
     <span class="refresh-time" id="refreshTime">Not loaded</span>
-    <button class="btn btn-primary" id="refreshBtn" onclick="loadAll()">⟳ Refresh</button>
+    <button class="btn btn-primary" id="refreshBtn" onclick="loadListings()">⟳ Refresh</button>
     <button class="btn btn-ghost" onclick="toggleTheme()">🌓 Theme</button>
     <button class="btn btn-ghost" onclick="openSettings()">⚙️ Sources</button>
   </div>
@@ -1020,14 +1020,11 @@
 
   <!-- TAB BAR -->
   <div class="tab-bar">
-    <button class="tab-btn active" id="tab-news"        onclick="switchTab('news')">💳 Points</button>
-    <button class="tab-btn" id="tab-listings" onclick="switchTab('listings')" style="display:none">🏠 Homes</button>
-    <button class="tab-btn"        id="tab-reddit"      onclick="switchTab('reddit')">🤝 Churning</button>
-    <button class="tab-btn"        id="tab-communities" onclick="switchTab('communities')">🌐 Reddit</button>
+    <button class="tab-btn active">🏠 Homes</button>
   </div>
 
   <!-- ══ PANEL: NEWS FEED ══ -->
-  <div id="panel-news">
+  <div id="panel-news" style="display:none">
 
     <!-- SOURCE STATUS PILLS -->
     <div class="source-status" id="sourcePills">
@@ -1084,7 +1081,7 @@
   </div><!-- /panel-news -->
 
   <!-- ══ PANEL: REAL ESTATE LISTINGS ══ -->
-  <div id="panel-listings" style="display:none">
+  <div id="panel-listings">
 
     <div class="source-status" id="listingSourcePills">
       <span class="src-pill all-pill ok" id="listing-pill-all" onclick="selectAllListingSources()" title="Show all locations">All</span>
@@ -1336,7 +1333,7 @@ let settingsDisabledListings = new Set(); // listing location IDs turned off
 let settingsCustomListings   = [];        // optional listing location IDs enabled by user
 // Draft state (used while modal is open — changes are speculative until Applied)
 let settingsDraft = null;
-let activeSettingsTab = 'news';
+let activeSettingsTab = 'houses';
 
 // ─── FETCH ───────────────────────────────────────────────────────────────
 async function fetchWithProxy(rssUrl) {
@@ -3440,9 +3437,9 @@ function openSettings() {
   };
   activeSettingsTab = 'news';
   document.getElementById('settingsNote').textContent = '';
-  document.getElementById('stab-news').classList.add('active');
-  document.getElementById('stab-houses').classList.remove('active');
-  document.getElementById('stab-comm').classList.remove('active');
+  document.getElementById('stab-news')?.classList.remove('active');
+  document.getElementById('stab-houses')?.classList.add('active');
+  document.getElementById('stab-comm')?.classList.remove('active');
   renderSettingsBody();
   document.getElementById('settingsOverlay').classList.add('open');
 }
@@ -3473,9 +3470,9 @@ function applySettings() {
 
 function switchSettingsTab(tab) {
   activeSettingsTab = tab;
-  document.getElementById('stab-news').classList.toggle('active', tab === 'news');
-  document.getElementById('stab-houses').classList.toggle('active', tab === 'houses');
-  document.getElementById('stab-comm').classList.toggle('active', tab === 'comm');
+  document.getElementById('stab-news')?.classList.toggle('active', tab === 'news');
+  document.getElementById('stab-houses')?.classList.toggle('active', tab === 'houses');
+  document.getElementById('stab-comm')?.classList.toggle('active', tab === 'comm');
   renderSettingsBody();
 }
 
@@ -3674,8 +3671,7 @@ function settingsAddCustomSub() {
   registerSW();
 
   // 5. Load content and start auto-refresh
-  loadAll();
-  scheduleAutoRefresh();
+  loadListings();
 })();
 </script>
 
@@ -3687,9 +3683,7 @@ function settingsAddCustomSub() {
       <button class="settings-close" onclick="closeSettings()">✕</button>
     </div>
     <div class="settings-tabs">
-      <button class="settings-tab active" id="stab-news" onclick="switchSettingsTab('news')">📰 News Sources</button>
-      <button class="settings-tab" id="stab-houses" onclick="switchSettingsTab('houses')" style="display:none">🏠 House Locations</button>
-      <button class="settings-tab" id="stab-comm" onclick="switchSettingsTab('comm')">🌐 Reddit</button>
+      <button class="settings-tab active" id="stab-houses" onclick="switchSettingsTab('houses')">🏠 House Locations</button>
     </div>
     <div class="settings-body" id="settingsBody"></div>
     <div class="settings-footer">
