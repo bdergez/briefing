@@ -197,10 +197,6 @@ def normalize_property_type(raw_type: str | None, feed_kind: str) -> str:
 def build_title(item: dict[str, Any], property_type: str, city: str | None, feed_kind: str) -> str:
     explicit = first_non_empty(item.get("formattedAddress"), item.get("address"), item.get("title"))
     if isinstance(explicit, str) and explicit.strip():
-        if property_type == "rental":
-            return f"Rental Listing in {city or MARKET_CITY}"
-        if property_type == "condo":
-            return f"Condo Listing in {city or MARKET_CITY}"
         return explicit
 
     bedrooms = first_non_empty(item.get("bedrooms"), item.get("beds"))
