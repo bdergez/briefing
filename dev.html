@@ -1192,7 +1192,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.83-dev';
+const VERSION = '1.5.79-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1202,7 +1202,7 @@ const SOURCES = [
   { id:'vftw',   name:'View From The Wing',  short:'VFTW',   color:'#2f855a', emoji:'🪟', url:'https://viewfromthewing.com',         rss:'https://viewfromthewing.com/feed/' },
   { id:'mtm',    name:'Miles to Memories',   short:'MtM',    color:'#d97706', emoji:'✈️', url:'https://milestomemories.com',         rss:'https://milestomemories.com/feed/' },
   { id:'loyaltylobby', name:'LoyaltyLobby', short:'LL', color:'#2C7A7B', emoji:'🛎️', url:'https://loyaltylobby.com', rss:'https://loyaltylobby.com/feed/' },
-  { id:'nextcard', name:'Nextcard', short:'NC', color:'#6366f1', emoji:'💳', url:'https://www.nextcard.com', scrapeUrl:'https://www.nextcard.com/articles' },
+  { id:'nextcard', name:'Nextcard', short:'NC', color:'#6366f1', emoji:'💳', url:'https://www.nextcard.com', sitemap:'https://www.nextcard.com/sitemap.xml', sitemapPath:'/articles/' },
   { id:'hyatt',  name:'Hyatt Newsroom',      short:'Hyatt',  color:'#2b6cb0', emoji:'🏨', url:'https://newsroom.hyatt.com',
     rssFeeds: [
       'https://newsroom.hyatt.com/news-releases?pagetemplate=rss',
@@ -1526,133 +1526,6 @@ function parseRSS(xmlText, source) {
   }
 }
 
-function scrapeHTMLArticles(htmlText, source) {
-  const base = source.url;
-  let doc;
-  try { doc = new DOMParser().parseFromString(htmlText, 'text/html'); }
-  catch(e) { return []; }
-  const cards = [...doc.querySelectorAll('article')];
-  const items = [];
-  for (const card of cards) {
-    const anchor = card.closest('a') || card.parentElement;
-    let url = anchor?.getAttribute('href') || '';
-    if (url && url.startsWith('/')) url = base + url;
-    if (!url || !url.includes('/articles/')) continue;
-    const heading = card.querySelector('h1,h2,h3,h4,h5,h6');
-    const title = heading?.textContent?.trim() || '';
-    if (!title) continue;
-    const lines = (card.textContent || '').split('\n').map(l=>l.trim()).filter(l=>l.length>50 && l!==title && !/min read|By nextcard|Credit Cards/i.test(l));
-    const desc = (lines[0]||'').substring(0,280);
-    const dateMatch = (card.textContent||'').match(/\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*[\s.]+\d{1,2},?\s*\d{4}/i);
-    const date = dateMatch ? new Date(dateMatch[0]) : null;
-    items.push({ sourceId:source.id, sourceName:source.name, sourceShort:source.short, sourceColor:source.color, sourceEmoji:source.emoji, sourceUrl:source.url, title, url, desc, date, category:categorize(title,desc) });
-    if (items.length >= 15) break;
-  }
-  return items;
-}
-
-function parseNextcardStructuredArticles(htmlText, source) {
-  try {
-    const rawItems = [];
-    const seenRaw = new Set();
-    let start = 0;
-
-    while (rawItems.length < 40) {
-      start = htmlText.indexOf('{\\"id\\":\\"', start);
-      if (start === -1) break;
-
-      let depth = 0;
-      let inString = false;
-      let escaped = false;
-      let end = -1;
-
-      for (let i = start; i < htmlText.length; i++) {
-        const ch = htmlText[i];
-        if (inString) {
-          if (escaped) {
-            escaped = false;
-          } else if (ch === '\\') {
-            escaped = true;
-          } else if (ch === '"') {
-            inString = false;
-          }
-          continue;
-        }
-
-        if (ch === '"') {
-          inString = true;
-          continue;
-        }
-        if (ch === '{') depth++;
-        if (ch === '}') {
-          depth--;
-          if (depth === 0) {
-            end = i + 1;
-            break;
-          }
-        }
-      }
-
-      const raw = end === -1 ? '' : htmlText.slice(start, end);
-      start = end === -1 ? start + 1 : end;
-      if (!raw) continue;
-      if (!raw.includes('\\"href\\":\\"/articles/')) continue;
-      if (!raw.includes('\\"publishedAt\\":\\"')) continue;
-      if (!(raw.includes('\\"excerpt\\":\\"') || raw.includes('\\"tldr\\":\\"'))) continue;
-
-      const decoded = raw.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
-      if (seenRaw.has(decoded)) continue;
-      seenRaw.add(decoded);
-
-      try {
-        rawItems.push(JSON.parse(decoded));
-      } catch (e) {
-        continue;
-      }
-    }
-
-    const items = rawItems
-      .map(article => {
-        const href = article.href || '';
-        const title = (article.title || '').replace(/^\$\$/g, '$').trim();
-        const desc = (article.excerpt || article.tldr || '').trim().slice(0, 280);
-        const url = href.startsWith('http') ? href : `${source.url}${href}`;
-        const date = article.publishedAt ? new Date(article.publishedAt) : null;
-        return {
-          sourceId: source.id,
-          sourceName: source.name,
-          sourceShort: source.short,
-          sourceColor: source.color,
-          sourceEmoji: source.emoji,
-          sourceUrl: source.url,
-          title,
-          url,
-          desc,
-          date: date && !isNaN(date) ? date : null,
-          category: categorize(title, desc),
-        };
-      })
-      .filter(item => item.title && item.url)
-      .sort((a, b) => (b.date || 0) - (a.date || 0));
-
-    const seen = new Set();
-    return items.filter(item => {
-      if (seen.has(item.url)) return false;
-      seen.add(item.url);
-      return true;
-    }).slice(0, 15);
-  } catch (e) {
-    return [];
-  }
-}
-
-function looksHealthyNextcardSet(items) {
-  if (!items || items.length < 5) return false;
-  const withPreview = items.filter(item => (item.desc || '').trim().length >= 40).length;
-  const uniqueUrls = new Set(items.map(item => item.url)).size;
-  return withPreview >= Math.min(5, items.length) && uniqueUrls >= Math.min(5, items.length);
-}
-
 function parseSitemap(xmlText, source) {
   let doc;
   try {
@@ -1713,28 +1586,6 @@ async function fetchSource(source) {
   updateDebug();
 
   let articles = [];
-
-  if (source.scrapeUrl) {
-    const html = await fetchTextWithProxy(source.scrapeUrl);
-    if (!html) {
-      setPillState(source.id, 'error');
-      updateDebugEntry(source.id, 'error', 'All proxies failed');
-      return [];
-    }
-
-    const structuredItems = parseNextcardStructuredArticles(html, source);
-    const fallbackItems = scrapeHTMLArticles(html, source);
-    const items = looksHealthyNextcardSet(structuredItems) ? structuredItems : fallbackItems;
-    if (items.length === 0) {
-      setPillState(source.id, 'error');
-      updateDebugEntry(source.id, 'error', 'Fetched but 0 articles parsed');
-      return [];
-    }
-
-    setPillState(source.id, 'ok', items.length);
-    updateDebugEntry(source.id, 'ok', `${items.length} articles loaded`);
-    return items;
-  }
 
   // Sitemap source
   if (source.sitemap) {
