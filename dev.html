@@ -1198,7 +1198,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.84-dev';
+const VERSION = '1.5.85-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1533,6 +1533,31 @@ function parseRSS(xmlText, source) {
 }
 
 function parseSitemap(xmlText, source) {
+  const humanizeSlug = slug => {
+    const words = slug.split('-').filter(Boolean);
+    if (words.length === 0) return '';
+    const smallWords = new Set(['a', 'an', 'and', 'as', 'at', 'by', 'for', 'in', 'of', 'on', 'or', 'the', 'to', 'vs']);
+    const normalized = words.map((word, idx) => {
+      const lower = word.toLowerCase();
+      if (/^\d+$/.test(lower)) return lower;
+      if (/^\d{4}$/.test(lower)) return lower;
+      if (smallWords.has(lower) && idx !== 0) return lower;
+      return lower.charAt(0).toUpperCase() + lower.slice(1);
+    });
+    return normalized.join(' ').replace(/\s+/g, ' ').trim();
+  };
+  const previewFromSlug = slug => {
+    const phrase = humanizeSlug(slug);
+    const lower = slug.toLowerCase();
+    if (!phrase) return '';
+    if (lower.includes('-vs-') || /\bvs\b/.test(lower)) return `Comparison of ${phrase.replace(/\bVs\b/i, 'vs')}.`;
+    if (lower.includes('review')) return `Review and key details on ${phrase.replace(/\bReview\b/i, '').trim()}.`;
+    if (lower.startsWith('best-') || lower.includes('-best-')) return `A look at ${phrase}.`;
+    if (lower.includes('guide')) return `Guide to ${phrase.replace(/\bGuide\b/i, '').trim()}.`;
+    if (lower.includes('how-to') || lower.startsWith('how-')) return `${phrase}.`;
+    return `More on ${phrase}.`;
+  };
+
   let doc;
   try {
     doc = new DOMParser().parseFromString(xmlText, 'application/xml');
@@ -1553,18 +1578,8 @@ function parseSitemap(xmlText, source) {
       const loc = u.querySelector('loc')?.textContent || '';
       const lastmod = u.querySelector('lastmod')?.textContent || '';
       const slug = loc.split('/').filter(Boolean).pop() || '';
-      // Convert slug to title: hyphens to spaces, title-case
-      const title = slug
-        .replace(/-/g, ' ')
-        .replace(/\b\w/g, c => c.toUpperCase())
-        .replace(/\bVs\b/g, 'vs')
-        .replace(/\bOf\b/g, 'of')
-        .replace(/\bAnd\b/g, 'and')
-        .replace(/\bThe\b/g, 'the')
-        .replace(/\bIn\b/g, 'in')
-        .replace(/\bA\b/g, 'a')
-        .replace(/\bFor\b/g, 'for')
-        .replace(/^(vs|of|and|the|in|a|for)\b/i, m => m.toUpperCase());
+      const title = humanizeSlug(slug);
+      const desc = source.id === 'nextcard' ? previewFromSlug(slug) : '';
       return {
         sourceId: source.id,
         sourceName: source.name,
@@ -1574,9 +1589,9 @@ function parseSitemap(xmlText, source) {
         sourceUrl: source.url,
         title,
         url: loc,
-        desc: '',
+        desc,
         date: lastmod ? new Date(lastmod) : null,
-        category: categorize(title, ''),
+        category: categorize(title, desc),
       };
     })
     .filter(a => a.title && a.url)
