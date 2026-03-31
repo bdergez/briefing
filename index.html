@@ -86,19 +86,50 @@
 
     .refresh-time { font-size: 11px; opacity: 0.45; }
 
-    .main { max-width: 1400px; margin: 0 auto; padding: 28px 24px; }
+    .main {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 18px 24px 24px;
+      height: calc(100vh - 64px);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #panel-news,
+    #panel-tools,
+    #panel-reddit,
+    #panel-communities {
+      min-height: 0;
+    }
+
+    #panel-news {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .news-fixed-chrome {
+      flex: 0 0 auto;
+      padding-bottom: 12px;
+      background: var(--bg);
+    }
 
     /* STATUS ROW */
     .source-status {
-      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;
+      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;
     }
     .src-pill {
       display: inline-flex; align-items: center; gap: 6px;
       padding: 5px 12px; border-radius: 20px;
+      min-height: 30px;
       font-size: 12px; font-weight: 600; color: #fff;
       cursor: pointer; transition: opacity 0.2s;
       border: 2px solid transparent;
       user-select: none;
+      justify-content: center;
+      line-height: 1;
     }
     .src-pill.inactive { opacity: 0.3; }
     .all-pill { background: #4a5568; }
@@ -111,28 +142,25 @@
     .src-pill.error::after { content: ' ✗'; }
     .src-pill.ok::after { content: ''; }
 
-    /* STATS BAR */
-    .stats-bar { display: flex; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
-    .stat {
-      background: var(--card-bg); border: 1px solid var(--border);
-      border-radius: 10px; padding: 12px 18px;
-      display: flex; flex-direction: column; gap: 2px; min-width: 90px;
-    }
-    .stat-num { font-size: 22px; font-weight: 800; color: var(--accent); }
-    .stat-label { font-size: 11px; color: var(--subtext); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
-
     /* FILTER BAR */
     .filter-bar {
-      display: flex; align-items: center; gap: 10px;
-      margin-bottom: 24px; flex-wrap: wrap;
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 10px; flex-wrap: wrap;
     }
-    .filter-label { font-size: 12px; font-weight: 600; color: var(--subtext); text-transform: uppercase; letter-spacing: 0.5px; margin-right: 4px; }
     .filter-btn {
-      padding: 7px 16px; border-radius: 20px;
-      border: 1.5px solid var(--border);
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 12px; border-radius: 20px;
+      min-height: 30px;
+      border: 2px solid transparent;
       background: var(--card-bg); color: var(--text);
-      font-size: 13px; font-weight: 500; cursor: pointer;
+      font-size: 12px; font-weight: 600; cursor: pointer;
       transition: all 0.2s;
+      user-select: none;
+      justify-content: center;
+      line-height: 1;
+      font-family: inherit;
+      appearance: none;
+      -webkit-appearance: none;
     }
     .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
     .filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
@@ -156,6 +184,22 @@
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
       gap: 16px;
+    }
+
+    #cardGrid {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      align-content: start;
+      padding-right: 4px;
+    }
+
+    #panel-tools,
+    #panel-reddit,
+    #panel-communities {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 4px;
     }
 
     /* CARD */
@@ -193,6 +237,12 @@
       font-size: 13px; color: var(--subtext); line-height: 1.55;
       display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
       overflow: hidden;
+    }
+    .card.card-no-desc {
+      gap: 8px;
+    }
+    .card.card-no-desc .card-footer {
+      padding-top: 2px;
     }
 
     .card-footer {
@@ -352,7 +402,7 @@
     .tab-bar {
       display: flex; gap: 4px;
       border-bottom: 2px solid var(--border);
-      margin-bottom: 24px;
+      margin-bottom: 16px;
     }
     .tab-btn {
       padding: 10px 22px; border: none; background: none;
@@ -702,7 +752,22 @@
       .btn { padding: 7px 12px; font-size: 12px; }
 
       /* Main padding */
-      .main { padding: 16px 12px; }
+      .main {
+        padding: 16px 12px;
+        height: auto;
+        display: block;
+        overflow: visible;
+      }
+
+      #panel-news,
+      #panel-tools,
+      #panel-reddit,
+      #panel-communities {
+        display: block;
+        overflow: visible;
+      }
+
+      .news-fixed-chrome { padding-bottom: 0; }
 
       /* Tabs: fill full width, bigger tap targets */
       .tab-bar { gap: 0; }
@@ -725,11 +790,8 @@
         width: 100%;
       }
 
-      /* Stats bar: hidden on mobile */
-      .stats-bar { display: none !important; }
-
       /* Category filter: hidden on mobile */
-      .filter-label, .filter-btn { display: none; }
+      .filter-btn { display: none; }
 
       /* Keep search bar, full width */
       .filter-bar {
@@ -749,6 +811,10 @@
       .grid {
         grid-template-columns: 1fr;
         gap: 12px;
+      }
+      #cardGrid {
+        overflow: visible;
+        padding-right: 0;
       }
       .card { padding: 14px 16px; }
       .card-title { font-size: 14px; }
@@ -941,7 +1007,19 @@
     }
     .settings-apply-btn:hover { opacity: 0.85; }
 
-    
+    /* ── DEV BANNER ── */
+    #devBanner {
+      background: #f59e0b;
+      color: #1a1a2e;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      padding: 5px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+    }
   </style>
   <script>
     (function() {
@@ -972,6 +1050,7 @@
 </head>
 <body>
 
+<div id="devBanner">🚧 DEV / STAGING — changes here are not live yet · <a href="index.html" style="color:#1a1a2e;text-decoration:underline">View production →</a></div>
 
 <header>
   <div>
@@ -998,17 +1077,11 @@
 
   <!-- ══ PANEL: NEWS FEED ══ -->
   <div id="panel-news">
+    <div class="news-fixed-chrome">
 
     <!-- SOURCE STATUS PILLS -->
     <div class="source-status" id="sourcePills">
       <span class="src-pill all-pill ok" id="pill-all" onclick="selectAllSources()" title="Show all sources">All</span>
-    </div>
-
-    <!-- STATS -->
-    <div class="stats-bar" id="statsBar" style="display:none">
-      <div class="stat"><div class="stat-num" id="statTotal">0</div><div class="stat-label">Articles</div></div>
-      <div class="stat"><div class="stat-num" id="statSources">0</div><div class="stat-label">Sources</div></div>
-      <div class="stat"><div class="stat-num" id="statCategories">0</div><div class="stat-label">Categories</div></div>
     </div>
 
     <!-- DEBUG (shown if errors) -->
@@ -1019,8 +1092,7 @@
 
     <!-- FILTER BAR -->
     <div class="filter-bar">
-      <span class="filter-label">Category:</span>
-      <button class="filter-btn active" onclick="setCategory('all',this)">All</button>
+      <button class="filter-btn all-filter-pill active" onclick="setCategory('all',this)">All</button>
       <button class="filter-btn" onclick="setCategory('new',this)" id="filterNew">🆕 New</button>
       <button class="filter-btn" onclick="setCategory('credit-cards',this)">💳 Credit Cards</button>
       <button class="filter-btn" onclick="setCategory('bank-bonuses',this)">🏦 Bank Bonuses</button>
@@ -1040,6 +1112,7 @@
         <span class="offers-strip-count" id="offersCount"></span>
       </div>
       <div class="offers-grid" id="offersGrid"></div>
+    </div>
     </div>
 
     <!-- CARDS GRID -->
@@ -1096,7 +1169,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.86';
+const VERSION = '1.5.87';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1518,6 +1591,7 @@ function parseSitemap(xmlText, source) {
       const loc = u.querySelector('loc')?.textContent || '';
       const lastmod = u.querySelector('lastmod')?.textContent || '';
       const slug = loc.split('/').filter(Boolean).pop() || '';
+      // Convert slug to title: hyphens to spaces, title-case
       const title = slug
         .replace(/-/g, ' ')
         .replace(/\b\w/g, c => c.toUpperCase())
@@ -1658,6 +1732,7 @@ async function fetchSource(source) {
     }
   }
 
+  // Sitemap source
   if (source.sitemap) {
     const xmlText = await fetchTextWithProxy(source.sitemap);
     if (!xmlText) {
@@ -1722,7 +1797,6 @@ async function loadAll() {
   allArticles = [];
   offersArticles = [];
   debugLog = [];
-  document.getElementById('statsBar').style.display = 'none';
   document.getElementById('debugBox').style.display = 'none';
   document.getElementById('refreshBtn').disabled = true;
   document.getElementById('refreshTime').textContent = 'Loading…';
@@ -1753,11 +1827,6 @@ async function loadAll() {
         if (b.date) return 1;
         return 0;
       });
-      // Update stats and re-render immediately when each source lands
-      document.getElementById('statTotal').textContent = allArticles.length;
-      document.getElementById('statSources').textContent = new Set(allArticles.map(a => a.sourceId)).size;
-      document.getElementById('statCategories').textContent = new Set(allArticles.map(a => a.category)).size;
-      document.getElementById('statsBar').style.display = 'flex';
       renderCards();
     })
   );
@@ -1771,6 +1840,7 @@ async function loadAll() {
 
   document.getElementById('refreshTime').textContent = `v${VERSION} · Updated ${new Date().toLocaleTimeString()}`;
   document.getElementById('refreshBtn').disabled = false;
+  syncNewsPillWidths();
 
   const hasErrors = debugLog.some(d => d.status === 'error');
   if (hasErrors) {
@@ -1880,6 +1950,26 @@ function setCategory(cat, btn) {
   document.querySelectorAll('#panel-news .filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   renderCards();
+}
+
+function syncNewsPillWidths() {
+  const sourcePills = Array.from(document.querySelectorAll('#panel-news .src-pill[data-src-id]'));
+  const categoryPills = Array.from(document.querySelectorAll('#panel-news .filter-btn:not(.all-filter-pill)'));
+  const allPills = [
+    document.getElementById('pill-all'),
+    document.querySelector('#panel-news .all-filter-pill')
+  ].filter(Boolean);
+
+  const uniformPills = [...sourcePills, ...categoryPills];
+  if (!uniformPills.length) return;
+
+  [...uniformPills, ...allPills].forEach(pill => { pill.style.width = 'auto'; });
+  const maxWidth = Math.max(...uniformPills.map(pill => Math.ceil(pill.getBoundingClientRect().width)));
+  const allWidth = allPills.length
+    ? Math.max(...allPills.map(pill => Math.ceil(pill.getBoundingClientRect().width)))
+    : 0;
+  uniformPills.forEach(pill => { pill.style.width = `${maxWidth}px`; });
+  allPills.forEach(pill => { pill.style.width = `${allWidth}px`; });
 }
 
 function esc(s) {
@@ -3205,6 +3295,8 @@ function settingsAddCustomSub() {
 
   // 5. Load content and start auto-refresh
   renderTools();
+  syncNewsPillWidths();
+  window.addEventListener('resize', syncNewsPillWidths);
   loadAll();
   scheduleAutoRefresh();
 })();
