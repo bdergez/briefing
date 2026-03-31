@@ -1115,7 +1115,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.88-dev';
+const VERSION = '1.5.89-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1125,7 +1125,7 @@ const SOURCES = [
   { id:'vftw',   name:'View From The Wing',  short:'VFTW',   color:'#2f855a', emoji:'🪟', url:'https://viewfromthewing.com',         rss:'https://viewfromthewing.com/feed/' },
   { id:'mtm',    name:'Miles to Memories',   short:'MtM',    color:'#d97706', emoji:'✈️', url:'https://milestomemories.com',         rss:'https://milestomemories.com/feed/' },
   { id:'loyaltylobby', name:'LoyaltyLobby', short:'LL', color:'#2C7A7B', emoji:'🛎️', url:'https://loyaltylobby.com', rss:'https://loyaltylobby.com/feed/' },
-  { id:'nextcard', name:'Nextcard', short:'NC', color:'#6366f1', emoji:'💳', url:'https://www.nextcard.com', sitemap:'https://www.nextcard.com/sitemap.xml', sitemapPath:'/articles/' },
+  { id:'nextcard', name:'Nextcard', short:'NC', color:'#6366f1', emoji:'💳', url:'https://www.nextcard.com', articlesPage:'https://www.nextcard.com/articles', sitemap:'https://www.nextcard.com/sitemap.xml', sitemapPath:'/articles/' },
   { id:'hyatt',  name:'Hyatt Newsroom',      short:'Hyatt',  color:'#2b6cb0', emoji:'🏨', url:'https://newsroom.hyatt.com',
     rssFeeds: [
       'https://newsroom.hyatt.com/news-releases?pagetemplate=rss',
@@ -1466,12 +1466,104 @@ function parseSitemap(xmlText, source) {
   return items;
 }
 
+function nextcardSlugToTitle(loc) {
+  const slug = (loc || '').split('/').filter(Boolean).pop() || '';
+  return slug
+    .replace(/-/g, ' ')
+    .replace(/\b\w/g, c => c.toUpperCase())
+    .replace(/\bVs\b/g, 'vs')
+    .replace(/\bOf\b/g, 'of')
+    .replace(/\bAnd\b/g, 'and')
+    .replace(/\bThe\b/g, 'the')
+    .replace(/\bIn\b/g, 'in')
+    .replace(/\bA\b/g, 'a')
+    .replace(/\bFor\b/g, 'for')
+    .replace(/^(vs|of|and|the|in|a|for)\b/i, m => m.toUpperCase());
+}
+
+function parseNextcardArticlesPage(htmlText, source) {
+  const doc = new DOMParser().parseFromString(htmlText, 'text/html');
+  const seen = new Set();
+  const items = [];
+
+  for (const anchor of [...doc.querySelectorAll('a[href*="/articles/"]')]) {
+    let href = anchor.getAttribute('href') || '';
+    if (!href) continue;
+    try { href = new URL(href, source.url).toString(); } catch {}
+    if (!/\/articles\/[^/]+/.test(href)) continue;
+    if (seen.has(href)) continue;
+
+    const titleFromSlug = nextcardSlugToTitle(href);
+    const titleEl = anchor.querySelector('h1,h2,h3,h4,h5,h6,[class*="title"]');
+    const descEl = anchor.querySelector('p,[class*="desc"],[class*="excerpt"],[class*="summary"]');
+
+    let title = (titleEl?.textContent || '').replace(/\s+/g, ' ').trim();
+    let desc = (descEl?.textContent || '').replace(/\s+/g, ' ').trim();
+    let text = (anchor.textContent || '').replace(/\s+/g, ' ').trim();
+
+    text = text
+      .replace(/\bfresh out of oven\b/ig, '')
+      .replace(/^(Credit Cards|Travel|Business)\s+/i, '')
+      .replace(/\s+\d+\s+min read$/i, '')
+      .trim();
+
+    if (!title) title = titleFromSlug;
+    if (!desc && text && title && text.toLowerCase().startsWith(title.toLowerCase())) {
+      const remainder = text.slice(title.length).trim();
+      if (remainder && remainder.length > 20) desc = remainder;
+    }
+
+    desc = desc
+      .replace(/\s+\d+\s+min read$/i, '')
+      .replace(/^By\s+.+?•.+$/i, '')
+      .trim();
+
+    const container = anchor.closest('article,li,section,div') || anchor.parentElement || anchor;
+    const metaText = (container.textContent || '').replace(/\s+/g, ' ').trim();
+    const dateMatch = metaText.match(/\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{1,2}, \d{4}\b/);
+    const date = dateMatch ? new Date(dateMatch[0]) : null;
+
+    if (!title || title.length < 8) continue;
+
+    items.push({
+      sourceId: source.id,
+      sourceName: source.name,
+      sourceShort: source.short,
+      sourceColor: source.color,
+      sourceEmoji: source.emoji,
+      sourceUrl: source.url,
+      title,
+      url: href,
+      desc: desc.slice(0, 280),
+      date: date && !isNaN(date) ? date : null,
+      category: categorize(title, desc),
+    });
+    seen.add(href);
+  }
+
+  return items
+    .sort((a, b) => (b.date || 0) - (a.date || 0))
+    .slice(0, 15);
+}
+
 async function fetchSource(source) {
   setPillState(source.id, 'loading');
   debugLog.push({ id: source.id, name: source.name, status: 'loading', msg: 'Fetching…' });
   updateDebug();
 
   let articles = [];
+
+  if (source.articlesPage) {
+    const htmlText = await fetchTextWithProxy(source.articlesPage);
+    if (htmlText) {
+      const items = parseNextcardArticlesPage(htmlText, source);
+      if (items.length >= 5) {
+        setPillState(source.id, 'ok', items.length);
+        updateDebugEntry(source.id, 'ok', `${items.length} articles loaded`);
+        return items;
+      }
+    }
+  }
 
   // Sitemap source
   if (source.sitemap) {
