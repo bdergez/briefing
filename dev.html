@@ -1541,8 +1541,17 @@ function scrapeHTMLArticles(htmlText, source) {
     const heading = card.querySelector('h1,h2,h3,h4,h5,h6');
     const title = heading?.textContent?.trim() || '';
     if (!title) continue;
-    const lines = (card.textContent || '').split('\n').map(l=>l.trim()).filter(l=>l.length>50 && l!==title && !/min read|By nextcard|Credit Cards/i.test(l));
-    const desc = (lines[0]||'').substring(0,280);
+    const cardText = (card.textContent || '').replace(/\s+/g, ' ').trim();
+    // Extract description: text between the title and "N min read"
+    let desc = '';
+    const afterTitle = title ? cardText.indexOf(title) : -1;
+    if (afterTitle !== -1) {
+      const afterTitleText = cardText.substring(afterTitle + title.length).trim();
+      const minReadIdx = afterTitleText.search(/\d+\s*min\s*read/i);
+      const raw = minReadIdx > 0 ? afterTitleText.substring(0, minReadIdx).trim() : afterTitleText.substring(0, 280).trim();
+      // Clean up: remove leading ellipsis, category labels
+      desc = raw.replace(/^[.\s]+/, '').replace(/^(Credit Cards?|Points? &? Miles?|News|Travel)\s*/i, '').substring(0, 280);
+    }
     const dateMatch = (card.textContent||'').match(/\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*[\s.]+\d{1,2},?\s*\d{4}/i);
     const date = dateMatch ? new Date(dateMatch[0]) : null;
     items.push({ sourceId:source.id, sourceName:source.name, sourceShort:source.short, sourceColor:source.color, sourceEmoji:source.emoji, sourceUrl:source.url, title, url, desc, date, category:categorize(title,desc) });
