@@ -112,13 +112,13 @@
 
     .news-fixed-chrome {
       flex: 0 0 auto;
-      padding-bottom: 18px;
+      padding-bottom: 12px;
       background: var(--bg);
     }
 
     /* STATUS ROW */
     .source-status {
-      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;
+      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;
     }
     .src-pill {
       display: inline-flex; align-items: center; gap: 6px;
@@ -139,20 +139,10 @@
     .src-pill.error::after { content: ' ✗'; }
     .src-pill.ok::after { content: ''; }
 
-    /* STATS BAR */
-    .stats-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
-    .stat {
-      background: var(--card-bg); border: 1px solid var(--border);
-      border-radius: 12px; padding: 7px 10px;
-      display: inline-flex; align-items: center; gap: 6px; min-width: 0;
-    }
-    .stat-num { font-size: 12px; font-weight: 800; color: var(--accent); }
-    .stat-label { font-size: 11px; color: var(--subtext); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
-
     /* FILTER BAR */
     .filter-bar {
       display: flex; align-items: center; gap: 10px;
-      margin-bottom: 24px; flex-wrap: wrap;
+      margin-bottom: 14px; flex-wrap: wrap;
     }
     .filter-btn {
       padding: 7px 16px; border-radius: 20px;
@@ -789,9 +779,6 @@
         width: 100%;
       }
 
-      /* Stats bar: hidden on mobile */
-      .stats-bar { display: none !important; }
-
       /* Category filter: hidden on mobile */
       .filter-btn { display: none; }
 
@@ -1086,13 +1073,6 @@
       <span class="src-pill all-pill ok" id="pill-all" onclick="selectAllSources()" title="Show all sources">All</span>
     </div>
 
-    <!-- STATS -->
-    <div class="stats-bar" id="statsBar" style="display:none">
-      <div class="stat"><div class="stat-num" id="statTotal">0</div><div class="stat-label">Articles</div></div>
-      <div class="stat"><div class="stat-num" id="statSources">0</div><div class="stat-label">Sources</div></div>
-      <div class="stat"><div class="stat-num" id="statCategories">0</div><div class="stat-label">Categories</div></div>
-    </div>
-
     <!-- DEBUG (shown if errors) -->
     <div class="debug-box" id="debugBox">
       <h4>🔍 Source Load Status</h4>
@@ -1178,7 +1158,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.94-dev';
+const VERSION = '1.5.95-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1806,7 +1786,6 @@ async function loadAll() {
   allArticles = [];
   offersArticles = [];
   debugLog = [];
-  document.getElementById('statsBar').style.display = 'none';
   document.getElementById('debugBox').style.display = 'none';
   document.getElementById('refreshBtn').disabled = true;
   document.getElementById('refreshTime').textContent = 'Loading…';
@@ -1837,11 +1816,6 @@ async function loadAll() {
         if (b.date) return 1;
         return 0;
       });
-      // Update stats and re-render immediately when each source lands
-      document.getElementById('statTotal').textContent = allArticles.length;
-      document.getElementById('statSources').textContent = new Set(allArticles.map(a => a.sourceId)).size;
-      document.getElementById('statCategories').textContent = new Set(allArticles.map(a => a.category)).size;
-      document.getElementById('statsBar').style.display = 'flex';
       renderCards();
     })
   );
