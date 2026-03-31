@@ -123,6 +123,7 @@
     .src-pill {
       display: inline-flex; align-items: center; gap: 6px;
       padding: 5px 12px; border-radius: 20px;
+      min-height: 30px;
       font-size: 12px; font-weight: 600; color: #fff;
       cursor: pointer; transition: opacity 0.2s;
       border: 2px solid transparent;
@@ -148,6 +149,7 @@
     .filter-btn {
       display: inline-flex; align-items: center; gap: 6px;
       padding: 5px 12px; border-radius: 20px;
+      min-height: 30px;
       border: 2px solid transparent;
       background: var(--card-bg); color: var(--text);
       font-size: 12px; font-weight: 600; cursor: pointer;
@@ -1162,7 +1164,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.99-dev';
+const VERSION = '1.5.100-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1958,7 +1960,11 @@ function syncNewsPillWidths() {
 
   [...uniformPills, ...allPills].forEach(pill => { pill.style.width = 'auto'; });
   const maxWidth = Math.max(...uniformPills.map(pill => Math.ceil(pill.getBoundingClientRect().width)));
+  const allWidth = allPills.length
+    ? Math.max(...allPills.map(pill => Math.ceil(pill.getBoundingClientRect().width)))
+    : 0;
   uniformPills.forEach(pill => { pill.style.width = `${maxWidth}px`; });
+  allPills.forEach(pill => { pill.style.width = `${allWidth}px`; });
 }
 
 function esc(s) {
