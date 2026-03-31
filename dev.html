@@ -1106,7 +1106,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.86-dev';
+const VERSION = '1.5.87-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1615,51 +1615,6 @@ function setCategory(cat, btn) {
   document.querySelectorAll('#panel-news .filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   renderCards();
-}
-
-function renderCards() {
-  const search = (document.getElementById('searchInput').value || '').toLowerCase();
-  const grid = document.getElementById('cardGrid');
-
-  const filtered = allArticles.filter(a => {
-    if (!activeSources.has(a.sourceId)) return false;
-    if (activeCategory !== 'all' && a.category !== activeCategory) return false;
-    if (search && !a.title.toLowerCase().includes(search) && !a.desc.toLowerCase().includes(search)) return false;
-    return true;
-  });
-
-  if (filtered.length === 0) {
-    if (allArticles.length === 0) {
-      grid.innerHTML = `<div class="empty-msg">⏳ Still loading… or all sources failed to load.<br><small>Check the status above for details.</small></div>`;
-    } else {
-      grid.innerHTML = `<div class="empty-msg">No articles match the current filters.</div>`;
-    }
-    return;
-  }
-
-  grid.innerHTML = filtered.map(a => cardHTML(a)).join('');
-}
-
-function cardHTML(a) {
-  const catLabel = a.category === 'news' ? '📰 News' : (CATEGORIES[a.category]?.label || a.category);
-  const dateStr  = a.date ? fmtDate(a.date) : '';
-  const desc     = a.desc ? `<div class="card-desc">${esc(a.desc)}</div>` : '';
-  const cardClass = a.desc ? 'card' : 'card card-no-desc';
-
-  return `
-  <div class="${cardClass}">
-    <div class="card-meta">
-      <span class="source-badge" style="background:${a.sourceColor}">${a.sourceShort}</span>
-      <span class="category-tag">${catLabel}</span>
-      <span class="card-date">${dateStr}</span>
-    </div>
-    <div class="card-title"><a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.title)}</a></div>
-    ${desc}
-    <div class="card-footer">
-      <a class="read-link" href="${esc(a.url)}" target="_blank" rel="noopener">Read article →</a>
-      <span style="font-size:11px;color:var(--subtext)">${esc(a.sourceName)}</span>
-    </div>
-  </div>`;
 }
 
 function esc(s) {
@@ -2916,6 +2871,8 @@ function settingsAddCustomSub() {
   let raw = (document.getElementById('csSubName')?.value || '').trim().replace(/^r\//i, '');
   if (!raw) { alert('Please enter a subreddit name.'); return; }
   const id = raw.toLowerCase();
+  const builtInIds = COMMUNITIES.flatMap(cat => cat.subs.map(s => String(s.id).toLowerCase()));
+  if (builtInIds.includes(id)) { alert('That subreddit is already included.'); return; }
   if (settingsDraft.customSubs.find(s => s.id === id)) return;
   const palette = ['#6b46c1','#e53e3e','#2b6cb0','#2f855a','#d97706','#c53030','#0891b2'];
   const color = palette[settingsDraft.customSubs.length % palette.length];
