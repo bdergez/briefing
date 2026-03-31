@@ -1192,7 +1192,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.81-dev';
+const VERSION = '1.5.82-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1641,6 +1641,13 @@ function parseNextcardStructuredArticles(htmlText, source) {
   }
 }
 
+function looksHealthyNextcardSet(items) {
+  if (!items || items.length < 5) return false;
+  const withPreview = items.filter(item => (item.desc || '').trim().length >= 40).length;
+  const uniqueUrls = new Set(items.map(item => item.url)).size;
+  return withPreview >= Math.min(5, items.length) && uniqueUrls >= Math.min(5, items.length);
+}
+
 function parseSitemap(xmlText, source) {
   let doc;
   try {
@@ -1710,17 +1717,18 @@ async function fetchSource(source) {
       return [];
     }
 
-    const items = parseNextcardStructuredArticles(html, source);
-    const fallbackItems = items.length > 0 ? items : scrapeHTMLArticles(html, source);
-    if (fallbackItems.length === 0) {
+    const structuredItems = parseNextcardStructuredArticles(html, source);
+    const fallbackItems = scrapeHTMLArticles(html, source);
+    const items = looksHealthyNextcardSet(structuredItems) ? structuredItems : fallbackItems;
+    if (items.length === 0) {
       setPillState(source.id, 'error');
       updateDebugEntry(source.id, 'error', 'Fetched but 0 articles parsed');
       return [];
     }
 
-    setPillState(source.id, 'ok', fallbackItems.length);
-    updateDebugEntry(source.id, 'ok', `${fallbackItems.length} articles loaded`);
-    return fallbackItems;
+    setPillState(source.id, 'ok', items.length);
+    updateDebugEntry(source.id, 'ok', `${items.length} articles loaded`);
+    return items;
   }
 
   // Sitemap source
