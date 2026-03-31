@@ -1094,10 +1094,10 @@
     <div class="filter-bar">
       <button class="filter-btn all-filter-pill active" onclick="setCategory('all',this)">All</button>
       <button class="filter-btn" onclick="setCategory('new',this)" id="filterNew">🆕 New</button>
-      <button class="filter-btn" onclick="setCategory('credit-cards',this)">💳 Credit Cards</button>
-      <button class="filter-btn" onclick="setCategory('bank-bonuses',this)">🏦 Bank Bonuses</button>
-      <button class="filter-btn" onclick="setCategory('points-miles',this)">✈️ Points &amp; Miles</button>
-      <button class="filter-btn" onclick="setCategory('travel',this)">🌍 Travel Deals</button>
+      <button class="filter-btn" onclick="setCategory('credit-cards',this)">💳 Credit</button>
+      <button class="filter-btn" onclick="setCategory('bank-bonuses',this)">🏦 Bonuses</button>
+      <button class="filter-btn" onclick="setCategory('points-miles',this)">✈️ Points</button>
+      <button class="filter-btn" onclick="setCategory('travel',this)">🌍 Travel</button>
       <button class="filter-btn" onclick="setCategory('news',this)">📰 News</button>
       <div class="search-wrap">
         <span class="search-icon">🔍</span>
@@ -1169,7 +1169,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.103-dev';
+const VERSION = '1.5.104-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1413,10 +1413,10 @@ const PROXIES = [
 ];
 
 const CATEGORIES = {
-  'credit-cards': { label:'💳 Credit Cards', kw:['credit card','card bonus','sign-up bonus','signup bonus','annual fee','welcome offer','welcome bonus','card review','amex','chase','citi','capital one','barclays','us bank','discover','ink','sapphire','platinum card','gold card','venture','freedom','preferred','reserve','business card','approval','credit pull','hard pull','application rule','5/24','2/90','card offer'] },
-  'bank-bonuses': { label:'🏦 Bank Bonuses', kw:['bank bonus','checking bonus','savings bonus','bank account','direct deposit','checking account','savings account','money market','cd rate','high yield','bank offer','bank deal','brokerage bonus'] },
-  'points-miles': { label:'✈️ Points & Miles', kw:['points','miles','award','redemption','transfer partner','transfer bonus','loyalty','frequent flyer','mileage','mileage plan','skymiles','saver award','award chart','cpp','cents per point','sweet spot','hyatt','marriott','hilton','ihg','bonvoy','world of hyatt','globalist','honors','hotel loyalty','oneworld','star alliance','skyteam','alaska','united','delta','american airlines','british airways','air canada','aeroplan'] },
-  'travel':       { label:'🌍 Travel Deals',  kw:['flight deal','fare sale','error fare','mistake fare','sale','hotel deal','travel deal','cheap flight','discount','flash sale','business class','first class','lounge','priority pass','global entry','tsa precheck','trip report','cruise','upgrade'] },
+  'credit-cards': { label:'💳 Credit', kw:['credit card','card bonus','sign-up bonus','signup bonus','annual fee','welcome offer','welcome bonus','card review','amex','chase','citi','capital one','barclays','us bank','discover','ink','sapphire','platinum card','gold card','venture','freedom','preferred','reserve','business card','approval','credit pull','hard pull','application rule','5/24','2/90','card offer'] },
+  'bank-bonuses': { label:'🏦 Bonuses', kw:['bank bonus','checking bonus','savings bonus','bank account','direct deposit','checking account','savings account','money market','cd rate','high yield','bank offer','bank deal','brokerage bonus'] },
+  'points-miles': { label:'✈️ Points', kw:['points','miles','award','redemption','transfer partner','transfer bonus','loyalty','frequent flyer','mileage','mileage plan','skymiles','saver award','award chart','cpp','cents per point','sweet spot','hyatt','marriott','hilton','ihg','bonvoy','world of hyatt','globalist','honors','hotel loyalty','oneworld','star alliance','skyteam','alaska','united','delta','american airlines','british airways','air canada','aeroplan'] },
+  'travel':       { label:'🌍 Travel',  kw:['flight deal','fare sale','error fare','mistake fare','sale','hotel deal','travel deal','cheap flight','discount','flash sale','business class','first class','lounge','priority pass','global entry','tsa precheck','trip report','cruise','upgrade'] },
 };
 
 function categorize(title, desc) {
