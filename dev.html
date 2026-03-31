@@ -1192,7 +1192,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.79-dev';
+const VERSION = '1.5.80-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1202,7 +1202,7 @@ const SOURCES = [
   { id:'vftw',   name:'View From The Wing',  short:'VFTW',   color:'#2f855a', emoji:'🪟', url:'https://viewfromthewing.com',         rss:'https://viewfromthewing.com/feed/' },
   { id:'mtm',    name:'Miles to Memories',   short:'MtM',    color:'#d97706', emoji:'✈️', url:'https://milestomemories.com',         rss:'https://milestomemories.com/feed/' },
   { id:'loyaltylobby', name:'LoyaltyLobby', short:'LL', color:'#2C7A7B', emoji:'🛎️', url:'https://loyaltylobby.com', rss:'https://loyaltylobby.com/feed/' },
-  { id:'nextcard', name:'Nextcard', short:'NC', color:'#6366f1', emoji:'💳', url:'https://www.nextcard.com', sitemap:'https://www.nextcard.com/sitemap.xml', sitemapPath:'/articles/' },
+  { id:'nextcard', name:'Nextcard', short:'NC', color:'#6366f1', emoji:'💳', url:'https://www.nextcard.com', scrapeUrl:'https://www.nextcard.com/articles' },
   { id:'hyatt',  name:'Hyatt Newsroom',      short:'Hyatt',  color:'#2b6cb0', emoji:'🏨', url:'https://newsroom.hyatt.com',
     rssFeeds: [
       'https://newsroom.hyatt.com/news-releases?pagetemplate=rss',
@@ -1526,56 +1526,57 @@ function parseRSS(xmlText, source) {
   }
 }
 
-function parseSitemap(xmlText, source) {
+function scrapeHTMLArticles(htmlText, source) {
+  const base = source.url;
   let doc;
   try {
-    doc = new DOMParser().parseFromString(xmlText, 'application/xml');
-    if (doc.querySelector('parsererror')) throw new Error('XML parse error');
-  } catch(e) {
-    doc = new DOMParser().parseFromString(xmlText, 'text/html');
+    doc = new DOMParser().parseFromString(htmlText, 'text/html');
+  } catch(e) { return []; }
+
+  // Find article cards: <article> elements wrapped in <a> tags
+  const articles = [...doc.querySelectorAll('article')];
+  const items = [];
+
+  for (const card of articles) {
+    // URL: from parent <a> or closest <a>
+    const anchor = card.closest('a') || card.parentElement?.closest('a');
+    let url = anchor?.getAttribute('href') || '';
+    if (url && url.startsWith('/')) url = base + url;
+    if (!url || !url.includes('/articles/')) continue;
+
+    // Title: from heading element
+    const heading = card.querySelector('h1,h2,h3,h4,h5,h6');
+    const title = heading?.textContent?.trim() || '';
+    if (!title) continue;
+
+    // Snippet: find a text block that's not the title, not metadata
+    const lines = card.textContent.split('\n')
+      .map(l => l.trim())
+      .filter(l => l.length > 50 && l !== title && !l.match(/min read|By nextcard|Credit Cards|Points/i));
+    const desc = (lines[0] || '').substring(0, 280);
+
+    // Date: look for date pattern in card text
+    const dateMatch = card.textContent.match(
+      /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*[\s.]+\d{1,2},?\s*\d{4}/i
+    );
+    const date = dateMatch ? new Date(dateMatch[0]) : null;
+
+    items.push({
+      sourceId: source.id,
+      sourceName: source.name,
+      sourceShort: source.short,
+      sourceColor: source.color,
+      sourceEmoji: source.emoji,
+      sourceUrl: source.url,
+      title,
+      url,
+      desc,
+      date,
+      category: categorize(title, desc),
+    });
+
+    if (items.length >= 15) break;
   }
-
-  const urlEls = [...doc.querySelectorAll('url')];
-  const pathFilter = source.sitemapPath || '';
-
-  const items = urlEls
-    .filter(u => {
-      const loc = u.querySelector('loc')?.textContent || '';
-      return pathFilter ? loc.includes(pathFilter) : true;
-    })
-    .map(u => {
-      const loc = u.querySelector('loc')?.textContent || '';
-      const lastmod = u.querySelector('lastmod')?.textContent || '';
-      const slug = loc.split('/').filter(Boolean).pop() || '';
-      // Convert slug to title: hyphens to spaces, title-case
-      const title = slug
-        .replace(/-/g, ' ')
-        .replace(/\b\w/g, c => c.toUpperCase())
-        .replace(/\bVs\b/g, 'vs')
-        .replace(/\bOf\b/g, 'of')
-        .replace(/\bAnd\b/g, 'and')
-        .replace(/\bThe\b/g, 'the')
-        .replace(/\bIn\b/g, 'in')
-        .replace(/\bA\b/g, 'a')
-        .replace(/\bFor\b/g, 'for')
-        .replace(/^(vs|of|and|the|in|a|for)\b/i, m => m.toUpperCase());
-      return {
-        sourceId: source.id,
-        sourceName: source.name,
-        sourceShort: source.short,
-        sourceColor: source.color,
-        sourceEmoji: source.emoji,
-        sourceUrl: source.url,
-        title,
-        url: loc,
-        desc: '',
-        date: lastmod ? new Date(lastmod) : null,
-        category: categorize(title, ''),
-      };
-    })
-    .filter(a => a.title && a.url)
-    .sort((a, b) => (b.date || 0) - (a.date || 0))
-    .slice(0, 15);
 
   return items;
 }
@@ -1587,23 +1588,19 @@ async function fetchSource(source) {
 
   let articles = [];
 
-  // Sitemap source
-  if (source.sitemap) {
-    const xmlText = await fetchTextWithProxy(source.sitemap);
-    if (!xmlText) {
+  // HTML scrape source
+  if (source.scrapeUrl) {
+    const htmlText = await fetchTextWithProxy(source.scrapeUrl);
+    if (htmlText) {
+      const items = scrapeHTMLArticles(htmlText, source);
+      allArticles = allArticles.filter(a => a.sourceId !== source.id);
+      allArticles.push(...items);
+      setPillState(source.id, items.length > 0 ? 'ok' : 'error', items.length);
+    } else {
       setPillState(source.id, 'error');
-      updateDebugEntry(source.id, 'error', 'All proxies failed');
-      return [];
     }
-    const items = parseSitemap(xmlText, source);
-    if (items.length === 0) {
-      setPillState(source.id, 'error');
-      updateDebugEntry(source.id, 'error', 'Fetched but 0 articles parsed');
-      return [];
-    }
-    setPillState(source.id, 'ok', items.length);
-    updateDebugEntry(source.id, 'ok', `${items.length} articles loaded`);
-    return items;
+    renderArticles();
+    return;
   }
 
   if (source.rssFeeds) {
