@@ -122,8 +122,8 @@
     }
     .src-pill {
       display: inline-flex; align-items: center; gap: 6px;
-      padding: 5px 10px; border-radius: 20px;
-      min-height: 32px;
+      padding: 5px 12px; border-radius: 20px;
+      min-height: 34px;
       font-size: 12px; font-weight: 600; color: #fff;
       cursor: pointer; transition: opacity 0.2s;
       border: 2px solid transparent;
@@ -136,7 +136,6 @@
     .src-pill.inactive { opacity: 0.3; }
     .all-pill { background: #4a5568; }
     .all-pill.inactive { opacity: 0.3; }
-    .demo-pill { background: #64748b; }
     .src-pill .pill-count {
       background: rgba(0,0,0,0.2); border-radius: 20px;
       min-width: 26px; padding: 1px 5px; font-size: 11px;
@@ -153,8 +152,8 @@
     }
     .filter-btn {
       display: inline-flex; align-items: center; gap: 6px;
-      padding: 5px 10px; border-radius: 20px;
-      min-height: 32px;
+      padding: 5px 12px; border-radius: 20px;
+      min-height: 34px;
       border: 2px solid transparent;
       background: var(--card-bg); color: var(--text);
       font-size: 12px; font-weight: 600; cursor: pointer;
@@ -1088,7 +1087,6 @@
     <!-- SOURCE STATUS PILLS -->
     <div class="source-status" id="sourcePills">
       <span class="src-pill all-pill ok" id="pill-all" onclick="selectAllSources()" title="Show all sources">All</span>
-      <span class="src-pill demo-pill" id="pill-demo-neil" title="Demo pill">🧪 Neil</span>
     </div>
 
     <!-- DEBUG (shown if errors) -->
@@ -1176,7 +1174,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.108-dev';
+const VERSION = '1.5.109-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1970,7 +1968,7 @@ function measurePillWidth(pill, ignoreCount = false) {
 }
 
 function syncNewsPillWidths() {
-  const sourcePills = Array.from(document.querySelectorAll('#panel-news .source-status .src-pill:not(.all-pill)'));
+  const sourcePills = Array.from(document.querySelectorAll('#panel-news .src-pill[data-src-id]'));
   const categoryPills = Array.from(document.querySelectorAll('#panel-news .filter-btn:not(.all-filter-pill)'));
   const allPills = [
     document.getElementById('pill-all'),
