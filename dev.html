@@ -1192,7 +1192,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.78-dev';
+const VERSION = '1.5.79-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1202,6 +1202,7 @@ const SOURCES = [
   { id:'vftw',   name:'View From The Wing',  short:'VFTW',   color:'#2f855a', emoji:'🪟', url:'https://viewfromthewing.com',         rss:'https://viewfromthewing.com/feed/' },
   { id:'mtm',    name:'Miles to Memories',   short:'MtM',    color:'#d97706', emoji:'✈️', url:'https://milestomemories.com',         rss:'https://milestomemories.com/feed/' },
   { id:'loyaltylobby', name:'LoyaltyLobby', short:'LL', color:'#2C7A7B', emoji:'🛎️', url:'https://loyaltylobby.com', rss:'https://loyaltylobby.com/feed/' },
+  { id:'nextcard', name:'Nextcard', short:'NC', color:'#6366f1', emoji:'💳', url:'https://www.nextcard.com', sitemap:'https://www.nextcard.com/sitemap.xml', sitemapPath:'/articles/' },
   { id:'hyatt',  name:'Hyatt Newsroom',      short:'Hyatt',  color:'#2b6cb0', emoji:'🏨', url:'https://newsroom.hyatt.com',
     rssFeeds: [
       'https://newsroom.hyatt.com/news-releases?pagetemplate=rss',
@@ -1525,12 +1526,85 @@ function parseRSS(xmlText, source) {
   }
 }
 
+function parseSitemap(xmlText, source) {
+  let doc;
+  try {
+    doc = new DOMParser().parseFromString(xmlText, 'application/xml');
+    if (doc.querySelector('parsererror')) throw new Error('XML parse error');
+  } catch(e) {
+    doc = new DOMParser().parseFromString(xmlText, 'text/html');
+  }
+
+  const urlEls = [...doc.querySelectorAll('url')];
+  const pathFilter = source.sitemapPath || '';
+
+  const items = urlEls
+    .filter(u => {
+      const loc = u.querySelector('loc')?.textContent || '';
+      return pathFilter ? loc.includes(pathFilter) : true;
+    })
+    .map(u => {
+      const loc = u.querySelector('loc')?.textContent || '';
+      const lastmod = u.querySelector('lastmod')?.textContent || '';
+      const slug = loc.split('/').filter(Boolean).pop() || '';
+      // Convert slug to title: hyphens to spaces, title-case
+      const title = slug
+        .replace(/-/g, ' ')
+        .replace(/\b\w/g, c => c.toUpperCase())
+        .replace(/\bVs\b/g, 'vs')
+        .replace(/\bOf\b/g, 'of')
+        .replace(/\bAnd\b/g, 'and')
+        .replace(/\bThe\b/g, 'the')
+        .replace(/\bIn\b/g, 'in')
+        .replace(/\bA\b/g, 'a')
+        .replace(/\bFor\b/g, 'for')
+        .replace(/^(vs|of|and|the|in|a|for)\b/i, m => m.toUpperCase());
+      return {
+        sourceId: source.id,
+        sourceName: source.name,
+        sourceShort: source.short,
+        sourceColor: source.color,
+        sourceEmoji: source.emoji,
+        sourceUrl: source.url,
+        title,
+        url: loc,
+        desc: '',
+        date: lastmod ? new Date(lastmod) : null,
+        category: categorize(title, ''),
+      };
+    })
+    .filter(a => a.title && a.url)
+    .sort((a, b) => (b.date || 0) - (a.date || 0))
+    .slice(0, 15);
+
+  return items;
+}
+
 async function fetchSource(source) {
   setPillState(source.id, 'loading');
   debugLog.push({ id: source.id, name: source.name, status: 'loading', msg: 'Fetching…' });
   updateDebug();
 
   let articles = [];
+
+  // Sitemap source
+  if (source.sitemap) {
+    const xmlText = await fetchTextWithProxy(source.sitemap);
+    if (!xmlText) {
+      setPillState(source.id, 'error');
+      updateDebugEntry(source.id, 'error', 'All proxies failed');
+      return [];
+    }
+    const items = parseSitemap(xmlText, source);
+    if (items.length === 0) {
+      setPillState(source.id, 'error');
+      updateDebugEntry(source.id, 'error', 'Fetched but 0 articles parsed');
+      return [];
+    }
+    setPillState(source.id, 'ok', items.length);
+    updateDebugEntry(source.id, 'ok', `${items.length} articles loaded`);
+    return items;
+  }
 
   if (source.rssFeeds) {
     // Multi-feed source: fetch all in parallel, merge and deduplicate by URL
