@@ -86,7 +86,35 @@
 
     .refresh-time { font-size: 11px; opacity: 0.45; }
 
-    .main { max-width: 1400px; margin: 0 auto; padding: 28px 24px; }
+    .main {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 28px 24px;
+      height: calc(100vh - 64px);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #panel-news,
+    #panel-tools,
+    #panel-reddit,
+    #panel-communities {
+      min-height: 0;
+    }
+
+    #panel-news {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .news-fixed-chrome {
+      flex: 0 0 auto;
+      padding-bottom: 18px;
+      background: var(--bg);
+    }
 
     /* STATUS ROW */
     .source-status {
@@ -156,6 +184,22 @@
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
       gap: 16px;
+    }
+
+    #cardGrid {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      align-content: start;
+      padding-right: 4px;
+    }
+
+    #panel-tools,
+    #panel-reddit,
+    #panel-communities {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 4px;
     }
 
     /* CARD */
@@ -708,7 +752,22 @@
       .btn { padding: 7px 12px; font-size: 12px; }
 
       /* Main padding */
-      .main { padding: 16px 12px; }
+      .main {
+        padding: 16px 12px;
+        height: auto;
+        display: block;
+        overflow: visible;
+      }
+
+      #panel-news,
+      #panel-tools,
+      #panel-reddit,
+      #panel-communities {
+        display: block;
+        overflow: visible;
+      }
+
+      .news-fixed-chrome { padding-bottom: 0; }
 
       /* Tabs: fill full width, bigger tap targets */
       .tab-bar { gap: 0; }
@@ -755,6 +814,10 @@
       .grid {
         grid-template-columns: 1fr;
         gap: 12px;
+      }
+      #cardGrid {
+        overflow: visible;
+        padding-right: 0;
       }
       .card { padding: 14px 16px; }
       .card-title { font-size: 14px; }
@@ -1017,6 +1080,7 @@
 
   <!-- ══ PANEL: NEWS FEED ══ -->
   <div id="panel-news">
+    <div class="news-fixed-chrome">
 
     <!-- SOURCE STATUS PILLS -->
     <div class="source-status" id="sourcePills">
@@ -1059,6 +1123,7 @@
         <span class="offers-strip-count" id="offersCount"></span>
       </div>
       <div class="offers-grid" id="offersGrid"></div>
+    </div>
     </div>
 
     <!-- CARDS GRID -->
@@ -1115,7 +1180,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.92-dev';
+const VERSION = '1.5.93-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
