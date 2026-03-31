@@ -1096,7 +1096,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.85';
+const VERSION = '1.5.86';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -2861,6 +2861,8 @@ function updateNewBadge() {
   const existing = tab.querySelector('.tab-new-dot');
   if (count > 0 && !existing) {
     tab.innerHTML = `💳 Points <span class="tab-new-dot" title="${count} new articles"></span>`;
+  } else if (count > 0 && existing) {
+    existing.title = `${count} new articles`;
   } else if (count === 0 && existing) {
     tab.textContent = '💳 Points';
   }
@@ -3137,14 +3139,35 @@ function renderSettingsCommTab() {
 
 function settingsAddSuggested(id) {
   const src = SUGGESTED_SOURCES.find(s => s.id === id);
-  if (src) settingsDraft.customSources.push(src);
+  if (!src) return;
+  if (sourceExistsInDraft(src)) { alert('That source is already included.'); return; }
+  settingsDraft.customSources.push(src);
   renderSettingsBody();
+}
+
+function normalizeSourceUrl(url) {
+  return String(url || '')
+    .trim()
+    .replace(/\/+$/, '')
+    .toLowerCase();
+}
+
+function sourceExistsInDraft(candidate) {
+  const candidateName = String(candidate.name || '').trim().toLowerCase();
+  const candidateUrl = normalizeSourceUrl(candidate.rss || candidate.url);
+  const allSources = [...SOURCES, ...settingsDraft.customSources];
+  return allSources.some(src => {
+    const sameName = candidateName && String(src.name || '').trim().toLowerCase() === candidateName;
+    const sameUrl = candidateUrl && normalizeSourceUrl(src.rss || src.url) === candidateUrl;
+    return sameName || sameUrl;
+  });
 }
 
 function settingsAddCustomSource() {
   const name = (document.getElementById('csName')?.value || '').trim();
   const rss  = (document.getElementById('csRss')?.value  || '').trim();
   if (!name || !rss) { alert('Please enter both a name and RSS URL.'); return; }
+  if (sourceExistsInDraft({ name, rss })) { alert('That source is already included.'); return; }
   const id    = 'custom_' + Date.now();
   const short = name.split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0,4) || 'SRC';
   const palette = ['#e53e3e','#2b6cb0','#2f855a','#6b46c1','#d97706','#0891b2','#db2777','#ea580c'];
