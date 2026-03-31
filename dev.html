@@ -140,21 +140,20 @@
     .src-pill.ok::after { content: ''; }
 
     /* STATS BAR */
-    .stats-bar { display: flex; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+    .stats-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
     .stat {
       background: var(--card-bg); border: 1px solid var(--border);
-      border-radius: 10px; padding: 12px 18px;
-      display: flex; flex-direction: column; gap: 2px; min-width: 90px;
+      border-radius: 12px; padding: 7px 10px;
+      display: inline-flex; align-items: center; gap: 6px; min-width: 0;
     }
-    .stat-num { font-size: 22px; font-weight: 800; color: var(--accent); }
-    .stat-label { font-size: 11px; color: var(--subtext); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-num { font-size: 12px; font-weight: 800; color: var(--accent); }
+    .stat-label { font-size: 11px; color: var(--subtext); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
 
     /* FILTER BAR */
     .filter-bar {
       display: flex; align-items: center; gap: 10px;
       margin-bottom: 24px; flex-wrap: wrap;
     }
-    .filter-label { font-size: 12px; font-weight: 600; color: var(--subtext); text-transform: uppercase; letter-spacing: 0.5px; margin-right: 4px; }
     .filter-btn {
       padding: 7px 16px; border-radius: 20px;
       border: 1.5px solid var(--border);
@@ -794,7 +793,7 @@
       .stats-bar { display: none !important; }
 
       /* Category filter: hidden on mobile */
-      .filter-label, .filter-btn { display: none; }
+      .filter-btn { display: none; }
 
       /* Keep search bar, full width */
       .filter-bar {
@@ -1102,7 +1101,6 @@
 
     <!-- FILTER BAR -->
     <div class="filter-bar">
-      <span class="filter-label">Category:</span>
       <button class="filter-btn active" onclick="setCategory('all',this)">All</button>
       <button class="filter-btn" onclick="setCategory('new',this)" id="filterNew">🆕 New</button>
       <button class="filter-btn" onclick="setCategory('credit-cards',this)">💳 Credit Cards</button>
@@ -1180,7 +1178,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.93-dev';
+const VERSION = '1.5.94-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
