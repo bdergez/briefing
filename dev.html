@@ -1169,7 +1169,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.103-dev';
+const VERSION = '1.5.104-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -3142,7 +3142,8 @@ function renderSettingsNewsTab() {
     !settingsDraft.customSources.find(c => c.id === s.id)
   );
 
-  let html = `<div class="settings-section-title">Sources</div>`;
+  let html = `<div class="settings-section-title">Sources</div>
+    <div class="settings-footer-note" style="margin-bottom:10px">Up to 8 active news sources at a time.</div>`;
   allSrcs.forEach(src => {
     const isOn = !settingsDraft.disabledSources.has(src.id);
     const isCustom = !!settingsDraft.customSources.find(c => c.id === src.id);
@@ -3154,7 +3155,7 @@ function renderSettingsNewsTab() {
           <div class="settings-row-url">${src.rssFeeds ? `${src.rssFeeds.length} feeds` : esc(src.rss)}</div>
         </div>
         ${isCustom ? `<button class="settings-remove-btn" title="Remove" onclick="settingsDraft.customSources=settingsDraft.customSources.filter(s=>s.id!=='${src.id}');settingsDraft.disabledSources.delete('${src.id}');renderSettingsBody()">✕</button>` : ''}
-        <button class="settings-toggle ${isOn ? 'on' : 'off'}" onclick="if(settingsDraft.disabledSources.has('${src.id}'))settingsDraft.disabledSources.delete('${src.id}');else settingsDraft.disabledSources.add('${src.id}');renderSettingsBody()"></button>
+        <button class="settings-toggle ${isOn ? 'on' : 'off'}" onclick="toggleDraftSource('${src.id}')"></button>
       </div>`;
   });
 
@@ -3228,6 +3229,25 @@ function settingsAddSuggested(id) {
   if (!src) return;
   if (sourceExistsInDraft(src)) { alert('That source is already included.'); return; }
   settingsDraft.customSources.push(src);
+  if (getDraftActiveNewsSourceCount() >= 8) settingsDraft.disabledSources.add(src.id);
+  renderSettingsBody();
+}
+
+function getDraftActiveNewsSourceCount() {
+  const allSrcs = [...SOURCES, ...settingsDraft.customSources];
+  return allSrcs.filter(src => !settingsDraft.disabledSources.has(src.id) && !src.isOffers).length;
+}
+
+function toggleDraftSource(id) {
+  if (settingsDraft.disabledSources.has(id)) {
+    if (getDraftActiveNewsSourceCount() >= 8) {
+      alert('You can keep up to 8 active news sources.');
+      return;
+    }
+    settingsDraft.disabledSources.delete(id);
+  } else {
+    settingsDraft.disabledSources.add(id);
+  }
   renderSettingsBody();
 }
 
@@ -3259,6 +3279,7 @@ function settingsAddCustomSource() {
   const palette = ['#e53e3e','#2b6cb0','#2f855a','#6b46c1','#d97706','#0891b2','#db2777','#ea580c'];
   const color = palette[settingsDraft.customSources.length % palette.length];
   settingsDraft.customSources.push({ id, name, short, color, emoji: '📰', url: rss, rss });
+  if (getDraftActiveNewsSourceCount() >= 8) settingsDraft.disabledSources.add(id);
   renderSettingsBody();
 }
 
