@@ -127,6 +127,7 @@
       cursor: pointer; transition: opacity 0.2s;
       border: 2px solid transparent;
       user-select: none;
+      justify-content: center;
     }
     .src-pill.inactive { opacity: 0.3; }
     .all-pill { background: #4a5568; }
@@ -1084,7 +1085,7 @@
 
     <!-- FILTER BAR -->
     <div class="filter-bar">
-      <button class="filter-btn active" onclick="setCategory('all',this)">All</button>
+      <button class="filter-btn all-filter-pill active" onclick="setCategory('all',this)">All</button>
       <button class="filter-btn" onclick="setCategory('new',this)" id="filterNew">🆕 New</button>
       <button class="filter-btn" onclick="setCategory('credit-cards',this)">💳 Credit Cards</button>
       <button class="filter-btn" onclick="setCategory('bank-bonuses',this)">🏦 Bank Bonuses</button>
@@ -1161,7 +1162,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.98-dev';
+const VERSION = '1.5.99-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1832,7 +1833,7 @@ async function loadAll() {
 
   document.getElementById('refreshTime').textContent = `v${VERSION} · Updated ${new Date().toLocaleTimeString()}`;
   document.getElementById('refreshBtn').disabled = false;
-  syncCategoryPillWidths();
+  syncNewsPillWidths();
 
   const hasErrors = debugLog.some(d => d.status === 'error');
   if (hasErrors) {
@@ -1944,12 +1945,20 @@ function setCategory(cat, btn) {
   renderCards();
 }
 
-function syncCategoryPillWidths() {
-  const buttons = Array.from(document.querySelectorAll('#panel-news .filter-btn'));
-  if (!buttons.length) return;
-  buttons.forEach(btn => { btn.style.width = 'auto'; });
-  const maxWidth = Math.max(...buttons.map(btn => Math.ceil(btn.getBoundingClientRect().width)));
-  buttons.forEach(btn => { btn.style.width = `${maxWidth}px`; });
+function syncNewsPillWidths() {
+  const sourcePills = Array.from(document.querySelectorAll('#panel-news .src-pill[data-src-id]'));
+  const categoryPills = Array.from(document.querySelectorAll('#panel-news .filter-btn:not(.all-filter-pill)'));
+  const allPills = [
+    document.getElementById('pill-all'),
+    document.querySelector('#panel-news .all-filter-pill')
+  ].filter(Boolean);
+
+  const uniformPills = [...sourcePills, ...categoryPills];
+  if (!uniformPills.length) return;
+
+  [...uniformPills, ...allPills].forEach(pill => { pill.style.width = 'auto'; });
+  const maxWidth = Math.max(...uniformPills.map(pill => Math.ceil(pill.getBoundingClientRect().width)));
+  uniformPills.forEach(pill => { pill.style.width = `${maxWidth}px`; });
 }
 
 function esc(s) {
@@ -3248,8 +3257,8 @@ function settingsAddCustomSub() {
 
   // 5. Load content and start auto-refresh
   renderTools();
-  syncCategoryPillWidths();
-  window.addEventListener('resize', syncCategoryPillWidths);
+  syncNewsPillWidths();
+  window.addEventListener('resize', syncNewsPillWidths);
   loadAll();
   scheduleAutoRefresh();
 })();
