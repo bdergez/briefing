@@ -194,6 +194,12 @@
       display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
       overflow: hidden;
     }
+    .card.card-no-desc {
+      gap: 8px;
+    }
+    .card.card-no-desc .card-footer {
+      padding-top: 2px;
+    }
 
     .card-footer {
       display: flex; align-items: center; justify-content: space-between;
@@ -1192,7 +1198,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.79-dev';
+const VERSION = '1.5.84-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -2387,9 +2393,10 @@ function cardHTML(a) {
   const catLabel = a.category === 'news' ? '📰 News' : (CATEGORIES[a.category]?.label || a.category);
   const dateStr  = a.date ? fmtDate(a.date) : '';
   const desc     = a.desc ? `<div class="card-desc">${esc(a.desc)}</div>` : '';
+  const cardClass = a.desc ? 'card' : 'card card-no-desc';
 
   return `
-  <div class="card">
+  <div class="${cardClass}">
     <div class="card-meta">
       <span class="source-badge" style="background:${a.sourceColor}">${a.sourceShort}</span>
       <span class="category-tag">${catLabel}</span>
