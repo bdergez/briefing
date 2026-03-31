@@ -1115,7 +1115,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.90-dev';
+const VERSION = '1.5.91-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1628,11 +1628,6 @@ function parseNextcardArticlesPage(htmlText, source) {
       .replace(/^By\s+.+?•.+$/i, '')
       .trim();
 
-    const container = anchor.closest('article,li,section,div') || anchor.parentElement || anchor;
-    const metaText = (container.textContent || '').replace(/\s+/g, ' ').trim();
-    const dateMatch = metaText.match(/\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{1,2}, \d{4}\b/);
-    const date = dateMatch ? new Date(dateMatch[0]) : null;
-
     if (!title || title.length < 8) continue;
 
     items.push({
@@ -1645,15 +1640,22 @@ function parseNextcardArticlesPage(htmlText, source) {
       title,
       url: href,
       desc: desc.slice(0, 280),
-      date: date && !isNaN(date) ? date : null,
+      date: null,
       category: categorize(title, desc),
     });
     seen.add(href);
   }
 
   return items
-    .sort((a, b) => (b.date || 0) - (a.date || 0))
     .slice(0, 15);
+}
+
+function mergeNextcardArticleDates(articlesItems, sitemapItems) {
+  const dateByUrl = new Map(sitemapItems.map(item => [item.url, item.date || null]));
+  return articlesItems.map(item => ({
+    ...item,
+    date: dateByUrl.get(item.url) || null
+  }));
 }
 
 async function fetchSource(source) {
@@ -1666,7 +1668,14 @@ async function fetchSource(source) {
   if (source.articlesPage) {
     const htmlText = await fetchTextWithProxy(source.articlesPage);
     if (htmlText) {
-      const items = parseNextcardArticlesPage(htmlText, source);
+      let items = parseNextcardArticlesPage(htmlText, source);
+      if (items.length >= 5 && source.sitemap) {
+        const sitemapText = await fetchTextWithProxy(source.sitemap);
+        if (sitemapText) {
+          const sitemapItems = parseSitemap(sitemapText, source);
+          items = mergeNextcardArticleDates(items, sitemapItems);
+        }
+      }
       if (items.length >= 5) {
         setPillState(source.id, 'ok', items.length);
         updateDebugEntry(source.id, 'ok', `${items.length} articles loaded`);
