@@ -1012,7 +1012,7 @@
     <span class="refresh-time" id="refreshTime">Not loaded</span>
     <button class="btn btn-primary" id="refreshBtn" onclick="loadListings()">⟳ Refresh</button>
     <button class="btn btn-ghost" onclick="toggleTheme()">🌓 Theme</button>
-    <button class="btn btn-ghost" onclick="openSettings()">⚙️ Sources</button>
+    <button class="btn btn-ghost" onclick="openSettings()">⚙️ Locations</button>
   </div>
 </header>
 
@@ -1022,63 +1022,6 @@
   <div class="tab-bar">
     <button class="tab-btn active">🏠 Homes</button>
   </div>
-
-  <!-- ══ PANEL: NEWS FEED ══ -->
-  <div id="panel-news" style="display:none">
-
-    <!-- SOURCE STATUS PILLS -->
-    <div class="source-status" id="sourcePills">
-      <span class="src-pill all-pill ok" id="pill-all" onclick="selectAllSources()" title="Show all sources">All</span>
-    </div>
-
-    <!-- STATS -->
-    <div class="stats-bar" id="statsBar" style="display:none">
-      <div class="stat"><div class="stat-num" id="statTotal">0</div><div class="stat-label">Articles</div></div>
-      <div class="stat"><div class="stat-num" id="statSources">0</div><div class="stat-label">Sources</div></div>
-      <div class="stat"><div class="stat-num" id="statCategories">0</div><div class="stat-label">Categories</div></div>
-    </div>
-
-    <!-- DEBUG (shown if errors) -->
-    <div class="debug-box" id="debugBox">
-      <h4>🔍 Source Load Status</h4>
-      <ul id="debugList"></ul>
-    </div>
-
-    <!-- FILTER BAR -->
-    <div class="filter-bar">
-      <span class="filter-label">Category:</span>
-      <button class="filter-btn active" onclick="setCategory('all',this)">All</button>
-      <button class="filter-btn" onclick="setCategory('new',this)" id="filterNew">🆕 New</button>
-      <button class="filter-btn" onclick="setCategory('credit-cards',this)">💳 Credit Cards</button>
-      <button class="filter-btn" onclick="setCategory('bank-bonuses',this)">🏦 Bank Bonuses</button>
-      <button class="filter-btn" onclick="setCategory('points-miles',this)">✈️ Points &amp; Miles</button>
-      <button class="filter-btn" onclick="setCategory('travel',this)">🌍 Travel Deals</button>
-      <button class="filter-btn" onclick="setCategory('news',this)">📰 News</button>
-      <div class="search-wrap">
-        <span class="search-icon">🔍</span>
-        <input type="text" id="searchInput" placeholder="Search articles…" oninput="renderCards()" />
-      </div>
-    </div>
-
-    <!-- OFFERS STRIP -->
-    <div class="offers-strip" id="offersStrip" style="display:none">
-      <div class="offers-strip-header">
-        <span class="offers-strip-title">🏷️ Cash Back Offers</span>
-        <span class="offers-strip-count" id="offersCount"></span>
-      </div>
-      <div class="offers-grid" id="offersGrid"></div>
-    </div>
-
-    <!-- CARDS GRID -->
-    <div class="grid" id="cardGrid">
-      <div class="loading-wrap">
-        <div class="spinner"></div>
-        <div class="loading-text">Loading your dashboard…</div>
-        <div class="loading-sub">Fetching articles from sources via RSS</div>
-      </div>
-    </div>
-
-  </div><!-- /panel-news -->
 
   <!-- ══ PANEL: REAL ESTATE LISTINGS ══ -->
   <div id="panel-listings">
@@ -1125,175 +1068,26 @@
       <div class="loading-wrap">
         <div class="spinner"></div>
         <div class="loading-text">Open the Listings tab to load real-estate feeds.</div>
-        <div class="loading-sub">Starting with Miami, Miami Beach, Boston metro, and Stamford area.</div>
+        <div class="loading-sub">Live imports currently focus on Miami and Miami Beach.</div>
       </div>
     </div>
 
   </div><!-- /panel-listings -->
-
-  <!-- ══ PANEL: REDDIT DIGEST ══ -->
-  <div id="panel-reddit" style="display:none">
-
-    <div class="digest-meta" id="digestMeta" style="font-size:12px;color:var(--subtext);margin-bottom:12px">Loading threads…</div>
-    <div class="digest-layout">
-      <div class="thread-list-panel" id="threadListPanel" style="display:none"></div>
-      <div class="thread-detail-panel">
-        <div class="section-label" id="digestSectionLabel"></div>
-        <div class="digest-grid" id="digestGrid">
-          <div class="digest-loading">
-            <div class="spinner"></div>
-            Fetching threads and discussion topics…
-          </div>
-        </div>
-      </div>
-    </div>
-
-  </div><!-- /panel-reddit -->
-
-  <!-- ══ PANEL: COMMUNITIES ══ -->
-  <div id="panel-communities" style="display:none">
-    <div class="comm-layout">
-      <div class="comm-nav-panel" id="commNavPanel" style="display:none"></div>
-      <div class="comm-detail-panel">
-        <div class="communities-wrap" id="communitiesWrap">
-          <div class="digest-loading"><div class="spinner"></div>Loading communities…</div>
-        </div>
-      </div>
-    </div>
-  </div><!-- /panel-communities -->
 
 
 </div>
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = 'homes-1.1.0';
+const VERSION = 'homes-1.1.1';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
-const SOURCES = [
-  { id:'doc',    name:'Doctor of Credit',    short:'DoC',    color:'#e53e3e', emoji:'🩺', url:'https://www.doctorofcredit.com',      rss:'https://www.doctorofcredit.com/feed/' },
-  { id:'fm',     name:'FrequentMiler',       short:'FM',     color:'#2b6cb0', emoji:'🧮', url:'https://frequentmiler.com',           rss:'https://frequentmiler.com/feed/' },
-  { id:'omaat',  name:'One Mile at a Time',  short:'OMAAT',  color:'#6b46c1', emoji:'🛫', url:'https://onemileatatime.com',          rss:'https://onemileatatime.com/feed/' },
-  { id:'vftw',   name:'View From The Wing',  short:'VFTW',   color:'#2f855a', emoji:'🪟', url:'https://viewfromthewing.com',         rss:'https://viewfromthewing.com/feed/' },
-  { id:'mtm',    name:'Miles to Memories',   short:'MtM',    color:'#d97706', emoji:'✈️', url:'https://milestomemories.com',         rss:'https://milestomemories.com/feed/' },
-  { id:'loyaltylobby', name:'LoyaltyLobby', short:'LL', color:'#2C7A7B', emoji:'🛎️', url:'https://loyaltylobby.com', rss:'https://loyaltylobby.com/feed/' },
-  { id:'hyatt',  name:'Hyatt Newsroom',      short:'Hyatt',  color:'#2b6cb0', emoji:'🏨', url:'https://newsroom.hyatt.com',
-    rssFeeds: [
-      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss',
-      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=794',
-      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=788',
-      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=846',
-      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=837',
-      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=838',
-      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=839',
-      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=840',
-      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=841',
-      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=843',
-      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=844',
-      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=845',
-      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=831',
-      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=824',
-      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=835',
-    ], maxAgeDays: 30 },
-];
-
-// ─── COMMUNITIES CONFIG ───────────────────────────────────────────────────
-const COMMUNITIES = [
-  { label: '💳 Points & Travel', color: '#6b46c1', subs: [
-    { id: 'awardtravel',   name: 'r/awardtravel',   color: '#6b46c1' },
-    { id: 'CreditCards',   name: 'r/CreditCards',   color: '#e53e3e' },
-    { id: 'ChaseSapphire', name: 'r/ChaseSapphire', color: '#1a56db' },
-    { id: 'hyatt',         name: 'r/hyatt',         color: '#2b6cb0' },
-    { id: 'marriott',      name: 'r/marriott',      color: '#c53030' },
-  ]},
-  { label: '💰 Finance & FIRE', color: '#2f855a', subs: [
-    { id: 'personalfinance',        name: 'r/personalfinance',        color: '#2f855a' },
-    { id: 'financialindependence',  name: 'r/financialindependence',  color: '#276749' },
-    { id: 'Bogleheads',             name: 'r/Bogleheads',             color: '#2b6cb0' },
-    { id: 'investing',              name: 'r/investing',              color: '#1a365d' },
-  ]},
-  { label: '🤖 AI & Tech', color: '#553c9a', subs: [
-    { id: 'LocalLLaMA',       name: 'r/LocalLLaMA',       color: '#553c9a' },
-    { id: 'MachineLearning',  name: 'r/MachineLearning',  color: '#44337a' },
-    { id: 'singularity',      name: 'r/singularity',      color: '#322659' },
-  ]},
-  { label: '🏃 Health & Wellness', color: '#276749', subs: [
-    { id: 'nutrition',    name: 'r/nutrition',    color: '#276749' },
-    { id: 'Supplements',  name: 'r/Supplements',  color: '#285e61' },
-  ]},
-  { label: '🧘 Lifestyle', color: '#744210', subs: [
-    { id: 'productivity', name: 'r/productivity', color: '#744210' },
-    { id: 'minimalism',   name: 'r/minimalism',   color: '#4a5568' },
-    { id: 'Stoicism',     name: 'r/Stoicism',     color: '#2d3748' },
-  ]},
-  { label: '🍕 Food & Local', color: '#c05621', subs: [
-    { id: 'FoodNYC', name: 'r/FoodNYC', color: '#c05621' },
-  ]},
-];
-
-// ─── SUGGESTED SOURCES (for settings modal) ──────────────────────────────
-const SUGGESTED_SOURCES = [
-  { id:'tpg',  name:'The Points Guy',  short:'TPG',  color:'#b7791f', emoji:'🏆', url:'https://thepointsguy.com',       rss:'https://thepointsguy.com/feed/' },
-  { id:'up',   name:'Upgraded Points', short:'UP',   color:'#553c9a', emoji:'⬆️', url:'https://upgradedpoints.com',     rss:'https://upgradedpoints.com/feed/' },
-  { id:'10xt', name:'10xTravel',       short:'10xT', color:'#c05621', emoji:'✈️', url:'https://10xtravel.com',          rss:'https://10xtravel.com/feed/' },
-  { id:'ba',   name:'BoardingArea',    short:'BA',   color:'#0369a1', emoji:'🛫', url:'https://boardingarea.com',       rss:'https://boardingarea.com/feed/' },
-  { id:'tt',   name:'Thrifty Traveler',short:'TT',   color:'#0f766e', emoji:'🤑', url:'https://thriftytraveler.com',    rss:'https://thriftytraveler.com/feed/' },
-  { id:'aw',   name:'AwardWallet',     short:'AW',   color:'#7c3aed', emoji:'🏆', url:'https://awardwallet.com/blog',   rss:'https://www.awardwallet.com/blog/feed/' },
-];
-
-const LISTING_SOURCES = [
-  { id:'miami',       name:'Miami Area',       short:'Miami',       color:'#0f766e', emoji:'🌴', url:'https://miami.craigslist.org/search/rea', rss:'https://miami.craigslist.org/search/rea?format=rss' },
-  { id:'miami-beach', name:'Miami Beach',      short:'M. Beach',    color:'#0284c7', emoji:'🏖️', url:'https://miami.craigslist.org/search/rea?query=miami+beach', rss:'https://miami.craigslist.org/search/rea?query=miami+beach&format=rss' },
-  { id:'boston',      name:'Boston Metro',     short:'Boston',      color:'#7c3aed', emoji:'🦞', url:'https://boston.craigslist.org/search/rea', rss:'https://boston.craigslist.org/search/rea?format=rss' },
-  { id:'stamford',    name:'Stamford Area',    short:'Stamford',    color:'#dc2626', emoji:'🌆', url:'https://newyork.craigslist.org/search/fct/rea?query=stamford', rss:'https://newyork.craigslist.org/search/fct/rea?query=stamford&format=rss' },
-];
-
-const SUGGESTED_LISTING_SOURCES = [
-  { id:'stowe-vt',         name:'Stowe, VT',           short:'Stowe',      color:'#1d4ed8', emoji:'⛷️', season:'winter', url:'https://vermont.craigslist.org/search/rea?query=stowe', rss:'https://vermont.craigslist.org/search/rea?query=stowe&format=rss' },
-  { id:'killington-vt',    name:'Killington, VT',      short:'Killngtn',   color:'#2563eb', emoji:'🎿', season:'winter', url:'https://vermont.craigslist.org/search/rea?query=killington', rss:'https://vermont.craigslist.org/search/rea?query=killington&format=rss' },
-  { id:'sunday-river-me',  name:'Sunday River, ME',    short:'S. River',   color:'#0f766e', emoji:'🏔️', season:'winter', url:'https://maine.craigslist.org/search/rea?query=sunday+river', rss:'https://maine.craigslist.org/search/rea?query=sunday+river&format=rss' },
-  { id:'park-city-ut',     name:'Park City, UT',       short:'Park City',  color:'#7c3aed', emoji:'🏂', season:'winter', url:'https://saltlakecity.craigslist.org/search/rea?query=park+city', rss:'https://saltlakecity.craigslist.org/search/rea?query=park+city&format=rss' },
-  { id:'aspen-co',         name:'Aspen, CO',           short:'Aspen',      color:'#9333ea', emoji:'❄️', season:'winter', url:'https://rockies.craigslist.org/search/rea?query=aspen', rss:'https://rockies.craigslist.org/search/rea?query=aspen&format=rss' },
-  { id:'bar-harbor-me',    name:'Bar Harbor, ME',      short:'Bar Hbr',    color:'#059669', emoji:'🌲', season:'summer', url:'https://maine.craigslist.org/search/rea?query=bar+harbor', rss:'https://maine.craigslist.org/search/rea?query=bar+harbor&format=rss' },
-  { id:'cape-cod-ma',      name:'Cape Cod, MA',        short:'Cape Cod',   color:'#0ea5e9', emoji:'🦀', season:'summer', url:'https://capecod.craigslist.org/search/rea', rss:'https://capecod.craigslist.org/search/rea?format=rss' },
-  { id:'outer-banks-nc',   name:'Outer Banks, NC',     short:'OBX',        color:'#f97316', emoji:'🏄', season:'summer', url:'https://eastnc.craigslist.org/search/rea?query=outer+banks', rss:'https://eastnc.craigslist.org/search/rea?query=outer+banks&format=rss' },
-  { id:'myrtle-beach-sc',  name:'Myrtle Beach, SC',    short:'Myrtle',     color:'#db2777', emoji:'🌊', season:'summer', url:'https://myrtlebeach.craigslist.org/search/rea', rss:'https://myrtlebeach.craigslist.org/search/rea?format=rss' },
-  { id:'destin-fl',        name:'Destin, FL',          short:'Destin',     color:'#0891b2', emoji:'☀️', season:'summer', url:'https://okaloosa.craigslist.org/search/rea?query=destin', rss:'https://okaloosa.craigslist.org/search/rea?query=destin&format=rss' },
-];
-
 const HOUSES_MARKETS_URL = 'data/house-markets.json';
 const SUPABASE_PROJECT_URL = 'https://buxitxwnqhezszwqbqwh.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_1hbWeGSEuIjNJPK4lw_eKg_rr8Ycmum';
 const SUPABASE_REST_URL = `${SUPABASE_PROJECT_URL}/rest/v1`;
 
-// CORS proxies — tried in order until one works
-const PROXIES = [
-  url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
-  url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-  url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
-];
-
-const CATEGORIES = {
-  'credit-cards': { label:'💳 Credit Cards', kw:['credit card','card bonus','sign-up bonus','signup bonus','annual fee','welcome offer','welcome bonus','card review','amex','chase','citi','capital one','barclays','us bank','discover','ink','sapphire','platinum card','gold card','venture','freedom','preferred','reserve','business card','approval','credit pull','hard pull','application rule','5/24','2/90','card offer'] },
-  'bank-bonuses': { label:'🏦 Bank Bonuses', kw:['bank bonus','checking bonus','savings bonus','bank account','direct deposit','checking account','savings account','money market','cd rate','high yield','bank offer','bank deal','brokerage bonus'] },
-  'points-miles': { label:'✈️ Points & Miles', kw:['points','miles','award','redemption','transfer partner','transfer bonus','loyalty','frequent flyer','mileage','mileage plan','skymiles','saver award','award chart','cpp','cents per point','sweet spot','hyatt','marriott','hilton','ihg','bonvoy','world of hyatt','globalist','honors','hotel loyalty','oneworld','star alliance','skyteam','alaska','united','delta','american airlines','british airways','air canada','aeroplan'] },
-  'travel':       { label:'🌍 Travel Deals',  kw:['flight deal','fare sale','error fare','mistake fare','sale','hotel deal','travel deal','cheap flight','discount','flash sale','business class','first class','lounge','priority pass','global entry','tsa precheck','trip report','cruise','upgrade'] },
-};
-
-function categorize(title, desc) {
-  const t = (title + ' ' + (desc||'')).toLowerCase();
-  for (const [cat, d] of Object.entries(CATEGORIES)) {
-    if (d.kw.some(k => t.includes(k))) return cat;
-  }
-  return 'news';
-}
-
 // ─── STATE ───────────────────────────────────────────────────────────────
-let allArticles = [];
-let activeCategory = 'all';
-let activeSources = new Set(); // initialized after loadSettings() in init()
-let sourceState = {}; // { id: 'loading'|'ok'|'error' }
-let debugLog = [];
 let allListings = [];
 let activeListingCategory = 'all';
 let activeListingSources = new Set();
@@ -1301,39 +1095,13 @@ let listingSourceState = {};
 let listingDebugLog = [];
 let listingsLoaded = false;
 let listingMarkets = [];
-let houseMarketDefaults = [];
 let activeListingSort = 'updated-desc';
 
-// ── Churning two-panel state ──────────────────────────────────────────────
-let digestPostsData = [];       // all fetched posts
-let digestCommentsData = {};    // postId -> topics[] (undefined = pending, [] = none)
-let selectedPostId = null;
-let selectedDay = null;         // local "YYYY-MM-DD" day key currently shown in right panel
-const CHURNING_MOBILE_INITIAL = 10;
-let churningExpanded = false;
-let churningSearchQuery = ''; // current filter string in thread list panel
-
-// ── Communities two-panel state ───────────────────────────────────────────
-let selectedCommCat = null;   // null = all, or category index
-let selectedCommSub = null;   // null = all/category, or sub id
-let communitiesLoaded = false; // only load once; skip on News Feed refreshes
-let communitiesRefreshTimer = null; // background 60-min auto-refresh timer
-let commSearchQuery = ''; // current filter string in communities nav panel
-
-
-// ── Offers state ─────────────────────────────────────────────────────────
-let offersArticles = []; // articles from isOffers sources — shown in dedicated strip
-
 // ── Settings state ────────────────────────────────────────────────────────
-let settingsDisabledSources = new Set(); // IDs of default sources turned off
-let settingsCustomSources   = [];        // user-added source objects
-let settingsDisabledSubs    = new Set(); // subreddit IDs turned off
-let settingsCustomSubs      = [];        // user-added {id, name, color}
 let settingsDisabledListings = new Set(); // listing location IDs turned off
 let settingsCustomListings   = [];        // optional listing location IDs enabled by user
 // Draft state (used while modal is open — changes are speculative until Applied)
 let settingsDraft = null;
-let activeSettingsTab = 'houses';
 
 // ─── FETCH ───────────────────────────────────────────────────────────────
 async function fetchWithProxy(rssUrl) {
@@ -3295,20 +3063,6 @@ function registerSW() {
   }
 }
 
-// ─── OFFERS STRIP ────────────────────────────────────────────────────────
-function renderOffers() {
-  const strip = document.getElementById('offersStrip');
-  const grid  = document.getElementById('offersGrid');
-  if (!offersArticles.length) { strip.style.display = 'none'; return; }
-  strip.style.display = '';
-  document.getElementById('offersCount').textContent = `${offersArticles.length} offers`;
-  grid.innerHTML = offersArticles.map(a => `
-    <a class="offer-card" href="${esc(a.url)}" target="_blank" rel="noopener">
-      <div class="offer-card-store">${esc(a.sourceName)}</div>
-      <div class="offer-card-title">${esc(a.title)}</div>
-    </a>`).join('');
-}
-
 // ─── SETTINGS ────────────────────────────────────────────────────────────
 
 function loadSettings() {
@@ -3332,23 +3086,6 @@ function saveSettings() {
   } catch {}
 }
 
-function getEffectiveSources() {
-  return [...SOURCES, ...settingsCustomSources].filter(s => !settingsDisabledSources.has(s.id));
-}
-
-function getEffectiveNewsSources() {
-  return getEffectiveSources().filter(s => !s.isOffers);
-}
-
-function getEffectiveCommunities() {
-  const result = COMMUNITIES
-    .map(cat => ({ ...cat, subs: cat.subs.filter(s => !settingsDisabledSubs.has(s.id)) }))
-    .filter(cat => cat.subs.length > 0);
-  const activeCust = settingsCustomSubs.filter(s => !settingsDisabledSubs.has(s.id));
-  if (activeCust.length > 0) result.push({ label: '⭐ Custom', color: '#4f46e5', subs: activeCust });
-  return result;
-}
-
 function getEffectiveListingSources() {
   return listingMarkets.filter(m =>
     (m.is_default || settingsCustomListings.includes(m.id)) &&
@@ -3357,20 +3094,11 @@ function getEffectiveListingSources() {
 }
 
 function openSettings() {
-  // Copy live state into draft
   settingsDraft = {
-    disabledSources: new Set(settingsDisabledSources),
-    customSources:   JSON.parse(JSON.stringify(settingsCustomSources)),
-    disabledSubs:    new Set(settingsDisabledSubs),
-    customSubs:      JSON.parse(JSON.stringify(settingsCustomSubs)),
-    disabledListings:new Set(settingsDisabledListings),
-    customListings:  [...settingsCustomListings],
+    disabledListings: new Set(settingsDisabledListings),
+    customListings: [...settingsCustomListings],
   };
-  activeSettingsTab = 'houses';
   document.getElementById('settingsNote').textContent = '';
-  document.getElementById('stab-news')?.classList.remove('active');
-  document.getElementById('stab-houses')?.classList.add('active');
-  document.getElementById('stab-comm')?.classList.remove('active');
   renderSettingsBody();
   document.getElementById('settingsOverlay').classList.add('open');
 }
@@ -3382,13 +3110,8 @@ function closeSettings() {
 
 function applySettings() {
   if (!settingsDraft) return;
-  // Copy draft → live
-  settingsDisabledSources = new Set(settingsDraft.disabledSources);
-  settingsCustomSources   = [...settingsDraft.customSources];
-  settingsDisabledSubs    = new Set(settingsDraft.disabledSubs);
-  settingsCustomSubs      = [...settingsDraft.customSubs];
   settingsDisabledListings = new Set(settingsDraft.disabledListings);
-  settingsCustomListings   = [...settingsDraft.customListings];
+  settingsCustomListings = [...settingsDraft.customListings];
   saveSettings();
   document.getElementById('settingsOverlay').classList.remove('open');
   settingsDraft = null;
@@ -3396,108 +3119,8 @@ function applySettings() {
   loadListings(true);
 }
 
-function switchSettingsTab(tab) {
-  activeSettingsTab = tab;
-  document.getElementById('stab-news')?.classList.toggle('active', tab === 'news');
-  document.getElementById('stab-houses')?.classList.toggle('active', tab === 'houses');
-  document.getElementById('stab-comm')?.classList.toggle('active', tab === 'comm');
-  renderSettingsBody();
-}
-
 function renderSettingsBody() {
-  document.getElementById('settingsBody').innerHTML =
-    activeSettingsTab === 'news' ? renderSettingsNewsTab()
-    : activeSettingsTab === 'houses' ? renderSettingsHousesTab()
-    : renderSettingsCommTab();
-}
-
-function renderSettingsNewsTab() {
-  if (!settingsDraft) return '';
-  const allSrcs = [...SOURCES, ...settingsDraft.customSources];
-  const suggested = SUGGESTED_SOURCES.filter(s =>
-    !SOURCES.find(d => d.id === s.id) &&
-    !settingsDraft.customSources.find(c => c.id === s.id)
-  );
-
-  let html = `<div class="settings-section-title">Sources</div>`;
-  allSrcs.forEach(src => {
-    const isOn = !settingsDraft.disabledSources.has(src.id);
-    const isCustom = !!settingsDraft.customSources.find(c => c.id === src.id);
-    html += `
-      <div class="settings-row">
-        <div class="settings-dot" style="background:${src.color}"></div>
-        <div class="settings-row-info">
-          <div class="settings-row-name">${esc(src.emoji || '📰')} ${esc(src.name)}</div>
-          <div class="settings-row-url">${src.rssFeeds ? `${src.rssFeeds.length} feeds` : esc(src.rss)}</div>
-        </div>
-        ${isCustom ? `<button class="settings-remove-btn" title="Remove" onclick="settingsDraft.customSources=settingsDraft.customSources.filter(s=>s.id!=='${src.id}');settingsDraft.disabledSources.delete('${src.id}');renderSettingsBody()">✕</button>` : ''}
-        <button class="settings-toggle ${isOn ? 'on' : 'off'}" onclick="if(settingsDraft.disabledSources.has('${src.id}'))settingsDraft.disabledSources.delete('${src.id}');else settingsDraft.disabledSources.add('${src.id}');renderSettingsBody()"></button>
-      </div>`;
-  });
-
-  if (suggested.length > 0) {
-    html += `<div class="settings-section-title">Suggested</div>`;
-    suggested.forEach(src => {
-      html += `
-        <div class="settings-row">
-          <div class="settings-dot" style="background:${src.color}"></div>
-          <div class="settings-row-info">
-            <div class="settings-row-name">${esc(src.emoji)} ${esc(src.name)}</div>
-            <div class="settings-row-url">${esc(src.rss)}</div>
-          </div>
-          <button class="settings-add-inline" onclick="settingsAddSuggested('${src.id}')">+ Add</button>
-        </div>`;
-    });
-  }
-
-  html += `
-    <div class="settings-section-title">Add Custom RSS</div>
-    <div class="settings-add-form">
-      <input type="text" id="csName" placeholder="Display name (e.g. My Blog)" />
-      <input type="url"  id="csRss"  placeholder="RSS feed URL (https://…/feed/)" />
-      <button class="settings-add-btn" onclick="settingsAddCustomSource()">Add Source</button>
-    </div>`;
-  return html;
-}
-
-function renderSettingsCommTab() {
-  if (!settingsDraft) return '';
-  let html = '';
-
-  COMMUNITIES.forEach(cat => {
-    html += `<div class="settings-cat-header">${esc(cat.label)}</div>`;
-    cat.subs.forEach(sub => {
-      const isOn = !settingsDraft.disabledSubs.has(sub.id);
-      html += `
-        <div class="settings-row">
-          <div class="settings-dot" style="background:${sub.color}"></div>
-          <div class="settings-row-info"><div class="settings-row-name">${esc(sub.name)}</div></div>
-          <button class="settings-toggle ${isOn ? 'on' : 'off'}" onclick="if(settingsDraft.disabledSubs.has('${sub.id}'))settingsDraft.disabledSubs.delete('${sub.id}');else settingsDraft.disabledSubs.add('${sub.id}');renderSettingsBody()"></button>
-        </div>`;
-    });
-  });
-
-  if (settingsDraft.customSubs.length > 0) {
-    html += `<div class="settings-cat-header">⭐ Custom</div>`;
-    settingsDraft.customSubs.forEach(sub => {
-      const isOn = !settingsDraft.disabledSubs.has(sub.id);
-      html += `
-        <div class="settings-row">
-          <div class="settings-dot" style="background:${sub.color}"></div>
-          <div class="settings-row-info"><div class="settings-row-name">${esc(sub.name)}</div></div>
-          <button class="settings-remove-btn" title="Remove" onclick="settingsDraft.customSubs=settingsDraft.customSubs.filter(s=>s.id!=='${sub.id}');settingsDraft.disabledSubs.delete('${sub.id}');renderSettingsBody()">✕</button>
-          <button class="settings-toggle ${isOn ? 'on' : 'off'}" onclick="if(settingsDraft.disabledSubs.has('${sub.id}'))settingsDraft.disabledSubs.delete('${sub.id}');else settingsDraft.disabledSubs.add('${sub.id}');renderSettingsBody()"></button>
-        </div>`;
-    });
-  }
-
-  html += `
-    <div class="settings-section-title">Add Subreddit</div>
-    <div class="settings-add-form">
-      <input type="text" id="csSubName" placeholder="Subreddit name (e.g. travel)" />
-      <button class="settings-add-btn" onclick="settingsAddCustomSub()">Add Subreddit</button>
-    </div>`;
-  return html;
+  document.getElementById('settingsBody').innerHTML = renderSettingsHousesTab();
 }
 
 function renderSettingsHousesTab() {
@@ -3541,12 +3164,6 @@ function renderSettingsHousesTab() {
   return html;
 }
 
-function settingsAddSuggested(id) {
-  const src = SUGGESTED_SOURCES.find(s => s.id === id);
-  if (src) settingsDraft.customSources.push(src);
-  renderSettingsBody();
-}
-
 function settingsAddSuggestedListing(id) {
   const src = listingMarkets.find(s => s.id === id);
   if (!src) return;
@@ -3555,34 +3172,9 @@ function settingsAddSuggestedListing(id) {
   renderSettingsBody();
 }
 
-function settingsAddCustomSource() {
-  const name = (document.getElementById('csName')?.value || '').trim();
-  const rss  = (document.getElementById('csRss')?.value  || '').trim();
-  if (!name || !rss) { alert('Please enter both a name and RSS URL.'); return; }
-  const id    = 'custom_' + Date.now();
-  const short = name.split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0,4) || 'SRC';
-  const palette = ['#e53e3e','#2b6cb0','#2f855a','#6b46c1','#d97706','#0891b2','#db2777','#ea580c'];
-  const color = palette[settingsDraft.customSources.length % palette.length];
-  settingsDraft.customSources.push({ id, name, short, color, emoji: '📰', url: rss, rss });
-  renderSettingsBody();
-}
-
-function settingsAddCustomSub() {
-  let raw = (document.getElementById('csSubName')?.value || '').trim().replace(/^r\//i, '');
-  if (!raw) { alert('Please enter a subreddit name.'); return; }
-  const id = raw.toLowerCase();
-  if (settingsDraft.customSubs.find(s => s.id === id)) return;
-  const palette = ['#6b46c1','#e53e3e','#2b6cb0','#2f855a','#d97706','#c53030','#0891b2'];
-  const color = palette[settingsDraft.customSubs.length % palette.length];
-  settingsDraft.customSubs.push({ id, name: `r/${raw}`, color });
-  renderSettingsBody();
-}
-
 // ─── INIT ────────────────────────────────────────────────────────────────
 (async function init() {
-  // 1. Load settings (must happen before loadAll so getEffectiveSources() is correct)
   loadSettings();
-  activeSources = new Set(getEffectiveNewsSources().map(s => s.id));
   try {
     await ensureHouseMarketsLoaded();
   } catch (e) {
@@ -3607,11 +3199,11 @@ function settingsAddCustomSub() {
 <div class="settings-overlay" id="settingsOverlay" onclick="if(event.target===this)closeSettings()">
   <div class="settings-modal">
     <div class="settings-header">
-      <h2>⚙️ Source Settings</h2>
+      <h2>⚙️ Homes Settings</h2>
       <button class="settings-close" onclick="closeSettings()">✕</button>
     </div>
     <div class="settings-tabs">
-      <button class="settings-tab active" id="stab-houses" onclick="switchSettingsTab('houses')">🏠 House Locations</button>
+      <button class="settings-tab active" id="stab-houses">🏠 House Locations</button>
     </div>
     <div class="settings-body" id="settingsBody"></div>
     <div class="settings-footer">
