@@ -122,24 +122,21 @@
     }
     .src-pill {
       display: inline-flex; align-items: center; gap: 6px;
-      padding: 6px 14px; border-radius: 20px;
-      min-height: 38px;
+      padding: 5px 12px; border-radius: 20px;
+      min-height: 30px;
       font-size: 12px; font-weight: 600; color: #fff;
       cursor: pointer; transition: opacity 0.2s;
       border: 2px solid transparent;
       user-select: none;
       justify-content: center;
-      line-height: 1.2;
-      white-space: nowrap;
-      flex-wrap: nowrap;
+      line-height: 1;
     }
     .src-pill.inactive { opacity: 0.3; }
     .all-pill { background: #4a5568; }
     .all-pill.inactive { opacity: 0.3; }
     .src-pill .pill-count {
       background: rgba(0,0,0,0.2); border-radius: 20px;
-      min-width: 26px; padding: 1px 5px; font-size: 11px;
-      text-align: center; font-variant-numeric: tabular-nums;
+      padding: 1px 7px; font-size: 11px;
     }
     .src-pill.loading::after { content: ' ⏳'; }
     .src-pill.error::after { content: ' ✗'; }
@@ -152,20 +149,18 @@
     }
     .filter-btn {
       display: inline-flex; align-items: center; gap: 6px;
-      padding: 6px 14px; border-radius: 20px;
-      min-height: 38px;
+      padding: 5px 12px; border-radius: 20px;
+      min-height: 30px;
       border: 2px solid transparent;
       background: var(--card-bg); color: var(--text);
       font-size: 12px; font-weight: 600; cursor: pointer;
       transition: all 0.2s;
       user-select: none;
       justify-content: center;
-      line-height: 1.2;
+      line-height: 1;
       font-family: inherit;
       appearance: none;
       -webkit-appearance: none;
-      white-space: nowrap;
-      flex-wrap: nowrap;
     }
     .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
     .filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
@@ -1099,10 +1094,10 @@
     <div class="filter-bar">
       <button class="filter-btn all-filter-pill active" onclick="setCategory('all',this)">All</button>
       <button class="filter-btn" onclick="setCategory('new',this)" id="filterNew">🆕 New</button>
-      <button class="filter-btn" onclick="setCategory('credit-cards',this)">💳 Credit</button>
-      <button class="filter-btn" onclick="setCategory('bank-bonuses',this)">🏦 Bonuses</button>
-      <button class="filter-btn" onclick="setCategory('points-miles',this)">✈️ Points</button>
-      <button class="filter-btn" onclick="setCategory('travel',this)">🌍 Travel</button>
+      <button class="filter-btn" onclick="setCategory('credit-cards',this)">💳 Credit Cards</button>
+      <button class="filter-btn" onclick="setCategory('bank-bonuses',this)">🏦 Bank Bonuses</button>
+      <button class="filter-btn" onclick="setCategory('points-miles',this)">✈️ Points &amp; Miles</button>
+      <button class="filter-btn" onclick="setCategory('travel',this)">🌍 Travel Deals</button>
       <button class="filter-btn" onclick="setCategory('news',this)">📰 News</button>
       <div class="search-wrap">
         <span class="search-icon">🔍</span>
@@ -1174,7 +1169,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.110-dev';
+const VERSION = '1.5.103-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1418,10 +1413,10 @@ const PROXIES = [
 ];
 
 const CATEGORIES = {
-  'credit-cards': { label:'💳 Credit', kw:['credit card','card bonus','sign-up bonus','signup bonus','annual fee','welcome offer','welcome bonus','card review','amex','chase','citi','capital one','barclays','us bank','discover','ink','sapphire','platinum card','gold card','venture','freedom','preferred','reserve','business card','approval','credit pull','hard pull','application rule','5/24','2/90','card offer'] },
-  'bank-bonuses': { label:'🏦 Bonuses', kw:['bank bonus','checking bonus','savings bonus','bank account','direct deposit','checking account','savings account','money market','cd rate','high yield','bank offer','bank deal','brokerage bonus'] },
-  'points-miles': { label:'✈️ Points', kw:['points','miles','award','redemption','transfer partner','transfer bonus','loyalty','frequent flyer','mileage','mileage plan','skymiles','saver award','award chart','cpp','cents per point','sweet spot','hyatt','marriott','hilton','ihg','bonvoy','world of hyatt','globalist','honors','hotel loyalty','oneworld','star alliance','skyteam','alaska','united','delta','american airlines','british airways','air canada','aeroplan'] },
-  'travel':       { label:'🌍 Travel',  kw:['flight deal','fare sale','error fare','mistake fare','sale','hotel deal','travel deal','cheap flight','discount','flash sale','business class','first class','lounge','priority pass','global entry','tsa precheck','trip report','cruise','upgrade'] },
+  'credit-cards': { label:'💳 Credit Cards', kw:['credit card','card bonus','sign-up bonus','signup bonus','annual fee','welcome offer','welcome bonus','card review','amex','chase','citi','capital one','barclays','us bank','discover','ink','sapphire','platinum card','gold card','venture','freedom','preferred','reserve','business card','approval','credit pull','hard pull','application rule','5/24','2/90','card offer'] },
+  'bank-bonuses': { label:'🏦 Bank Bonuses', kw:['bank bonus','checking bonus','savings bonus','bank account','direct deposit','checking account','savings account','money market','cd rate','high yield','bank offer','bank deal','brokerage bonus'] },
+  'points-miles': { label:'✈️ Points & Miles', kw:['points','miles','award','redemption','transfer partner','transfer bonus','loyalty','frequent flyer','mileage','mileage plan','skymiles','saver award','award chart','cpp','cents per point','sweet spot','hyatt','marriott','hilton','ihg','bonvoy','world of hyatt','globalist','honors','hotel loyalty','oneworld','star alliance','skyteam','alaska','united','delta','american airlines','british airways','air canada','aeroplan'] },
+  'travel':       { label:'🌍 Travel Deals',  kw:['flight deal','fare sale','error fare','mistake fare','sale','hotel deal','travel deal','cheap flight','discount','flash sale','business class','first class','lounge','priority pass','global entry','tsa precheck','trip report','cruise','upgrade'] },
 };
 
 function categorize(title, desc) {
@@ -1902,7 +1897,7 @@ function setPillState(id, state, count) {
   if (!pill) return;
   pill.className = `src-pill ${state}`;
   if (!activeSources.has(id)) pill.classList.add('inactive');
-  if (state === 'ok' && count != null) cnt.textContent = count > 99 ? '99+' : String(count);
+  if (state === 'ok' && count != null) cnt.textContent = count;
   if (state === 'error') cnt.textContent = '✗';
   if (state === 'loading') cnt.textContent = '⏳';
   updateAllPill();
@@ -1957,16 +1952,6 @@ function setCategory(cat, btn) {
   renderCards();
 }
 
-function measurePillWidth(pill, ignoreCount = false) {
-  const count = ignoreCount ? pill.querySelector('.pill-count') : null;
-  const previousDisplay = count ? count.style.display : '';
-  if (count) count.style.display = 'none';
-  pill.style.width = 'auto';
-  const width = Math.ceil(pill.getBoundingClientRect().width);
-  if (count) count.style.display = previousDisplay;
-  return width;
-}
-
 function syncNewsPillWidths() {
   const sourcePills = Array.from(document.querySelectorAll('#panel-news .src-pill[data-src-id]'));
   const categoryPills = Array.from(document.querySelectorAll('#panel-news .filter-btn:not(.all-filter-pill)'));
@@ -1979,9 +1964,9 @@ function syncNewsPillWidths() {
   if (!uniformPills.length) return;
 
   [...uniformPills, ...allPills].forEach(pill => { pill.style.width = 'auto'; });
-  const maxWidth = Math.max(...uniformPills.map(pill => measurePillWidth(pill, pill.classList.contains('src-pill'))));
+  const maxWidth = Math.max(...uniformPills.map(pill => Math.ceil(pill.getBoundingClientRect().width)));
   const allWidth = allPills.length
-    ? Math.max(...allPills.map(pill => measurePillWidth(pill, pill.classList.contains('src-pill'))))
+    ? Math.max(...allPills.map(pill => Math.ceil(pill.getBoundingClientRect().width)))
     : 0;
   uniformPills.forEach(pill => { pill.style.width = `${maxWidth}px`; });
   allPills.forEach(pill => { pill.style.width = `${allWidth}px`; });
