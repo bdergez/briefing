@@ -1192,7 +1192,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.80-dev';
+const VERSION = '1.5.81-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1551,6 +1551,96 @@ function scrapeHTMLArticles(htmlText, source) {
   return items;
 }
 
+function parseNextcardStructuredArticles(htmlText, source) {
+  try {
+    const extractArray = key => {
+      const marker = `\\"${key}\\":[`;
+      const start = htmlText.indexOf(marker);
+      if (start === -1) return [];
+      const jsonStart = htmlText.indexOf('[', start + marker.length - 1);
+      if (jsonStart === -1) return [];
+
+      let depth = 0;
+      let inString = false;
+      let escaped = false;
+      let jsonEnd = -1;
+
+      for (let i = jsonStart; i < htmlText.length; i++) {
+        const ch = htmlText[i];
+        if (inString) {
+          if (escaped) {
+            escaped = false;
+          } else if (ch === '\\') {
+            escaped = true;
+          } else if (ch === '"') {
+            inString = false;
+          }
+          continue;
+        }
+
+        if (ch === '"') {
+          inString = true;
+          continue;
+        }
+        if (ch === '[') depth++;
+        if (ch === ']') {
+          depth--;
+          if (depth === 0) {
+            jsonEnd = i + 1;
+            break;
+          }
+        }
+      }
+
+      if (jsonEnd === -1) return [];
+      const escapedJson = htmlText.slice(jsonStart, jsonEnd);
+      const decodedJson = escapedJson
+        .replace(/\\"/g, '"')
+        .replace(/\\\\/g, '\\');
+      return JSON.parse(decodedJson);
+    };
+
+    const rawItems = [
+      ...extractArray('creditCardsArticles'),
+      ...extractArray('travelArticles'),
+      ...extractArray('businessArticles'),
+    ];
+
+    const items = rawItems
+      .map(article => {
+        const href = article.href || '';
+        const title = (article.title || '').replace(/^\$\$/g, '$').trim();
+        const desc = (article.excerpt || article.tldr || '').trim().slice(0, 280);
+        const url = href.startsWith('http') ? href : `${source.url}${href}`;
+        const date = article.publishedAt ? new Date(article.publishedAt) : null;
+        return {
+          sourceId: source.id,
+          sourceName: source.name,
+          sourceShort: source.short,
+          sourceColor: source.color,
+          sourceEmoji: source.emoji,
+          sourceUrl: source.url,
+          title,
+          url,
+          desc,
+          date: date && !isNaN(date) ? date : null,
+          category: categorize(title, desc),
+        };
+      })
+      .filter(item => item.title && item.url)
+      .sort((a, b) => (b.date || 0) - (a.date || 0));
+
+    const seen = new Set();
+    return items.filter(item => {
+      if (seen.has(item.url)) return false;
+      seen.add(item.url);
+      return true;
+    }).slice(0, 15);
+  } catch (e) {
+    return [];
+  }
+}
+
 function parseSitemap(xmlText, source) {
   let doc;
   try {
@@ -1613,18 +1703,25 @@ async function fetchSource(source) {
   let articles = [];
 
   if (source.scrapeUrl) {
-      const html = await fetchTextWithProxy(source.scrapeUrl);
-      if (html) {
-        const items = scrapeHTMLArticles(html, source);
-        allArticles = allArticles.filter(a => a.sourceId !== source.id);
-        allArticles.push(...items);
-        setPillState(source.id, items.length > 0 ? 'ok' : 'error', items.length);
-      } else {
-        setPillState(source.id, 'error');
-      }
-      renderArticles();
-      return;
+    const html = await fetchTextWithProxy(source.scrapeUrl);
+    if (!html) {
+      setPillState(source.id, 'error');
+      updateDebugEntry(source.id, 'error', 'All proxies failed');
+      return [];
     }
+
+    const items = parseNextcardStructuredArticles(html, source);
+    const fallbackItems = items.length > 0 ? items : scrapeHTMLArticles(html, source);
+    if (fallbackItems.length === 0) {
+      setPillState(source.id, 'error');
+      updateDebugEntry(source.id, 'error', 'Fetched but 0 articles parsed');
+      return [];
+    }
+
+    setPillState(source.id, 'ok', fallbackItems.length);
+    updateDebugEntry(source.id, 'ok', `${fallbackItems.length} articles loaded`);
+    return fallbackItems;
+  }
 
   // Sitemap source
   if (source.sitemap) {
