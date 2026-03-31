@@ -991,6 +991,7 @@
   <!-- TAB BAR -->
   <div class="tab-bar">
     <button class="tab-btn active" id="tab-news"        onclick="switchTab('news')">💳 Points</button>
+    <button class="tab-btn"        id="tab-tools"       onclick="switchTab('tools')">🧰 Tools</button>
     <button class="tab-btn"        id="tab-reddit"      onclick="switchTab('reddit')">🤝 Churning</button>
     <button class="tab-btn"        id="tab-communities" onclick="switchTab('communities')">🌐 Reddit</button>
   </div>
@@ -1051,6 +1052,14 @@
     </div>
 
   </div><!-- /panel-news -->
+  <!-- ══ PANEL: TOOLS ══ -->
+  <div id="panel-tools" style="display:none">
+    <div class="debug-box" style="display:block">
+      <h4>🧰 Tools</h4>
+      <p style="margin:0;color:var(--subtext);font-size:13px;line-height:1.5">Useful maps, calculators, and lookup pages that are better opened directly than squeezed into the feed.</p>
+    </div>
+    <div class="grid" id="toolsGrid"></div>
+  </div><!-- /panel-tools -->
   <!-- ══ PANEL: REDDIT DIGEST ══ -->
   <div id="panel-reddit" style="display:none">
 
@@ -1087,7 +1096,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.80';
+const VERSION = '1.5.81';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1132,6 +1141,21 @@ const COMMUNITIES = [
     { id: 'delta',         name: 'r/delta',        color: '#1d4ed8' },
     { id: 'pointsandmiles', name: 'r/pointsandmiles', color: '#1e40af' },
   ]},
+];
+
+const TOOLS = [
+  {
+    id: 'bilt-dining-map',
+    name: 'Bilt Dining Map',
+    short: 'Bilt',
+    color: '#0f766e',
+    emoji: '🍽️',
+    provider: 'Nextcard',
+    url: 'https://www.nextcard.com/tools/bilt-cash-dining-map',
+    desc: 'Useful for location-specific Bilt dining lookups where opening the live map is more practical than scraping it into Briefing.',
+    tags: ['Dining', 'Bilt', 'Map'],
+    updated: '2026-03-23'
+  }
 ];
 
 // ─── SUGGESTED SOURCES (for settings modal) ──────────────────────────────
@@ -1612,10 +1636,34 @@ function fmtDate(d) {
 
 // ─── TAB SWITCHING ───────────────────────────────────────────────────────
 function switchTab(name) {
-  ['news','reddit','communities'].forEach(t => {
+  ['news','tools','reddit','communities'].forEach(t => {
     document.getElementById(`panel-${t}`).style.display = name === t ? '' : 'none';
     document.getElementById(`tab-${t}`).classList.toggle('active', name === t);
   });
+}
+
+function renderTools() {
+  const grid = document.getElementById('toolsGrid');
+  if (!grid) return;
+
+  grid.innerHTML = TOOLS.map(tool => {
+    const tags = (tool.tags || []).map(tag => `<span class="category-tag">${esc(tag)}</span>`).join('');
+    const dateStr = tool.updated ? fmtDate(new Date(`${tool.updated}T12:00:00`)) : '';
+    return `
+      <div class="card">
+        <div class="card-meta">
+          <span class="source-badge" style="background:${tool.color}">${esc(tool.short)}</span>
+          ${tags}
+          <span class="card-date">${dateStr}</span>
+        </div>
+        <div class="card-title"><a href="${esc(tool.url)}" target="_blank" rel="noopener">${esc(tool.emoji)} ${esc(tool.name)}</a></div>
+        <div class="card-desc">${esc(tool.desc)}</div>
+        <div class="card-footer">
+          <a class="read-link" href="${esc(tool.url)}" target="_blank" rel="noopener">Open tool →</a>
+          <span style="font-size:11px;color:var(--subtext)">${esc(tool.provider)}</span>
+        </div>
+      </div>`;
+  }).join('');
 }
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────
@@ -2873,6 +2921,7 @@ function settingsAddCustomSub() {
   registerSW();
 
   // 5. Load content and start auto-refresh
+  renderTools();
   loadAll();
   scheduleAutoRefresh();
 })();
