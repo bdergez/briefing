@@ -1,0 +1,16 @@
+[
+  { "id": "miami", "slug": "miami", "name": "Miami Area", "short": "Miami", "color": "#0f766e", "emoji": "🌴", "season_tag": null, "is_default": true, "sort_order": 10 },
+  { "id": "miami-beach", "slug": "miami-beach", "name": "Miami Beach", "short": "M. Beach", "color": "#0284c7", "emoji": "🏖️", "season_tag": null, "is_default": true, "sort_order": 20 },
+  { "id": "boston-metro", "slug": "boston-metro", "name": "Boston Metro", "short": "Boston", "color": "#7c3aed", "emoji": "🦞", "season_tag": null, "is_default": false, "sort_order": 30 },
+  { "id": "stamford-ct", "slug": "stamford-ct", "name": "Stamford Area", "short": "Stamford", "color": "#dc2626", "emoji": "🌆", "season_tag": null, "is_default": false, "sort_order": 40 },
+  { "id": "stowe-vt", "slug": "stowe-vt", "name": "Stowe, VT", "short": "Stowe", "color": "#1d4ed8", "emoji": "⛷️", "season_tag": "winter", "is_default": false, "sort_order": 100 },
+  { "id": "killington-vt", "slug": "killington-vt", "name": "Killington, VT", "short": "Killngtn", "color": "#2563eb", "emoji": "🎿", "season_tag": "winter", "is_default": false, "sort_order": 110 },
+  { "id": "sunday-river-me", "slug": "sunday-river-me", "name": "Sunday River, ME", "short": "S. River", "color": "#0f766e", "emoji": "🏔️", "season_tag": "winter", "is_default": false, "sort_order": 120 },
+  { "id": "park-city-ut", "slug": "park-city-ut", "name": "Park City, UT", "short": "Park City", "color": "#7c3aed", "emoji": "🏂", "season_tag": "winter", "is_default": false, "sort_order": 130 },
+  { "id": "aspen-co", "slug": "aspen-co", "name": "Aspen, CO", "short": "Aspen", "color": "#9333ea", "emoji": "❄️", "season_tag": "winter", "is_default": false, "sort_order": 140 },
+  { "id": "bar-harbor-me", "slug": "bar-harbor-me", "name": "Bar Harbor, ME", "short": "Bar Hbr", "color": "#059669", "emoji": "🌲", "season_tag": "summer", "is_default": false, "sort_order": 200 },
+  { "id": "cape-cod-ma", "slug": "cape-cod-ma", "name": "Cape Cod, MA", "short": "Cape Cod", "color": "#0ea5e9", "emoji": "🦀", "season_tag": "summer", "is_default": false, "sort_order": 210 },
+  { "id": "outer-banks-nc", "slug": "outer-banks-nc", "name": "Outer Banks, NC", "short": "OBX", "color": "#f97316", "emoji": "🏄", "season_tag": "summer", "is_default": false, "sort_order": 220 },
+  { "id": "myrtle-beach-sc", "slug": "myrtle-beach-sc", "name": "Myrtle Beach, SC", "short": "Myrtle", "color": "#db2777", "emoji": "🌊", "season_tag": "summer", "is_default": false, "sort_order": 230 },
+  { "id": "destin-fl", "slug": "destin-fl", "name": "Destin, FL", "short": "Destin", "color": "#0891b2", "emoji": "☀️", "season_tag": "summer", "is_default": false, "sort_order": 240 }
+]
