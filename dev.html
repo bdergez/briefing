@@ -1169,7 +1169,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.102-dev';
+const VERSION = '1.5.103-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -2951,6 +2951,8 @@ function updateNewBadge() {
   const existing = tab.querySelector('.tab-new-dot');
   if (count > 0 && !existing) {
     tab.innerHTML = `💳 Points <span class="tab-new-dot" title="${count} new articles"></span>`;
+  } else if (count > 0 && existing) {
+    existing.title = `${count} new articles`;
   } else if (count === 0 && existing) {
     tab.textContent = '💳 Points';
   }
