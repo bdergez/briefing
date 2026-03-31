@@ -1115,7 +1115,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.91-dev';
+const VERSION = '1.5.92-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1172,8 +1172,7 @@ const TOOLS = [
     provider: 'Nextcard',
     url: 'https://www.nextcard.com/tools/bilt-cash-dining-map',
     desc: 'Useful for location-specific Bilt dining lookups where opening the live map is more practical than scraping it into Briefing.',
-    tags: ['Dining', 'Bilt', 'Map'],
-    updated: '2026-03-23'
+    tags: ['Dining', 'Bilt', 'Map']
   },
   {
     id: 'bilt-neighborhood-map',
@@ -1184,8 +1183,7 @@ const TOOLS = [
     provider: 'Nextcard',
     url: 'https://www.nextcard.com/tools/bilt-dining-map',
     desc: 'Search the broader Bilt Neighborhood Dining network to see where linked cards can earn extra Bilt points.',
-    tags: ['Dining', 'Bilt', 'Neighborhood'],
-    updated: '2026-02-01'
+    tags: ['Dining', 'Bilt', 'Neighborhood']
   },
   {
     id: 'mealmaxxer',
@@ -1196,8 +1194,7 @@ const TOOLS = [
     provider: 'Nextcard',
     url: 'https://www.nextcard.com/tools/dining-rewards-map',
     desc: 'One combined dining map overlaying Bilt, Resy, InKind, Seated, OpenTable Exclusive Tables, and more.',
-    tags: ['Dining', 'Compare', 'Map'],
-    updated: '2026-03-26'
+    tags: ['Dining', 'Compare', 'Map']
   },
   {
     id: 'csr-dining-map',
@@ -1208,8 +1205,7 @@ const TOOLS = [
     provider: 'Nextcard',
     url: 'https://www.nextcard.com/tools/csr-dining-credit-map',
     desc: 'Find restaurants that qualify for the Sapphire Reserve dining credit with city, cuisine, and feature filters.',
-    tags: ['Dining', 'Chase', 'Credit'],
-    updated: '2026-02-06'
+    tags: ['Dining', 'Chase', 'Credit']
   },
   {
     id: 'bilt-calculator',
@@ -1220,8 +1216,7 @@ const TOOLS = [
     provider: 'Nextcard',
     url: 'https://www.nextcard.com/tools/bilt-calculator',
     desc: 'Estimate Bilt points from rent, mortgage, and everyday spend, and compare the result against other cards.',
-    tags: ['Bilt', 'Calculator', 'Compare'],
-    updated: '2026-03-17'
+    tags: ['Bilt', 'Calculator', 'Compare']
   },
   {
     id: 'bilt-cash-redemption',
@@ -1232,8 +1227,7 @@ const TOOLS = [
     provider: 'Nextcard',
     url: 'https://www.nextcard.com/tools/bilt-cash-redemption',
     desc: 'Compare Bilt Cash redemption options and see which path is best based on your own point valuation.',
-    tags: ['Bilt', 'Calculator', 'Redemption'],
-    updated: '2026-02-25'
+    tags: ['Bilt', 'Calculator', 'Redemption']
   },
   {
     id: 'resy-map',
@@ -1791,11 +1785,8 @@ async function loadAll() {
 
   // Start Reddit digest independently (don't block news feed)
   loadRedditDigest();
-  // Communities only loads once — skip on subsequent refreshes
-  if (!communitiesLoaded) {
-    communitiesLoaded = true;
-    loadCommunities();
-  }
+  loadCommunities(communitiesLoaded);
+  communitiesLoaded = true;
   // Wait for all blog sources to finish
   await Promise.allSettled(sourcePromises);
 
@@ -2964,12 +2955,7 @@ function renderCards() {
 
 // ─── PWA SERVICE WORKER ───────────────────────────────────────────────────
 function registerSW() {
-  // Dev: unregister any existing service worker so prod SW doesn't intercept dev navigation
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then(regs => {
-      regs.forEach(r => r.unregister());
-    });
-  }
+  // Dev intentionally does not register or unregister service workers.
 }
 
 // ─── OFFERS STRIP ────────────────────────────────────────────────────────
