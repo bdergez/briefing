@@ -152,7 +152,6 @@
       font-size: 12px; font-weight: 600; cursor: pointer;
       transition: all 0.2s;
       user-select: none;
-      min-width: 122px;
       justify-content: center;
     }
     .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
@@ -1162,7 +1161,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.97-dev';
+const VERSION = '1.5.98-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1833,6 +1832,7 @@ async function loadAll() {
 
   document.getElementById('refreshTime').textContent = `v${VERSION} · Updated ${new Date().toLocaleTimeString()}`;
   document.getElementById('refreshBtn').disabled = false;
+  syncCategoryPillWidths();
 
   const hasErrors = debugLog.some(d => d.status === 'error');
   if (hasErrors) {
@@ -1942,6 +1942,14 @@ function setCategory(cat, btn) {
   document.querySelectorAll('#panel-news .filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   renderCards();
+}
+
+function syncCategoryPillWidths() {
+  const buttons = Array.from(document.querySelectorAll('#panel-news .filter-btn'));
+  if (!buttons.length) return;
+  buttons.forEach(btn => { btn.style.width = 'auto'; });
+  const maxWidth = Math.max(...buttons.map(btn => Math.ceil(btn.getBoundingClientRect().width)));
+  buttons.forEach(btn => { btn.style.width = `${maxWidth}px`; });
 }
 
 function esc(s) {
@@ -3240,6 +3248,8 @@ function settingsAddCustomSub() {
 
   // 5. Load content and start auto-refresh
   renderTools();
+  syncCategoryPillWidths();
+  window.addEventListener('resize', syncCategoryPillWidths);
   loadAll();
   scheduleAutoRefresh();
 })();
