@@ -136,7 +136,8 @@
     .all-pill.inactive { opacity: 0.3; }
     .src-pill .pill-count {
       background: rgba(0,0,0,0.2); border-radius: 20px;
-      padding: 1px 7px; font-size: 11px;
+      min-width: 28px; padding: 1px 6px; font-size: 11px;
+      text-align: center; font-variant-numeric: tabular-nums;
     }
     .src-pill.loading::after { content: ' ⏳'; }
     .src-pill.error::after { content: ' ✗'; }
@@ -1169,7 +1170,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.104-dev';
+const VERSION = '1.5.105-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1897,7 +1898,7 @@ function setPillState(id, state, count) {
   if (!pill) return;
   pill.className = `src-pill ${state}`;
   if (!activeSources.has(id)) pill.classList.add('inactive');
-  if (state === 'ok' && count != null) cnt.textContent = count;
+  if (state === 'ok' && count != null) cnt.textContent = count > 99 ? '99+' : String(count);
   if (state === 'error') cnt.textContent = '✗';
   if (state === 'loading') cnt.textContent = '⏳';
   updateAllPill();
