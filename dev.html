@@ -1192,7 +1192,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.82-dev';
+const VERSION = '1.5.83-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1553,19 +1553,20 @@ function scrapeHTMLArticles(htmlText, source) {
 
 function parseNextcardStructuredArticles(htmlText, source) {
   try {
-    const extractArray = key => {
-      const marker = `\\"${key}\\":[`;
-      const start = htmlText.indexOf(marker);
-      if (start === -1) return [];
-      const jsonStart = htmlText.indexOf('[', start + marker.length - 1);
-      if (jsonStart === -1) return [];
+    const rawItems = [];
+    const seenRaw = new Set();
+    let start = 0;
+
+    while (rawItems.length < 40) {
+      start = htmlText.indexOf('{\\"id\\":\\"', start);
+      if (start === -1) break;
 
       let depth = 0;
       let inString = false;
       let escaped = false;
-      let jsonEnd = -1;
+      let end = -1;
 
-      for (let i = jsonStart; i < htmlText.length; i++) {
+      for (let i = start; i < htmlText.length; i++) {
         const ch = htmlText[i];
         if (inString) {
           if (escaped) {
@@ -1582,29 +1583,33 @@ function parseNextcardStructuredArticles(htmlText, source) {
           inString = true;
           continue;
         }
-        if (ch === '[') depth++;
-        if (ch === ']') {
+        if (ch === '{') depth++;
+        if (ch === '}') {
           depth--;
           if (depth === 0) {
-            jsonEnd = i + 1;
+            end = i + 1;
             break;
           }
         }
       }
 
-      if (jsonEnd === -1) return [];
-      const escapedJson = htmlText.slice(jsonStart, jsonEnd);
-      const decodedJson = escapedJson
-        .replace(/\\"/g, '"')
-        .replace(/\\\\/g, '\\');
-      return JSON.parse(decodedJson);
-    };
+      const raw = end === -1 ? '' : htmlText.slice(start, end);
+      start = end === -1 ? start + 1 : end;
+      if (!raw) continue;
+      if (!raw.includes('\\"href\\":\\"/articles/')) continue;
+      if (!raw.includes('\\"publishedAt\\":\\"')) continue;
+      if (!(raw.includes('\\"excerpt\\":\\"') || raw.includes('\\"tldr\\":\\"'))) continue;
 
-    const rawItems = [
-      ...extractArray('creditCardsArticles'),
-      ...extractArray('travelArticles'),
-      ...extractArray('businessArticles'),
-    ];
+      const decoded = raw.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+      if (seenRaw.has(decoded)) continue;
+      seenRaw.add(decoded);
+
+      try {
+        rawItems.push(JSON.parse(decoded));
+      } catch (e) {
+        continue;
+      }
+    }
 
     const items = rawItems
       .map(article => {
