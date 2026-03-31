@@ -204,45 +204,6 @@
       text-decoration: none;
     }
     .read-link:hover { text-decoration: underline; }
-    .listing-card {
-      padding: 0;
-      overflow: hidden;
-      gap: 0;
-    }
-    .listing-photo {
-      aspect-ratio: 16 / 10;
-      background-size: cover;
-      background-position: center;
-      background-repeat: no-repeat;
-      border-bottom: 1px solid var(--border);
-    }
-    .listing-photo-fallback {
-      display: flex; align-items: center; justify-content: center;
-      font-size: 40px; color: var(--subtext);
-      background: linear-gradient(135deg, var(--accent-light), var(--tag-bg));
-    }
-    .listing-card-body {
-      padding: 16px 18px 18px;
-      display: flex; flex-direction: column; gap: 10px;
-      height: 100%;
-    }
-    .listing-price {
-      font-size: 24px; font-weight: 800; color: var(--text);
-      letter-spacing: -0.4px; line-height: 1.1;
-    }
-    .listing-specs {
-      display: flex; flex-wrap: wrap; gap: 8px;
-    }
-    .listing-spec-pill {
-      background: var(--tag-bg); color: var(--text);
-      border-radius: 999px; padding: 5px 10px;
-      font-size: 12px; font-weight: 600;
-    }
-    .listing-location {
-      font-size: 12px; color: var(--subtext); font-weight: 600;
-      text-transform: uppercase; letter-spacing: 0.4px;
-    }
-
     /* LOADING */
     .loading-wrap { grid-column: 1/-1; display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 60px 0; }
     .spinner {
@@ -1030,7 +991,6 @@
   <!-- TAB BAR -->
   <div class="tab-bar">
     <button class="tab-btn active" id="tab-news"        onclick="switchTab('news')">💳 Points</button>
-    <button class="tab-btn" id="tab-listings" onclick="switchTab('listings')" style="display:none">🏠 Homes</button>
     <button class="tab-btn"        id="tab-reddit"      onclick="switchTab('reddit')">🤝 Churning</button>
     <button class="tab-btn"        id="tab-communities" onclick="switchTab('communities')">🌐 Reddit</button>
   </div>
@@ -1091,58 +1051,6 @@
     </div>
 
   </div><!-- /panel-news -->
-
-  <!-- ══ PANEL: REAL ESTATE LISTINGS ══ -->
-  <div id="panel-listings" style="display:none">
-
-    <div class="source-status" id="listingSourcePills">
-      <span class="src-pill all-pill ok" id="listing-pill-all" onclick="selectAllListingSources()" title="Show all locations">All</span>
-    </div>
-
-    <div class="stats-bar" id="listingStatsBar" style="display:none">
-      <div class="stat"><div class="stat-num" id="listingStatTotal">0</div><div class="stat-label">Listings</div></div>
-      <div class="stat"><div class="stat-num" id="listingStatSources">0</div><div class="stat-label">Locations</div></div>
-      <div class="stat"><div class="stat-num" id="listingStatCategories">0</div><div class="stat-label">Types</div></div>
-    </div>
-
-    <div class="debug-box" id="listingDebugBox">
-      <h4>🔍 Listing Feed Status</h4>
-      <ul id="listingDebugList"></ul>
-    </div>
-
-    <div class="filter-bar">
-      <span class="filter-label">Type:</span>
-      <button class="filter-btn listing-filter-btn active" onclick="setListingCategory('all',this)">All</button>
-      <button class="filter-btn listing-filter-btn" onclick="setListingCategory('new',this)" id="listingFilterNew">🆕 New</button>
-      <button class="filter-btn listing-filter-btn" onclick="setListingCategory('for-sale',this)">🏷️ For Sale</button>
-      <button class="filter-btn listing-filter-btn" onclick="setListingCategory('for-rent',this)">🏘️ For Rent</button>
-      <button class="filter-btn listing-filter-btn" onclick="setListingCategory('home',this)">🏡 Homes</button>
-      <button class="filter-btn listing-filter-btn" onclick="setListingCategory('condo',this)">🏢 Condos</button>
-      <button class="filter-btn listing-filter-btn" onclick="setListingCategory('land',this)">🌿 Land</button>
-      <button class="filter-btn listing-filter-btn" onclick="setListingCategory('commercial',this)">🏬 Commercial</button>
-      <div class="search-wrap" style="margin-left:0">
-        <select id="listingSortSelect" onchange="renderListingCards()" style="padding:8px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--card-bg);color:var(--text);font-size:13px;outline:none;cursor:pointer">
-          <option value="updated-desc">Newest</option>
-          <option value="price-asc">Price: Low to High</option>
-          <option value="price-desc">Price: High to Low</option>
-        </select>
-      </div>
-      <div class="search-wrap">
-        <span class="search-icon">🔍</span>
-        <input type="text" id="listingSearchInput" placeholder="Search listings…" oninput="renderListingCards()" />
-      </div>
-    </div>
-
-    <div class="grid" id="listingGrid">
-      <div class="loading-wrap">
-        <div class="spinner"></div>
-        <div class="loading-text">Open the Listings tab to load real-estate feeds.</div>
-        <div class="loading-sub">Starting with Miami, Miami Beach, Boston metro, and Stamford area.</div>
-      </div>
-    </div>
-
-  </div><!-- /panel-listings -->
-
   <!-- ══ PANEL: REDDIT DIGEST ══ -->
   <div id="panel-reddit" style="display:none">
 
@@ -1179,7 +1087,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.78';
+const VERSION = '1.5.79';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1235,31 +1143,6 @@ const SUGGESTED_SOURCES = [
   { id:'aw',   name:'AwardWallet',     short:'AW',   color:'#7c3aed', emoji:'🏆', url:'https://awardwallet.com/blog',   rss:'https://www.awardwallet.com/blog/feed/' },
 ];
 
-const LISTING_SOURCES = [
-  { id:'miami',       name:'Miami Area',       short:'Miami',       color:'#0f766e', emoji:'🌴', url:'https://miami.craigslist.org/search/rea', rss:'https://miami.craigslist.org/search/rea?format=rss' },
-  { id:'miami-beach', name:'Miami Beach',      short:'M. Beach',    color:'#0284c7', emoji:'🏖️', url:'https://miami.craigslist.org/search/rea?query=miami+beach', rss:'https://miami.craigslist.org/search/rea?query=miami+beach&format=rss' },
-  { id:'boston',      name:'Boston Metro',     short:'Boston',      color:'#7c3aed', emoji:'🦞', url:'https://boston.craigslist.org/search/rea', rss:'https://boston.craigslist.org/search/rea?format=rss' },
-  { id:'stamford',    name:'Stamford Area',    short:'Stamford',    color:'#dc2626', emoji:'🌆', url:'https://newyork.craigslist.org/search/fct/rea?query=stamford', rss:'https://newyork.craigslist.org/search/fct/rea?query=stamford&format=rss' },
-];
-
-const SUGGESTED_LISTING_SOURCES = [
-  { id:'stowe-vt',         name:'Stowe, VT',           short:'Stowe',      color:'#1d4ed8', emoji:'⛷️', season:'winter', url:'https://vermont.craigslist.org/search/rea?query=stowe', rss:'https://vermont.craigslist.org/search/rea?query=stowe&format=rss' },
-  { id:'killington-vt',    name:'Killington, VT',      short:'Killngtn',   color:'#2563eb', emoji:'🎿', season:'winter', url:'https://vermont.craigslist.org/search/rea?query=killington', rss:'https://vermont.craigslist.org/search/rea?query=killington&format=rss' },
-  { id:'sunday-river-me',  name:'Sunday River, ME',    short:'S. River',   color:'#0f766e', emoji:'🏔️', season:'winter', url:'https://maine.craigslist.org/search/rea?query=sunday+river', rss:'https://maine.craigslist.org/search/rea?query=sunday+river&format=rss' },
-  { id:'park-city-ut',     name:'Park City, UT',       short:'Park City',  color:'#7c3aed', emoji:'🏂', season:'winter', url:'https://saltlakecity.craigslist.org/search/rea?query=park+city', rss:'https://saltlakecity.craigslist.org/search/rea?query=park+city&format=rss' },
-  { id:'aspen-co',         name:'Aspen, CO',           short:'Aspen',      color:'#9333ea', emoji:'❄️', season:'winter', url:'https://rockies.craigslist.org/search/rea?query=aspen', rss:'https://rockies.craigslist.org/search/rea?query=aspen&format=rss' },
-  { id:'bar-harbor-me',    name:'Bar Harbor, ME',      short:'Bar Hbr',    color:'#059669', emoji:'🌲', season:'summer', url:'https://maine.craigslist.org/search/rea?query=bar+harbor', rss:'https://maine.craigslist.org/search/rea?query=bar+harbor&format=rss' },
-  { id:'cape-cod-ma',      name:'Cape Cod, MA',        short:'Cape Cod',   color:'#0ea5e9', emoji:'🦀', season:'summer', url:'https://capecod.craigslist.org/search/rea', rss:'https://capecod.craigslist.org/search/rea?format=rss' },
-  { id:'outer-banks-nc',   name:'Outer Banks, NC',     short:'OBX',        color:'#f97316', emoji:'🏄', season:'summer', url:'https://eastnc.craigslist.org/search/rea?query=outer+banks', rss:'https://eastnc.craigslist.org/search/rea?query=outer+banks&format=rss' },
-  { id:'myrtle-beach-sc',  name:'Myrtle Beach, SC',    short:'Myrtle',     color:'#db2777', emoji:'🌊', season:'summer', url:'https://myrtlebeach.craigslist.org/search/rea', rss:'https://myrtlebeach.craigslist.org/search/rea?format=rss' },
-  { id:'destin-fl',        name:'Destin, FL',          short:'Destin',     color:'#0891b2', emoji:'☀️', season:'summer', url:'https://okaloosa.craigslist.org/search/rea?query=destin', rss:'https://okaloosa.craigslist.org/search/rea?query=destin&format=rss' },
-];
-
-const HOUSES_MARKETS_URL = 'data/house-markets.json';
-const SUPABASE_PROJECT_URL = 'https://buxitxwnqhezszwqbqwh.supabase.co';
-const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_1hbWeGSEuIjNJPK4lw_eKg_rr8Ycmum';
-const SUPABASE_REST_URL = `${SUPABASE_PROJECT_URL}/rest/v1`;
-
 // CORS proxies — tried in order until one works
 const PROXIES = [
   url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
@@ -1288,15 +1171,6 @@ let activeCategory = 'all';
 let activeSources = new Set(); // initialized after loadSettings() in init()
 let sourceState = {}; // { id: 'loading'|'ok'|'error' }
 let debugLog = [];
-let allListings = [];
-let activeListingCategory = 'all';
-let activeListingSources = new Set();
-let listingSourceState = {};
-let listingDebugLog = [];
-let listingsLoaded = false;
-let listingMarkets = [];
-let houseMarketDefaults = [];
-let activeListingSort = 'updated-desc';
 
 // ── Churning two-panel state ──────────────────────────────────────────────
 let digestPostsData = [];       // all fetched posts
@@ -1323,8 +1197,6 @@ let settingsDisabledSources = new Set(); // IDs of default sources turned off
 let settingsCustomSources   = [];        // user-added source objects
 let settingsDisabledSubs    = new Set(); // subreddit IDs turned off
 let settingsCustomSubs      = [];        // user-added {id, name, color}
-let settingsDisabledListings = new Set(); // listing location IDs turned off
-let settingsCustomListings   = [];        // optional listing location IDs enabled by user
 // Draft state (used while modal is open — changes are speculative until Applied)
 let settingsDraft = null;
 let activeSettingsTab = 'news';
@@ -1375,82 +1247,6 @@ async function fetchTextWithProxy(url) {
     }
   }
   return null;
-}
-
-async function fetchJSON(url) {
-  const res = await fetchWithTimeout(url, { credentials: 'omit' }, 15000);
-  if (!res.ok) throw new Error(`Failed to fetch ${url}`);
-  return res.json();
-}
-
-async function fetchSupabaseJSON(path, searchParams = {}) {
-  const url = new URL(`${SUPABASE_REST_URL}/${path}`);
-  Object.entries(searchParams).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== '') url.searchParams.set(key, value);
-  });
-
-  const res = await fetchWithTimeout(url.toString(), {
-    method: 'GET',
-    headers: {
-      apikey: SUPABASE_PUBLISHABLE_KEY,
-      Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
-      Accept: 'application/json',
-    },
-    credentials: 'omit',
-  }, 15000);
-
-  if (!res.ok) throw new Error(`Supabase request failed (${res.status})`);
-  return res.json();
-}
-
-function mergeHouseMarketRecords(defaults, remote = []) {
-  const bySlug = new Map(defaults.map(item => [item.slug || item.id, { ...item }]));
-  remote.forEach(item => {
-    const slug = item.slug || item.id;
-    if (!slug) return;
-    const existing = bySlug.get(slug) || {};
-    bySlug.set(slug, {
-      ...existing,
-      ...item,
-      id: existing.id || slug,
-      remote_id: item.id || existing.remote_id || null,
-      slug,
-      short: item.short || existing.short || item.name || slug,
-      color: item.color || existing.color || '#0f766e',
-      emoji: item.emoji || existing.emoji || '🏠',
-      name: item.name || existing.name || slug,
-    });
-  });
-  return [...bySlug.values()].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
-}
-
-async function ensureHouseMarketsLoaded() {
-  if (listingMarkets.length > 0) return;
-  houseMarketDefaults = await fetchJSON(HOUSES_MARKETS_URL);
-  listingMarkets = [...houseMarketDefaults].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
-
-  try {
-    const remoteMarkets = await fetchSupabaseJSON('markets', {
-      select: 'id,slug,name,short,color,emoji,season_tag,is_default,sort_order',
-      order: 'sort_order.asc',
-    });
-    if (Array.isArray(remoteMarkets) && remoteMarkets.length > 0) {
-      listingMarkets = mergeHouseMarketRecords(houseMarketDefaults, remoteMarkets);
-    }
-  } catch (e) {
-    console.warn('Supabase markets unavailable, using local house markets fallback.', e);
-  }
-}
-
-async function fetchListingsForMarket(id) {
-  const remoteItems = await fetchSupabaseJSON('listing_cards', {
-    select: 'id,title,price,beds,baths,sqft,property_type,status,location_label,photo_url,listing_url,provider_name,updated_at',
-    market_slug: `eq.${id}`,
-    status: 'in.(active,rental-active)',
-    order: 'updated_at.desc',
-    limit: '50',
-  });
-  return Array.isArray(remoteItems) ? remoteItems : [];
 }
 
 function parseRSS(xmlText, source) {
@@ -1560,307 +1356,6 @@ async function fetchSource(source) {
   return articles;
 }
 
-const LISTING_CATEGORIES = {
-  rental:    { label:'🏘️ Rental', kw:[' rent ','rental','lease','apartment','apt','studio','1br','2br','3br','4br','per month','/mo','month'] },
-  home:      { label:'🏡 Home', kw:['single family','house','home','townhouse','townhome'] },
-  condo:     { label:'🏢 Condo', kw:['condo','condominium','co-op','coop','loft'] },
-  land:      { label:'🌿 Land', kw:['lot','land','acre','acres','buildable'] },
-  commercial:{ label:'🏬 Commercial', kw:['commercial','office','retail','warehouse','storefront','restaurant','business'] },
-};
-
-function categorizeListing(title, desc) {
-  const text = ` ${(title || '')} ${(desc || '')} `.toLowerCase();
-  for (const [cat, def] of Object.entries(LISTING_CATEGORIES)) {
-    if (def.kw.some(k => text.includes(k))) return cat;
-  }
-  return 'home';
-}
-
-function parseListingRSS(xmlText, source) {
-  try {
-    const parser = new DOMParser();
-    let doc = parser.parseFromString(xmlText, 'application/xml');
-    if (doc.querySelector('parsererror')) {
-      doc = parser.parseFromString(xmlText, 'text/html');
-    }
-
-    return Array.from(doc.querySelectorAll('item')).slice(0, 30).map(item => {
-      const title = item.querySelector('title')?.textContent?.trim() || '';
-      const rawDesc = item.querySelector('description')?.textContent?.trim()
-                    || item.querySelector('summary')?.textContent?.trim()
-                    || '';
-      const tmpDiv = document.createElement('div');
-      tmpDiv.innerHTML = rawDesc;
-      const cleanDesc = tmpDiv.textContent.replace(/\s+/g, ' ').trim().slice(0, 320);
-      const link = item.querySelector('link')?.textContent?.trim()
-                || item.querySelector('guid')?.textContent?.trim()
-                || source.url;
-      const pubDateStr = item.querySelector('pubDate')?.textContent?.trim()
-                      || item.querySelector('published')?.textContent?.trim()
-                      || item.querySelector('updated')?.textContent?.trim()
-                      || '';
-      const pubDate = pubDateStr ? new Date(pubDateStr) : null;
-
-      return {
-        sourceId: source.id,
-        sourceName: source.name,
-        sourceShort: source.short,
-        sourceColor: source.color,
-        sourceEmoji: source.emoji,
-        sourceUrl: source.url,
-        title: title.replace(/&amp;/g,'&').replace(/&#8217;/g,"'").replace(/&#8216;/g,"'"),
-        url: link,
-        desc: cleanDesc,
-        date: pubDate && !isNaN(pubDate) ? pubDate : null,
-        category: categorizeListing(title, cleanDesc),
-      };
-    }).filter(item => item.title && item.url);
-  } catch (e) {
-    return [];
-  }
-}
-
-function listingDateFromMeta(meta) {
-  if (!meta) return null;
-  const text = meta.trim();
-  const now = new Date();
-
-  let match = text.match(/^<\s*(\d+)\s*hr/i);
-  if (match) return new Date(Date.now() - Number(match[1]) * 3600 * 1000);
-
-  match = text.match(/^(\d+)\s*hr/i);
-  if (match) return new Date(Date.now() - Number(match[1]) * 3600 * 1000);
-
-  match = text.match(/^(\d+)\s*min/i);
-  if (match) return new Date(Date.now() - Number(match[1]) * 60 * 1000);
-
-  match = text.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/);
-  if (match) {
-    const month = Number(match[1]) - 1;
-    const day = Number(match[2]);
-    const year = match[3] ? Number(match[3].length === 2 ? `20${match[3]}` : match[3]) : now.getFullYear();
-    return new Date(year, month, day);
-  }
-
-  return null;
-}
-
-function parseListingMarkdown(markdown, source) {
-  const content = markdown.includes('Markdown Content:')
-    ? markdown.split('Markdown Content:')[1]
-    : markdown;
-  const lines = content.split('\n');
-  const items = [];
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    const match = line.match(/^\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)$/);
-    if (!match) continue;
-
-    const title = match[1].trim();
-    const url = match[2].trim();
-    if (!title || title.startsWith('!') || title.toLowerCase().startsWith('no image ![')) continue;
-
-    let meta = '';
-    let price = '';
-    for (let j = i + 1; j < Math.min(i + 6, lines.length); j++) {
-      const next = lines[j].trim();
-      if (!next) continue;
-      if (/^\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)$/.test(next)) break;
-      if (!meta && !/^[•.]+$/.test(next) && !next.startsWith('![')) {
-        meta = next;
-        continue;
-      }
-      if (!price && /^\$[\d,]+/.test(next)) {
-        price = next;
-        break;
-      }
-    }
-
-    items.push({
-      sourceId: source.id,
-      sourceName: source.name,
-      sourceShort: source.short,
-      sourceColor: source.color,
-      sourceEmoji: source.emoji,
-      sourceUrl: source.url,
-      title,
-      url,
-      desc: [meta, price].filter(Boolean).join(' · '),
-      date: listingDateFromMeta(meta),
-      category: categorizeListing(title, `${meta} ${price}`),
-    });
-  }
-
-  const deduped = [];
-  const seen = new Set();
-  items.forEach(item => {
-    if (seen.has(item.url)) return;
-    seen.add(item.url);
-    deduped.push(item);
-  });
-  if (deduped.length > 0) return deduped.slice(0, 40);
-  return parseListingPlainText(content, source);
-}
-
-function parseListingPlainText(content, source) {
-  const lines = content.split('\n').map(line => line.trim()).filter(Boolean);
-  const items = [];
-
-  const isMetaLine = line =>
-    /^<\d+\s*hr/i.test(line) ||
-    /^\d+\s*hr/i.test(line) ||
-    /^\d+\s*min/i.test(line) ||
-    /^\d{1,2}\/\d{1,2}(?:\/\d{2,4})?$/i.test(line);
-
-  const isNoiseLine = line =>
-    /^[•.]+$/.test(line) ||
-    /^(CL|south florida|miami \/ dade|all south florida|housing|real estate for sale|post|acct|fair housing|avoiding scams|relevance|price|beds|baths|type|furnished|help|safety|privacy|terms|about|app|©)/i.test(line) ||
-    /^(MORE RESULTS IN|search titles only|has image|posted today|hide duplicates|MILES FROM LOCATION|use map|PRICE|BEDROOMS|BATHROOMS|SQ FT|all dates|within 30 days|beyond 30 days|housing type|laundry|parking|OPEN HOUSE DATE|reset|apply|owner|broker|all)$/i.test(line) ||
-    /^\d+\s*-\s*\d+\s*of\s*\d+/i.test(line) ||
-    /^\$?\d[\d,]*$/.test(line);
-
-  for (let i = 0; i < lines.length; i++) {
-    if (!isMetaLine(lines[i])) continue;
-
-    const meta = lines[i];
-    const location = lines[i + 1] && !isNoiseLine(lines[i + 1]) ? lines[i + 1] : '';
-    const price = lines[i + 2] && /^\$[\d,]+/.test(lines[i + 2]) ? lines[i + 2] : '';
-
-    let title = '';
-    for (let j = i - 1; j >= Math.max(0, i - 3); j--) {
-      const candidate = lines[j];
-      if (!candidate || isNoiseLine(candidate) || isMetaLine(candidate) || candidate === 'no image') continue;
-      title = candidate;
-      break;
-    }
-    if (!title) continue;
-
-    const baseSearchUrl = source.url.replace(/\?.*$/, '');
-    const queryJoin = baseSearchUrl.includes('?') ? '&' : '?';
-    const synthesizedUrl = `${baseSearchUrl}${queryJoin}query=${encodeURIComponent(title)}`;
-
-    items.push({
-      sourceId: source.id,
-      sourceName: source.name,
-      sourceShort: source.short,
-      sourceColor: source.color,
-      sourceEmoji: source.emoji,
-      sourceUrl: source.url,
-      title,
-      url: synthesizedUrl,
-      desc: [meta, location, price].filter(Boolean).join(' · '),
-      date: listingDateFromMeta(meta),
-      category: categorizeListing(title, `${meta} ${location} ${price}`),
-    });
-  }
-
-  const deduped = [];
-  const seen = new Set();
-  items.forEach(item => {
-    const key = `${item.title}|${item.desc}`;
-    if (seen.has(key)) return;
-    seen.add(key);
-    deduped.push(item);
-  });
-  return deduped.slice(0, 40);
-}
-
-async function fetchListingSource(source) {
-  setListingPillState(source.id, 'loading');
-  listingDebugLog.push({ id: source.id, name: source.name, status: 'loading', msg: 'Fetching…' });
-  updateListingDebug();
-  try {
-    const items = (await fetchListingsForMarket(source.id)).map(item => normalizeBackendListing(item, source));
-    if (items.length === 0) {
-      setListingPillState(source.id, 'ok', 0);
-      updateListingDebugEntry(source.id, 'ok', 'No real listings yet');
-      return [];
-    }
-    setListingPillState(source.id, 'ok', items.length);
-    updateListingDebugEntry(source.id, 'ok', `${items.length} listings loaded`);
-    return items;
-  } catch (e) {
-    setListingPillState(source.id, 'error');
-    updateListingDebugEntry(source.id, 'error', 'Live listings unavailable');
-    return [];
-  }
-}
-
-function mapBackendPropertyType(item) {
-  if (item.status === 'rental-active' || item.property_type === 'rental') return 'rental';
-  if (item.property_type === 'condo') return 'condo';
-  if (item.property_type === 'land') return 'land';
-  if (item.property_type === 'commercial') return 'commercial';
-  return 'home';
-}
-
-function formatPrice(value) {
-  if (value == null || value === '') return '';
-  return new Intl.NumberFormat(undefined, {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  }).format(value);
-}
-
-function buildListingSearchUrl(title, locationLabel) {
-  const query = [title, locationLabel, 'real estate listing'].filter(Boolean).join(' ');
-  return `https://www.google.com/search?q=${encodeURIComponent(query)}`;
-}
-
-function buildListingProviderSearchUrl(provider, title, locationLabel) {
-  const fullAddress = [title, locationLabel].filter(Boolean).join(', ');
-  if (provider === 'zillow') {
-    const slug = fullAddress
-      .replace(/[^a-zA-Z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-    return `https://www.zillow.com/homes/${encodeURIComponent(slug)}_rb/`;
-  }
-  if (provider === 'redfin') {
-    return `https://www.google.com/search?q=${encodeURIComponent(`site:redfin.com "${fullAddress}"`)}`;
-  }
-  return buildListingSearchUrl(title, locationLabel);
-}
-
-function normalizeBackendListing(item, source) {
-  const meta = [
-    item.location_label,
-    item.price != null ? formatPrice(item.price) : '',
-    item.beds ? `${item.beds} bd` : '',
-    item.baths ? `${item.baths} ba` : '',
-    item.sqft ? `${item.sqft} sqft` : '',
-  ].filter(Boolean).join(' · ');
-  const hasDirectUrl = item.listing_url && !/^https:\/\/www\.rentcast\.io\/?$/.test(item.listing_url);
-  const zillowUrl = buildListingProviderSearchUrl('zillow', item.title, item.location_label);
-  const googleUrl = buildListingSearchUrl(item.title, item.location_label);
-  const resolvedUrl = zillowUrl || (hasDirectUrl ? item.listing_url : googleUrl);
-
-  return {
-    id: item.id,
-    sourceId: source.id,
-    sourceName: source.name,
-    sourceShort: source.short || source.name,
-    sourceColor: source.color || '#0f766e',
-    sourceEmoji: source.emoji || '🏠',
-    sourceUrl: '',
-    title: item.title,
-    url: resolvedUrl,
-    isSearchLink: !hasDirectUrl,
-    zillowUrl,
-    googleUrl,
-    desc: meta,
-    date: item.updated_at ? new Date(item.updated_at) : null,
-    category: mapBackendPropertyType(item),
-    providerName: item.provider_name,
-    price: item.price,
-    beds: item.beds,
-    baths: item.baths,
-    sqft: item.sqft,
-    locationLabel: item.location_label,
-  };
-}
-
 // ─── LOAD ALL ────────────────────────────────────────────────────────────
 async function loadAll() {
   allArticles = [];
@@ -1913,9 +1408,6 @@ async function loadAll() {
     communitiesLoaded = true;
     loadCommunities();
   }
-  if (listingsLoaded) {
-    loadListings(true);
-  }
   // Wait for all blog sources to finish
   await Promise.allSettled(sourcePromises);
 
@@ -1927,65 +1419,6 @@ async function loadAll() {
     document.getElementById('debugBox').style.display = 'block';
     updateDebug();
   }
-}
-
-async function loadListings(quiet = false) {
-  await ensureHouseMarketsLoaded();
-  listingsLoaded = true;
-  allListings = [];
-  listingDebugLog = [];
-  const effectiveListingSources = getEffectiveListingSources();
-  if (activeListingSources.size === 0 || activeListingSources.size !== effectiveListingSources.length) {
-    activeListingSources = new Set(effectiveListingSources.map(s => s.id));
-  }
-  document.getElementById('listingStatsBar').style.display = 'none';
-  document.getElementById('listingDebugBox').style.display = 'none';
-  if (effectiveListingSources.length === 0) {
-    document.getElementById('listingGrid').innerHTML = `<div class="empty-msg">No house locations are enabled.<br><small>Open Settings → House Locations to add some.</small></div>`;
-    return;
-  }
-  document.getElementById('listingGrid').innerHTML = `
-    <div class="loading-wrap">
-      <div class="spinner"></div>
-      <div class="loading-text">Fetching listings from ${effectiveListingSources.length} locations…</div>
-      <div class="loading-sub">Showing only live imported data from the backend</div>
-    </div>`;
-
-  buildListingPills();
-
-  const results = await Promise.allSettled(effectiveListingSources.map(async source => {
-    const items = await fetchListingSource(source);
-    allListings.push(...items);
-    const deduped = [];
-    const seen = new Set();
-    allListings
-      .sort((a, b) => {
-        if (a.date && b.date) return b.date - a.date;
-        if (a.date) return -1;
-        if (b.date) return 1;
-        return 0;
-      })
-      .forEach(item => {
-        const dedupeKey = item.id || `${item.sourceId}|${item.title}|${item.price || ''}`;
-        if (seen.has(dedupeKey)) return;
-        seen.add(dedupeKey);
-        deduped.push(item);
-      });
-    allListings = deduped;
-    document.getElementById('listingStatTotal').textContent = allListings.length;
-    document.getElementById('listingStatSources').textContent = new Set(allListings.map(a => a.sourceId)).size;
-    document.getElementById('listingStatCategories').textContent = new Set(allListings.map(a => a.category)).size;
-    document.getElementById('listingStatsBar').style.display = 'flex';
-    renderListingCards();
-  }));
-
-  const hasErrors = results.some(r => r.status === 'rejected') || listingDebugLog.some(d => d.status === 'error');
-  if (hasErrors) {
-    document.getElementById('listingDebugBox').style.display = 'block';
-    updateListingDebug();
-  }
-
-  if (!quiet) renderListingCards();
 }
 
 // ─── SOURCE PILLS ────────────────────────────────────────────────────────
@@ -2083,101 +1516,6 @@ function updateDebugEntry(id, status, msg) {
   updateDebug();
 }
 
-function buildListingPills() {
-  const wrap = document.getElementById('listingSourcePills');
-  wrap.querySelectorAll('.src-pill[data-src-id]').forEach(pill => {
-    if (!getEffectiveListingSources().find(s => s.id === pill.dataset.srcId)) pill.remove();
-  });
-  getEffectiveListingSources().forEach(src => {
-    listingSourceState[src.id] = 'loading';
-    let pill = document.getElementById(`listing-pill-${src.id}`);
-    if (!pill) {
-      pill = document.createElement('span');
-      pill.id = `listing-pill-${src.id}`;
-      pill.style.background = src.color;
-      pill.dataset.srcId = src.id;
-      pill.title = `Toggle ${src.name}`;
-      pill.onclick = () => toggleListingSource(src.id);
-      wrap.appendChild(pill);
-    }
-    pill.style.background = src.color;
-    pill.title = `Toggle ${src.name}`;
-    pill.onclick = () => toggleListingSource(src.id);
-    pill.className = 'src-pill loading';
-    pill.innerHTML = `${src.emoji} ${src.short} <span class="pill-count" id="listing-pillcount-${src.id}">…</span>`;
-  });
-}
-
-function updateListingAllPill() {
-  const allPill = document.getElementById('listing-pill-all');
-  if (!allPill) return;
-  const allActive = activeListingSources.size === getEffectiveListingSources().length;
-  allPill.classList.toggle('inactive', !allActive);
-}
-
-function selectAllListingSources() {
-  activeListingSources = new Set(getEffectiveListingSources().map(s => s.id));
-  getEffectiveListingSources().forEach(s => {
-    const pill = document.getElementById(`listing-pill-${s.id}`);
-    if (pill) pill.classList.remove('inactive');
-  });
-  updateListingAllPill();
-  renderListingCards();
-}
-
-function setListingPillState(id, state, count) {
-  listingSourceState[id] = state;
-  const pill = document.getElementById(`listing-pill-${id}`);
-  const cnt  = document.getElementById(`listing-pillcount-${id}`);
-  if (!pill) return;
-  pill.className = `src-pill ${state}`;
-  if (!activeListingSources.has(id)) pill.classList.add('inactive');
-  if (state === 'ok' && count != null) cnt.textContent = count;
-  if (state === 'error') cnt.textContent = '✗';
-  if (state === 'loading') cnt.textContent = '⏳';
-  updateListingAllPill();
-}
-
-function toggleListingSource(id) {
-  const eff = getEffectiveListingSources();
-  const allActive = activeListingSources.size === eff.length;
-  if (allActive) {
-    activeListingSources = new Set([id]);
-  } else {
-    if (activeListingSources.has(id)) {
-      activeListingSources.delete(id);
-      if (activeListingSources.size === 0) activeListingSources = new Set(eff.map(s => s.id));
-    } else {
-      activeListingSources.add(id);
-    }
-  }
-
-  eff.forEach(s => {
-    const pill = document.getElementById(`listing-pill-${s.id}`);
-    if (pill) pill.classList.toggle('inactive', !activeListingSources.has(s.id));
-  });
-  updateListingAllPill();
-  renderListingCards();
-}
-
-function updateListingDebug() {
-  const list = document.getElementById('listingDebugList');
-  list.innerHTML = listingDebugLog.map(d => `
-    <li>
-      <span class="${d.status === 'ok' ? 'debug-ok' : d.status === 'error' ? 'debug-err' : ''}">${d.status === 'ok' ? '✓' : d.status === 'error' ? '✗' : '⏳'}</span>
-      <strong>${d.name}</strong> — ${d.msg}
-    </li>`).join('');
-}
-
-function updateListingDebugEntry(id, status, msg) {
-  const entry = listingDebugLog.find(d => d.id === id);
-  if (entry) {
-    entry.status = status;
-    entry.msg = msg;
-  }
-  updateListingDebug();
-}
-
 // ─── FILTER / RENDER ─────────────────────────────────────────────────────
 function setCategory(cat, btn) {
   activeCategory = cat;
@@ -2207,93 +1545,6 @@ function renderCards() {
   }
 
   grid.innerHTML = filtered.map(a => cardHTML(a)).join('');
-}
-
-function setListingCategory(cat, btn) {
-  activeListingCategory = cat;
-  document.querySelectorAll('.listing-filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  renderListingCards();
-}
-
-function renderListingCards() {
-  const search = (document.getElementById('listingSearchInput')?.value || '').toLowerCase();
-  const grid = document.getElementById('listingGrid');
-  if (!grid) return;
-  const newCount = allListings.filter(item => item.date && item.date.getTime() > lastVisitTime).length;
-  const newBtn = document.getElementById('listingFilterNew');
-  if (newBtn) newBtn.textContent = newCount > 0 ? `🆕 New (${newCount})` : '🆕 New';
-  activeListingSort = document.getElementById('listingSortSelect')?.value || 'updated-desc';
-
-  const filtered = allListings.filter(item => {
-    if (!activeListingSources.has(item.sourceId)) return false;
-    if (activeListingCategory === 'new') return item.date && item.date.getTime() > lastVisitTime;
-    if (activeListingCategory === 'for-sale') return item.status !== 'rental-active' && item.category !== 'rental';
-    if (activeListingCategory === 'for-rent') return item.status === 'rental-active' || item.category === 'rental';
-    if (activeListingCategory !== 'all' && item.category !== activeListingCategory) return false;
-    if (search && !item.title.toLowerCase().includes(search) && !(item.desc || '').toLowerCase().includes(search)) return false;
-    return true;
-  });
-
-  if (filtered.length === 0) {
-    if (allListings.length === 0) {
-      grid.innerHTML = `<div class="empty-msg">No real listings are available yet for the selected locations.<br><small>Miami Area and Miami Beach are currently the imported live markets.</small></div>`;
-    } else {
-      grid.innerHTML = `<div class="empty-msg">No listings match the current filters.</div>`;
-    }
-    return;
-  }
-
-  filtered.sort((a, b) => {
-    if (activeListingSort === 'price-asc') return (a.price || Number.MAX_SAFE_INTEGER) - (b.price || Number.MAX_SAFE_INTEGER);
-    if (activeListingSort === 'price-desc') return (b.price || 0) - (a.price || 0);
-    return (b.date || 0) - (a.date || 0);
-  });
-
-  grid.innerHTML = filtered.map(item => listingCardHTML(item)).join('');
-}
-
-function listingCardHTML(item) {
-  const isNew = item.date && item.date.getTime() > lastVisitTime;
-  const catLabel = LISTING_CATEGORIES[item.category]?.label || '🏠 Listing';
-  const dateStr = item.date ? fmtDate(item.date) : '';
-  const photo = item.photoUrl
-    ? `<div class="listing-photo" style="background-image:url('${esc(item.photoUrl)}')"></div>`
-    : '';
-  const price = item.price != null ? formatPrice(item.price) : 'Price on request';
-  const specs = [
-    item.beds ? `${item.beds} bd` : '',
-    item.baths ? `${item.baths} ba` : '',
-    item.sqft ? `${item.sqft} sqft` : '',
-  ].filter(Boolean);
-  const specsHTML = specs.length
-    ? `<div class="listing-specs">${specs.map(spec => `<span class="listing-spec-pill">${esc(spec)}</span>`).join('')}</div>`
-    : '';
-  const desc = item.desc ? `<div class="card-desc">${esc(item.desc)}</div>` : '';
-  const provider = item.providerName || item.sourceName;
-  const actionLabel = item.zillowUrl ? 'View on Zillow →' : 'Search listing →';
-
-  return `
-  <div class="card listing-card">
-    ${photo}
-    <div class="listing-card-body">
-      <div class="card-meta">
-        <span class="source-badge" style="background:${item.sourceColor}">${item.sourceShort}</span>
-        <span class="category-tag">${catLabel}</span>
-        ${isNew ? '<span class="new-badge">New</span>' : ''}
-        <span class="card-date">${dateStr}</span>
-      </div>
-      <div class="listing-price">${esc(price)}</div>
-      <div class="card-title"><a href="${esc(item.url)}" target="_blank" rel="noopener">${esc(item.title)}</a></div>
-      ${specsHTML}
-      ${item.locationLabel ? `<div class="listing-location">${esc(item.locationLabel)}</div>` : ''}
-      ${desc}
-      <div class="card-footer">
-        <a class="read-link" href="${esc(item.url)}" target="_blank" rel="noopener">${actionLabel}</a>
-        <span style="font-size:11px;color:var(--subtext)">${esc(provider)}</span>
-      </div>
-    </div>
-  </div>`;
 }
 
 function cardHTML(a) {
@@ -2333,11 +1584,10 @@ function fmtDate(d) {
 
 // ─── TAB SWITCHING ───────────────────────────────────────────────────────
 function switchTab(name) {
-  ['news','listings','reddit','communities'].forEach(t => {
+  ['news','reddit','communities'].forEach(t => {
     document.getElementById(`panel-${t}`).style.display = name === t ? '' : 'none';
     document.getElementById(`tab-${t}`).classList.toggle('active', name === t);
   });
-  if (name === 'listings' && !listingsLoaded) loadListings();
 }
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────
@@ -3381,15 +2631,6 @@ function loadSettings() {
     if (dsub) settingsDisabledSubs    = new Set(JSON.parse(dsub));
     const csub = localStorage.getItem('pmDashCustomSubs');
     if (csub) settingsCustomSubs      = JSON.parse(csub);
-    const dlst = localStorage.getItem('pmDashDisabledListings');
-    if (dlst) settingsDisabledListings = new Set(JSON.parse(dlst));
-    const clst = localStorage.getItem('pmDashCustomListings');
-    if (clst) {
-      const parsed = JSON.parse(clst);
-      settingsCustomListings = Array.isArray(parsed)
-        ? parsed.map(v => typeof v === 'string' ? v : (v?.id || v?.slug)).filter(Boolean)
-        : [];
-    }
   } catch {}
 }
 
@@ -3399,8 +2640,6 @@ function saveSettings() {
     localStorage.setItem('pmDashCustomSources',   JSON.stringify(settingsCustomSources));
     localStorage.setItem('pmDashDisabledSubs',    JSON.stringify([...settingsDisabledSubs]));
     localStorage.setItem('pmDashCustomSubs',      JSON.stringify(settingsCustomSubs));
-    localStorage.setItem('pmDashDisabledListings', JSON.stringify([...settingsDisabledListings]));
-    localStorage.setItem('pmDashCustomListings',   JSON.stringify(settingsCustomListings));
   } catch {}
 }
 
@@ -3421,13 +2660,6 @@ function getEffectiveCommunities() {
   return result;
 }
 
-function getEffectiveListingSources() {
-  return listingMarkets.filter(m =>
-    (m.is_default || settingsCustomListings.includes(m.id)) &&
-    !settingsDisabledListings.has(m.id)
-  );
-}
-
 function openSettings() {
   // Copy live state into draft
   settingsDraft = {
@@ -3435,13 +2667,10 @@ function openSettings() {
     customSources:   JSON.parse(JSON.stringify(settingsCustomSources)),
     disabledSubs:    new Set(settingsDisabledSubs),
     customSubs:      JSON.parse(JSON.stringify(settingsCustomSubs)),
-    disabledListings:new Set(settingsDisabledListings),
-    customListings:  [...settingsCustomListings],
   };
   activeSettingsTab = 'news';
   document.getElementById('settingsNote').textContent = '';
   document.getElementById('stab-news').classList.add('active');
-  document.getElementById('stab-houses').classList.remove('active');
   document.getElementById('stab-comm').classList.remove('active');
   renderSettingsBody();
   document.getElementById('settingsOverlay').classList.add('open');
@@ -3459,14 +2688,11 @@ function applySettings() {
   settingsCustomSources   = [...settingsDraft.customSources];
   settingsDisabledSubs    = new Set(settingsDraft.disabledSubs);
   settingsCustomSubs      = [...settingsDraft.customSubs];
-  settingsDisabledListings = new Set(settingsDraft.disabledListings);
-  settingsCustomListings   = [...settingsDraft.customListings];
   saveSettings();
   document.getElementById('settingsOverlay').classList.remove('open');
   settingsDraft = null;
   // Reload data with new effective sources
   activeSources = new Set(getEffectiveNewsSources().map(s => s.id));
-  activeListingSources = new Set(getEffectiveListingSources().map(s => s.id));
   communitiesLoaded = false;
   loadAll();
 }
@@ -3474,7 +2700,6 @@ function applySettings() {
 function switchSettingsTab(tab) {
   activeSettingsTab = tab;
   document.getElementById('stab-news').classList.toggle('active', tab === 'news');
-  document.getElementById('stab-houses').classList.toggle('active', tab === 'houses');
   document.getElementById('stab-comm').classList.toggle('active', tab === 'comm');
   renderSettingsBody();
 }
@@ -3482,7 +2707,6 @@ function switchSettingsTab(tab) {
 function renderSettingsBody() {
   document.getElementById('settingsBody').innerHTML =
     activeSettingsTab === 'news' ? renderSettingsNewsTab()
-    : activeSettingsTab === 'houses' ? renderSettingsHousesTab()
     : renderSettingsCommTab();
 }
 
@@ -3575,58 +2799,9 @@ function renderSettingsCommTab() {
   return html;
 }
 
-function renderSettingsHousesTab() {
-  if (!settingsDraft) return '';
-  const activeLocations = listingMarkets.filter(m => m.is_default || settingsDraft.customListings.includes(m.id));
-  const suggested = listingMarkets.filter(m => !m.is_default && !settingsDraft.customListings.includes(m.id));
-
-  let html = `<div class="settings-section-title">Active Locations</div>`;
-  activeLocations.forEach(src => {
-    const isOn = !settingsDraft.disabledListings.has(src.id);
-    const isCustom = settingsDraft.customListings.includes(src.id);
-    html += `
-      <div class="settings-row">
-        <div class="settings-dot" style="background:${src.color}"></div>
-        <div class="settings-row-info">
-          <div class="settings-row-name">${esc(src.emoji || '🏠')} ${esc(src.name)}</div>
-          <div class="settings-row-url">${src.season_tag ? `${src.season_tag[0].toUpperCase()}${src.season_tag.slice(1)} vacation market` : 'Default market'}</div>
-        </div>
-        ${isCustom ? `<button class="settings-remove-btn" title="Remove" onclick="settingsDraft.customListings=settingsDraft.customListings.filter(id=>id!=='${src.id}');settingsDraft.disabledListings.delete('${src.id}');renderSettingsBody()">✕</button>` : ''}
-        <button class="settings-toggle ${isOn ? 'on' : 'off'}" onclick="if(settingsDraft.disabledListings.has('${src.id}'))settingsDraft.disabledListings.delete('${src.id}');else settingsDraft.disabledListings.add('${src.id}');renderSettingsBody()"></button>
-      </div>`;
-  });
-
-  const winter = suggested.filter(s => s.season_tag === 'winter');
-  const summer = suggested.filter(s => s.season_tag === 'summer');
-  const renderSuggestedGroup = (title, items) => {
-    if (!items.length) return '';
-    return `<div class="settings-section-title">${title}</div>` + items.map(src => `
-      <div class="settings-row">
-        <div class="settings-dot" style="background:${src.color}"></div>
-          <div class="settings-row-info">
-            <div class="settings-row-name">${esc(src.emoji)} ${esc(src.name)}</div>
-            <div class="settings-row-url">${src.season_tag === 'winter' ? 'Winter vacation market' : 'Summer vacation market'}</div>
-          </div>
-          <button class="settings-add-inline" onclick="settingsAddSuggestedListing('${src.id}')">+ Add</button>
-        </div>`).join('');
-  };
-
-  html += renderSuggestedGroup('Winter Vacation', winter);
-  html += renderSuggestedGroup('Summer Vacation', summer);
-  return html;
-}
-
 function settingsAddSuggested(id) {
   const src = SUGGESTED_SOURCES.find(s => s.id === id);
   if (src) settingsDraft.customSources.push(src);
-  renderSettingsBody();
-}
-
-function settingsAddSuggestedListing(id) {
-  const src = listingMarkets.find(s => s.id === id);
-  if (!src) return;
-  if (!settingsDraft.customListings.includes(id)) settingsDraft.customListings.push(id);
-  settingsDraft.disabledListings.delete(id);
   renderSettingsBody();
 }
 
@@ -3658,12 +2833,6 @@ function settingsAddCustomSub() {
   // 1. Load settings (must happen before loadAll so getEffectiveSources() is correct)
   loadSettings();
   activeSources = new Set(getEffectiveNewsSources().map(s => s.id));
-  try {
-    await ensureHouseMarketsLoaded();
-  } catch (e) {
-    console.error('Failed to load house markets', e);
-  }
-  activeListingSources = new Set(getEffectiveListingSources().map(s => s.id));
   updateThemeButton();
 
   // 3. Load last visit time, then save new visit timestamp
@@ -3688,7 +2857,6 @@ function settingsAddCustomSub() {
     </div>
     <div class="settings-tabs">
       <button class="settings-tab active" id="stab-news" onclick="switchSettingsTab('news')">📰 News Sources</button>
-      <button class="settings-tab" id="stab-houses" onclick="switchSettingsTab('houses')" style="display:none">🏠 House Locations</button>
       <button class="settings-tab" id="stab-comm" onclick="switchSettingsTab('comm')">🌐 Reddit</button>
     </div>
     <div class="settings-body" id="settingsBody"></div>
