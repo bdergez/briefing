@@ -1096,7 +1096,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.82';
+const VERSION = '1.5.83';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1215,6 +1215,116 @@ const TOOLS = [
     desc: 'Compare Bilt Cash redemption options and see which path is best based on your own point valuation.',
     tags: ['Bilt', 'Calculator', 'Redemption'],
     updated: '2026-02-25'
+  },
+  {
+    id: 'resy-map',
+    name: 'Resy Map',
+    short: 'Resy',
+    color: '#be123c',
+    emoji: '🍴',
+    provider: 'Nextcard',
+    url: 'https://www.nextcard.com/tools/resy-map',
+    desc: 'Browse premium restaurants available through Resy when you want a quick city-by-city dining lookup.',
+    tags: ['Dining', 'Resy', 'Map']
+  },
+  {
+    id: 'inkind-map',
+    name: 'inKind Restaurant Map',
+    short: 'inKind',
+    color: '#0f766e',
+    emoji: '🥂',
+    provider: 'Nextcard',
+    url: 'https://www.nextcard.com/tools/inkind-restaurant-map',
+    desc: 'Find restaurants offering inKind cashback and stack-friendly dining opportunities.',
+    tags: ['Dining', 'Cashback', 'Map']
+  },
+  {
+    id: 'editmaxxer',
+    name: 'EditMaxxer',
+    short: 'Edit',
+    color: '#1d4ed8',
+    emoji: '🏨',
+    provider: 'Nextcard',
+    url: 'https://www.nextcard.com/tools/chase-edit-hotels',
+    desc: 'Explore Chase Edit luxury hotels with pricing, points costs, and cents-per-point context.',
+    tags: ['Travel', 'Hotels', 'Compare']
+  },
+  {
+    id: 'amex-fhr-thc',
+    name: 'Amex FHR & THC Hotels',
+    short: 'Amex',
+    color: '#2563eb',
+    emoji: '🛎️',
+    provider: 'Nextcard',
+    url: 'https://www.nextcard.com/tools/amex-fhr-thc-hotels',
+    desc: 'Search the Fine Hotels + Resorts and Hotel Collection universe in one place.',
+    tags: ['Travel', 'Hotels', 'Amex']
+  },
+  {
+    id: 'bilt-home-away',
+    name: 'Bilt Home Away From Home Hotels',
+    short: 'Bilt',
+    color: '#0b7285',
+    emoji: '🧳',
+    provider: 'Nextcard',
+    url: 'https://www.nextcard.com/tools/bilt-home-away-from-home-hotels',
+    desc: 'Look through hotels in Bilt’s Home Away From Home collection for travel planning.',
+    tags: ['Travel', 'Hotels', 'Bilt']
+  },
+  {
+    id: 'airport-lounge-map',
+    name: 'Airport Lounge Map',
+    short: 'Lounge',
+    color: '#4338ca',
+    emoji: '🛫',
+    provider: 'Nextcard',
+    url: 'https://www.nextcard.com/tools/airport-lounge-map',
+    desc: 'Find airport lounges worldwide by airport when you are planning lounge access.',
+    tags: ['Travel', 'Lounges', 'Map']
+  },
+  {
+    id: 'transfer-ratios',
+    name: 'Transfer Partner Ratios Table',
+    short: 'Xfer',
+    color: '#6d28d9',
+    emoji: '🔁',
+    provider: 'Nextcard',
+    url: 'https://www.nextcard.com/tools/transfer-partner-ratios',
+    desc: 'Compare transfer ratios across major points currencies and travel partners.',
+    tags: ['Travel', 'Transfer', 'Compare']
+  },
+  {
+    id: 'united-miles-calc',
+    name: 'United Miles Calculator',
+    short: 'UA',
+    color: '#1e40af',
+    emoji: '✈️',
+    provider: 'Nextcard',
+    url: 'https://www.nextcard.com/tools/united-miles-calculator',
+    desc: 'Estimate MileagePlus earnings and compare United card options for your flying habits.',
+    tags: ['Travel', 'United', 'Calculator']
+  },
+  {
+    id: 'fees-comparison',
+    name: 'Credit Card Fees Comparison',
+    short: 'Fees',
+    color: '#b91c1c',
+    emoji: '💳',
+    provider: 'Nextcard',
+    url: 'https://www.nextcard.com/tools/credit-card-fees-comparison',
+    desc: 'Compare annual fees, foreign transaction fees, and other core card costs across issuers.',
+    tags: ['Cards', 'Fees', 'Compare']
+  },
+  {
+    id: 'csp-infatuation-map',
+    name: 'Chase Sapphire Preferred Infatuation Credit Map',
+    short: 'CSP',
+    color: '#1d4ed8',
+    emoji: '🍽️',
+    provider: 'Nextcard',
+    url: 'https://www.nextcard.com/tools/chase-sapphire-preferred-infatuation-credit-map',
+    desc: 'Past-offer lookup for restaurants tied to the Sapphire Preferred Infatuation credit.',
+    tags: ['Dining', 'Chase', 'Past Offer']
   }
 ];
 
@@ -1800,13 +1910,11 @@ function renderTools() {
 
   grid.innerHTML = TOOLS.map(tool => {
     const tags = (tool.tags || []).map(tag => `<span class="category-tag">${esc(tag)}</span>`).join('');
-    const dateStr = tool.updated ? fmtDate(new Date(`${tool.updated}T12:00:00`)) : '';
     return `
       <div class="card">
         <div class="card-meta">
           <span class="source-badge" style="background:${tool.color}">${esc(tool.short)}</span>
           ${tags}
-          <span class="card-date">${dateStr}</span>
         </div>
         <div class="card-title"><a href="${esc(tool.url)}" target="_blank" rel="noopener">${esc(tool.emoji)} ${esc(tool.name)}</a></div>
         <div class="card-desc">${esc(tool.desc)}</div>
