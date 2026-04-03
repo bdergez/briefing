@@ -1162,7 +1162,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.109-dev';
+const VERSION = '1.5.110-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1549,7 +1549,7 @@ function parseRSS(xmlText, source) {
     }
     const items = Array.from(doc.querySelectorAll('item'));
 
-    return items.slice(0, 35).map(item => {
+    return items.slice(0, 50).map(item => {
       let title = item.querySelector('title')?.textContent?.trim() || '';
       const rawDesc = item.querySelector('description')?.textContent?.trim()
                     || item.querySelector('summary')?.textContent?.trim()
@@ -1647,7 +1647,7 @@ function parseSitemap(xmlText, source) {
     })
     .filter(a => a.title && a.url)
     .sort((a, b) => (b.date || 0) - (a.date || 0))
-    .slice(0, 35);
+    .slice(0, 50);
 
   return items;
 }
@@ -1723,7 +1723,7 @@ function parseNextcardArticlesPage(htmlText, source) {
   }
 
   return items
-    .slice(0, 35);
+    .slice(0, 50);
 }
 
 function mergeNextcardArticleDates(articlesItems, sitemapItems) {
@@ -1791,7 +1791,7 @@ async function fetchSource(source) {
       }
     }
     articles.sort((a, b) => (b.date || 0) - (a.date || 0));
-    articles = articles.slice(0, 140);
+    articles = articles.slice(0, 200);
   } else {
     // Single-feed source
     const xml = await fetchWithProxy(source.rss);
