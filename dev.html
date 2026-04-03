@@ -1159,7 +1159,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.107-dev';
+const VERSION = '1.5.108-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1365,6 +1365,39 @@ const TOOLS = [
     url: 'https://www.nextcard.com/tools/chase-sapphire-preferred-infatuation-credit-map',
     desc: 'Past-offer lookup for restaurants tied to the Sapphire Preferred Infatuation credit.',
     tags: ['Dining', 'Chase', 'Past Offer']
+  },
+  {
+    id: 'points-toolkit',
+    name: 'The Points Toolkit',
+    short: 'TPT',
+    color: '#0f766e',
+    emoji: '🧰',
+    provider: 'The Points Toolkit',
+    url: 'https://thepointstoolkit.com/',
+    desc: 'A free toolkit for award-travel planning with direct links, availability views, and trip-planning helpers.',
+    tags: ['Travel', 'Toolkit', 'Planning']
+  },
+  {
+    id: 'points-fyi',
+    name: 'points.fyi',
+    short: 'FYI',
+    color: '#1d4ed8',
+    emoji: '🧭',
+    provider: 'points.fyi',
+    url: 'https://points.fyi/',
+    desc: 'Search live award flights, compare points vs cash, view transfer maps, and decide where to credit paid flights.',
+    tags: ['Travel', 'Awards', 'Compare']
+  },
+  {
+    id: 'point-calculator-transfer',
+    name: 'The Point Calculator Transfer Tool',
+    short: 'TPC',
+    color: '#7c3aed',
+    emoji: '🔁',
+    provider: 'The Point Calculator',
+    url: 'https://www.thepointcalculator.com/us/transfer-to/',
+    desc: 'Calculate transfer ratios across major card, airline, and hotel programs when you need a quick conversion check.',
+    tags: ['Transfer', 'Calculator', 'Compare']
   }
 ];
 
@@ -1511,7 +1544,7 @@ function parseRSS(xmlText, source) {
     }
     const items = Array.from(doc.querySelectorAll('item'));
 
-    return items.slice(0, 15).map(item => {
+    return items.slice(0, 25).map(item => {
       let title = item.querySelector('title')?.textContent?.trim() || '';
       const rawDesc = item.querySelector('description')?.textContent?.trim()
                     || item.querySelector('summary')?.textContent?.trim()
@@ -1609,7 +1642,7 @@ function parseSitemap(xmlText, source) {
     })
     .filter(a => a.title && a.url)
     .sort((a, b) => (b.date || 0) - (a.date || 0))
-    .slice(0, 15);
+    .slice(0, 25);
 
   return items;
 }
@@ -1685,7 +1718,7 @@ function parseNextcardArticlesPage(htmlText, source) {
   }
 
   return items
-    .slice(0, 15);
+    .slice(0, 25);
 }
 
 function mergeNextcardArticleDates(articlesItems, sitemapItems) {
@@ -1753,7 +1786,7 @@ async function fetchSource(source) {
       }
     }
     articles.sort((a, b) => (b.date || 0) - (a.date || 0));
-    articles = articles.slice(0, 60);
+    articles = articles.slice(0, 100);
   } else {
     // Single-feed source
     const xml = await fetchWithProxy(source.rss);
