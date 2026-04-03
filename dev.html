@@ -1018,21 +1018,12 @@
         if (saved) {
           document.documentElement.dataset.theme = saved;
           isDark = saved === 'dark';
-        } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        } else {
           document.documentElement.dataset.theme = 'dark';
           isDark = true;
-        } else {
-          isDark = false;
         }
         var tc = document.querySelector('meta[name="theme-color"]');
         if (tc) tc.setAttribute('content', isDark ? '#1a1a2e' : '#ffffff');
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
-          if (!localStorage.getItem('pmDashTheme')) {
-            document.documentElement.dataset.theme = e.matches ? 'dark' : '';
-            var tc2 = document.querySelector('meta[name="theme-color"]');
-            if (tc2) tc2.setAttribute('content', e.matches ? '#1a1a2e' : '#ffffff');
-          }
-        });
       } catch(e) {}
     })();
   </script>
@@ -1161,7 +1152,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.0-dev';
+const VERSION = '1.6.1-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -2987,21 +2978,20 @@ function showLessSub(subId) {
 }
 
 // ─── THEME ───────────────────────────────────────────────────────────────
-// 3-state cycle: Auto (system) → Dark → Light → Auto
+// 3-state cycle: Default Dark → Light → Dark → Default Dark
 function toggleTheme() {
-  const saved = localStorage.getItem('pmDashTheme'); // 'dark', 'light', or null
+  const saved = localStorage.getItem('pmDashTheme'); // 'dark', 'light', or null (default dark)
   let next;
-  if (!saved)          next = 'dark';
-  else if (saved === 'dark') next = 'light';
-  else                 next = null; // back to auto
+  if (!saved)                 next = 'light';
+  else if (saved === 'light') next = 'dark';
+  else                        next = null; // back to default dark
 
   const html = document.documentElement;
   const tc = document.querySelector('meta[name="theme-color"]');
   if (next === null) {
     try { localStorage.removeItem('pmDashTheme'); } catch{}
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    html.dataset.theme = prefersDark ? 'dark' : '';
-    if (tc) tc.setAttribute('content', prefersDark ? '#1a1a2e' : '#ffffff');
+    html.dataset.theme = 'dark';
+    if (tc) tc.setAttribute('content', '#1a1a2e');
   } else {
     try { localStorage.setItem('pmDashTheme', next); } catch{}
     html.dataset.theme = next === 'dark' ? 'dark' : '';
@@ -3014,9 +3004,9 @@ function updateThemeButton() {
   const btn = document.querySelector('button[onclick="toggleTheme()"]');
   if (!btn) return;
   const saved = localStorage.getItem('pmDashTheme');
-  if (!saved)              btn.textContent = '🌓 Auto';
+  if (!saved)                btn.textContent = '🌑 Default';
   else if (saved === 'dark') btn.textContent = '🌑 Dark';
-  else                     btn.textContent = '☀️ Light';
+  else                       btn.textContent = '☀️ Light';
 }
 
 // ─── LAST VISIT / NEW TRACKING ───────────────────────────────────────────
