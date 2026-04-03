@@ -1162,7 +1162,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.111-dev';
+const VERSION = '1.5.112-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -2106,29 +2106,25 @@ function renderTools() {
     return acc;
   }, {});
 
-  grid.innerHTML = Object.entries(groups).map(([provider, items]) => {
-    const cards = items.map(tool => {
-      const tags = (tool.tags || []).map(tag => `<span class="category-tag">${esc(tag)}</span>`).join('');
-      return `
-        <div class="card">
-          <div class="card-meta">
-            <span class="source-badge" style="background:${tool.color}">${esc(tool.short)}</span>
-            ${tags}
-          </div>
-          <div class="card-title"><a href="${esc(tool.url)}" target="_blank" rel="noopener">${esc(tool.emoji)} ${esc(tool.name)}</a></div>
-          <div class="card-desc">${esc(tool.desc)}</div>
-          <div class="card-footer">
-            <a class="read-link" href="${esc(tool.url)}" target="_blank" rel="noopener">Open tool →</a>
-            <span style="font-size:11px;color:var(--subtext)">${esc(tool.provider)}</span>
-          </div>
-        </div>`;
-    }).join('');
+  const orderedTools = Object.entries(groups)
+    .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]))
+    .flatMap(([, items]) => items);
 
+  grid.innerHTML = orderedTools.map(tool => {
+    const tags = (tool.tags || []).map(tag => `<span class="category-tag">${esc(tag)}</span>`).join('');
     return `
-      <section style="margin-bottom:22px">
-        <div class="section-label" style="margin-bottom:10px">${esc(provider)} · ${items.length} tool${items.length === 1 ? '' : 's'}</div>
-        <div class="grid">${cards}</div>
-      </section>`;
+      <div class="card">
+        <div class="card-meta">
+          <span class="source-badge" style="background:${tool.color}">${esc(tool.short)}</span>
+          ${tags}
+        </div>
+        <div class="card-title"><a href="${esc(tool.url)}" target="_blank" rel="noopener">${esc(tool.emoji)} ${esc(tool.name)}</a></div>
+        <div class="card-desc">${esc(tool.desc)}</div>
+        <div class="card-footer">
+          <a class="read-link" href="${esc(tool.url)}" target="_blank" rel="noopener">Open tool →</a>
+          <span style="font-size:11px;color:var(--subtext)">${esc(tool.provider)}</span>
+        </div>
+      </div>`;
   }).join('');
 }
 
