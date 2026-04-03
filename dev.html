@@ -132,11 +132,10 @@
     .all-pill.inactive { opacity: 0.3; }
     .src-pill .pill-count {
       background: rgba(0,0,0,0.2); border-radius: 20px;
+      min-width: 28px;
       padding: 1px 7px; font-size: 11px;
+      text-align: center;
     }
-    .src-pill.loading::after { content: ' ⏳'; }
-    .src-pill.error::after { content: ' ✗'; }
-    .src-pill.ok::after { content: ''; }
 
     /* FILTER BAR */
     .filter-bar {
@@ -1162,7 +1161,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.113-dev';
+const VERSION = '1.5.114-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -2038,15 +2037,14 @@ function syncNewsPillWidths() {
     document.querySelector('#panel-news .all-filter-pill')
   ].filter(Boolean);
 
-  const uniformPills = [...sourcePills, ...categoryPills];
-  if (!uniformPills.length) return;
+  if (!categoryPills.length) return;
 
-  [...uniformPills, ...allPills].forEach(pill => { pill.style.width = 'auto'; });
-  const maxWidth = Math.max(...uniformPills.map(pill => Math.ceil(pill.getBoundingClientRect().width)));
+  [...sourcePills, ...categoryPills, ...allPills].forEach(pill => { pill.style.width = 'auto'; });
+  const maxWidth = Math.max(...categoryPills.map(pill => Math.ceil(pill.getBoundingClientRect().width)));
   const allWidth = allPills.length
     ? Math.max(...allPills.map(pill => Math.ceil(pill.getBoundingClientRect().width)))
     : 0;
-  uniformPills.forEach(pill => { pill.style.width = `${maxWidth}px`; });
+  [...sourcePills, ...categoryPills].forEach(pill => { pill.style.width = `${maxWidth}px`; });
   allPills.forEach(pill => { pill.style.width = `${allWidth}px`; });
 }
 
