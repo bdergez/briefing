@@ -1161,7 +1161,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.114-dev';
+const VERSION = '1.5.115-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1940,6 +1940,7 @@ function buildPills() {
     pill.className = 'src-pill loading';
     pill.innerHTML = `${src.emoji} ${src.short} <span class="pill-count" id="pillcount-${src.id}">…</span>`;
   });
+  syncNewsPillWidths();
 }
 
 function updateAllPill() {
