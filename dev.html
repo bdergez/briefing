@@ -1162,7 +1162,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.110-dev';
+const VERSION = '1.5.111-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1381,6 +1381,17 @@ const TOOLS = [
     tags: ['Travel', 'Toolkit', 'Planning']
   },
   {
+    id: 'points-toolkit-hub',
+    name: 'Points Toolkit Tools Hub',
+    short: 'TPT',
+    color: '#0b7285',
+    emoji: '🗂️',
+    provider: 'The Points Toolkit',
+    url: 'https://thepointstoolkit.com/tools',
+    desc: 'Open the full The Points Toolkit hub for yearly availability views, direct-link building, and trip-planning helpers.',
+    tags: ['Travel', 'Toolkit', 'Hub']
+  },
+  {
     id: 'points-fyi',
     name: 'points.fyi',
     short: 'FYI',
@@ -1392,6 +1403,28 @@ const TOOLS = [
     tags: ['Travel', 'Awards', 'Compare']
   },
   {
+    id: 'points-fyi-awards',
+    name: 'points.fyi Award Search',
+    short: 'FYI',
+    color: '#2563eb',
+    emoji: '🎯',
+    provider: 'points.fyi',
+    url: 'https://points.fyi/',
+    desc: 'Use the points.fyi toolkit for live award-flight search and quick points-versus-cash comparisons.',
+    tags: ['Travel', 'Awards', 'Search']
+  },
+  {
+    id: 'points-fyi-credit',
+    name: 'points.fyi Where To Credit',
+    short: 'FYI',
+    color: '#1e40af',
+    emoji: '🧾',
+    provider: 'points.fyi',
+    url: 'https://points.fyi/',
+    desc: 'Use the points.fyi toolkit to figure out the best loyalty program to credit a paid flight.',
+    tags: ['Travel', 'Miles', 'Credit']
+  },
+  {
     id: 'point-calculator-transfer',
     name: 'The Point Calculator Transfer Tool',
     short: 'TPC',
@@ -1401,6 +1434,39 @@ const TOOLS = [
     url: 'https://www.thepointcalculator.com/us/transfer-to/',
     desc: 'Calculate transfer ratios across major card, airline, and hotel programs when you need a quick conversion check.',
     tags: ['Transfer', 'Calculator', 'Compare']
+  },
+  {
+    id: 'point-calculator-partners',
+    name: 'The Point Calculator Partner Finder',
+    short: 'TPC',
+    color: '#6d28d9',
+    emoji: '🔎',
+    provider: 'The Point Calculator',
+    url: 'https://www.thepointcalculator.com/us/tools/credit-card-transfer-partner-finder/',
+    desc: 'Find which cards and rewards currencies transfer to a target airline or hotel program before you move points.',
+    tags: ['Transfer', 'Cards', 'Finder']
+  },
+  {
+    id: 'point-calculator-rewards',
+    name: 'The Point Calculator Rewards Tool',
+    short: 'TPC',
+    color: '#8b5cf6',
+    emoji: '📊',
+    provider: 'The Point Calculator',
+    url: 'https://www.thepointcalculator.com/us/tools/credit-card-rewards-calculator/',
+    desc: 'Model card combos, annual fees, perk values, and spending categories to compare total rewards value.',
+    tags: ['Cards', 'Rewards', 'Calculator']
+  },
+  {
+    id: 'point-calculator-best-card',
+    name: 'The Point Calculator Card Finder',
+    short: 'TPC',
+    color: '#7c3aed',
+    emoji: '🏆',
+    provider: 'The Point Calculator',
+    url: 'https://www.thepointcalculator.com/us/tools/best-credit-card-finder/',
+    desc: 'Filter and rank cards by your spending profile when you want a quick best-card recommendation.',
+    tags: ['Cards', 'Finder', 'Compare']
   }
 ];
 
@@ -2035,21 +2101,34 @@ function renderTools() {
   const grid = document.getElementById('toolsGrid');
   if (!grid) return;
 
-  grid.innerHTML = TOOLS.map(tool => {
-    const tags = (tool.tags || []).map(tag => `<span class="category-tag">${esc(tag)}</span>`).join('');
+  const groups = TOOLS.reduce((acc, tool) => {
+    (acc[tool.provider] ||= []).push(tool);
+    return acc;
+  }, {});
+
+  grid.innerHTML = Object.entries(groups).map(([provider, items]) => {
+    const cards = items.map(tool => {
+      const tags = (tool.tags || []).map(tag => `<span class="category-tag">${esc(tag)}</span>`).join('');
+      return `
+        <div class="card">
+          <div class="card-meta">
+            <span class="source-badge" style="background:${tool.color}">${esc(tool.short)}</span>
+            ${tags}
+          </div>
+          <div class="card-title"><a href="${esc(tool.url)}" target="_blank" rel="noopener">${esc(tool.emoji)} ${esc(tool.name)}</a></div>
+          <div class="card-desc">${esc(tool.desc)}</div>
+          <div class="card-footer">
+            <a class="read-link" href="${esc(tool.url)}" target="_blank" rel="noopener">Open tool →</a>
+            <span style="font-size:11px;color:var(--subtext)">${esc(tool.provider)}</span>
+          </div>
+        </div>`;
+    }).join('');
+
     return `
-      <div class="card">
-        <div class="card-meta">
-          <span class="source-badge" style="background:${tool.color}">${esc(tool.short)}</span>
-          ${tags}
-        </div>
-        <div class="card-title"><a href="${esc(tool.url)}" target="_blank" rel="noopener">${esc(tool.emoji)} ${esc(tool.name)}</a></div>
-        <div class="card-desc">${esc(tool.desc)}</div>
-        <div class="card-footer">
-          <a class="read-link" href="${esc(tool.url)}" target="_blank" rel="noopener">Open tool →</a>
-          <span style="font-size:11px;color:var(--subtext)">${esc(tool.provider)}</span>
-        </div>
-      </div>`;
+      <section style="margin-bottom:22px">
+        <div class="section-label" style="margin-bottom:10px">${esc(provider)} · ${items.length} tool${items.length === 1 ? '' : 's'}</div>
+        <div class="grid">${cards}</div>
+      </section>`;
   }).join('');
 }
 
