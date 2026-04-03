@@ -1162,7 +1162,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.112-dev';
+const VERSION = '1.5.113-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1403,28 +1403,6 @@ const TOOLS = [
     tags: ['Travel', 'Awards', 'Compare']
   },
   {
-    id: 'points-fyi-awards',
-    name: 'points.fyi Award Search',
-    short: 'FYI',
-    color: '#2563eb',
-    emoji: '🎯',
-    provider: 'points.fyi',
-    url: 'https://points.fyi/',
-    desc: 'Use the points.fyi toolkit for live award-flight search and quick points-versus-cash comparisons.',
-    tags: ['Travel', 'Awards', 'Search']
-  },
-  {
-    id: 'points-fyi-credit',
-    name: 'points.fyi Where To Credit',
-    short: 'FYI',
-    color: '#1e40af',
-    emoji: '🧾',
-    provider: 'points.fyi',
-    url: 'https://points.fyi/',
-    desc: 'Use the points.fyi toolkit to figure out the best loyalty program to credit a paid flight.',
-    tags: ['Travel', 'Miles', 'Credit']
-  },
-  {
     id: 'point-calculator-transfer',
     name: 'The Point Calculator Transfer Tool',
     short: 'TPC',
@@ -1540,6 +1518,7 @@ let churningSearchQuery = ''; // current filter string in thread list panel
 // ── Communities two-panel state ───────────────────────────────────────────
 let selectedCommCat = null;   // null = all, or category index
 let selectedCommSub = null;   // null = all/category, or sub id
+let redditDigestLoaded = false; // lazy-load on first Churning tab open
 let communitiesLoaded = false; // only load once; skip on News Feed refreshes
 let communitiesRefreshTimer = null; // background 60-min auto-refresh timer
 let commSearchQuery = ''; // current filter string in communities nav panel
@@ -1926,10 +1905,6 @@ async function loadAll() {
     })
   );
 
-  // Start Reddit digest independently (don't block news feed)
-  loadRedditDigest();
-  loadCommunities(communitiesLoaded);
-  communitiesLoaded = true;
   // Wait for all blog sources to finish
   await Promise.allSettled(sourcePromises);
 
@@ -2095,6 +2070,14 @@ function switchTab(name) {
     document.getElementById(`panel-${t}`).style.display = name === t ? '' : 'none';
     document.getElementById(`tab-${t}`).classList.toggle('active', name === t);
   });
+  if (name === 'reddit' && !redditDigestLoaded) {
+    redditDigestLoaded = true;
+    loadRedditDigest();
+  }
+  if (name === 'communities' && !communitiesLoaded) {
+    communitiesLoaded = true;
+    loadCommunities(false);
+  }
 }
 
 function renderTools() {
@@ -3251,8 +3234,17 @@ function applySettings() {
   settingsDraft = null;
   // Reload data with new effective sources
   activeSources = new Set(getEffectiveNewsSources().map(s => s.id));
+  redditDigestLoaded = false;
   communitiesLoaded = false;
   loadAll();
+  const activeTab = document.querySelector('.tab-btn.active')?.id?.replace('tab-', '');
+  if (activeTab === 'reddit') {
+    redditDigestLoaded = true;
+    loadRedditDigest();
+  } else if (activeTab === 'communities') {
+    communitiesLoaded = true;
+    loadCommunities(false);
+  }
 }
 
 function switchSettingsTab(tab) {
