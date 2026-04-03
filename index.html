@@ -90,24 +90,20 @@
       max-width: 1400px;
       margin: 0 auto;
       padding: 18px 24px 24px;
-      height: calc(100vh - 64px);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
+      display: block;
+      overflow: visible;
     }
 
     #panel-news,
     #panel-tools,
     #panel-reddit,
     #panel-communities {
-      min-height: 0;
+      display: block;
+      overflow: visible;
     }
 
     #panel-news {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      min-height: 0;
+      display: block;
     }
 
     .news-fixed-chrome {
@@ -136,11 +132,10 @@
     .all-pill.inactive { opacity: 0.3; }
     .src-pill .pill-count {
       background: rgba(0,0,0,0.2); border-radius: 20px;
+      min-width: 28px;
       padding: 1px 7px; font-size: 11px;
+      text-align: center;
     }
-    .src-pill.loading::after { content: ' ⏳'; }
-    .src-pill.error::after { content: ' ✗'; }
-    .src-pill.ok::after { content: ''; }
 
     /* FILTER BAR */
     .filter-bar {
@@ -187,19 +182,13 @@
     }
 
     #cardGrid {
-      flex: 1 1 auto;
-      min-height: 0;
-      overflow-y: auto;
       align-content: start;
-      padding-right: 4px;
     }
 
     #panel-tools,
     #panel-reddit,
     #panel-communities {
-      flex: 1;
-      overflow-y: auto;
-      padding-right: 4px;
+      padding-right: 0;
     }
 
     /* CARD */
@@ -1007,7 +996,7 @@
     }
     .settings-apply-btn:hover { opacity: 0.85; }
 
-  </style>
+    </style>
   <script>
     (function() {
       try {
@@ -1108,6 +1097,9 @@
         <div class="loading-sub">Fetching articles from sources via RSS</div>
       </div>
     </div>
+    <div id="cardMoreWrap" style="display:none;margin-top:18px;text-align:center">
+      <button class="btn btn-primary" id="cardMoreBtn" onclick="showMoreCards()">Show more</button>
+    </div>
 
   </div><!-- /panel-news -->
   <!-- ══ PANEL: TOOLS ══ -->
@@ -1154,7 +1146,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.103';
+const VERSION = '1.6.0';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1164,25 +1156,8 @@ const SOURCES = [
   { id:'vftw',   name:'View From The Wing',  short:'VFTW',   color:'#2f855a', emoji:'🪟', url:'https://viewfromthewing.com',         rss:'https://viewfromthewing.com/feed/' },
   { id:'mtm',    name:'Miles to Memories',   short:'MtM',    color:'#d97706', emoji:'✈️', url:'https://milestomemories.com',         rss:'https://milestomemories.com/feed/' },
   { id:'loyaltylobby', name:'LoyaltyLobby', short:'LL', color:'#2C7A7B', emoji:'🛎️', url:'https://loyaltylobby.com', rss:'https://loyaltylobby.com/feed/' },
-  { id:'nextcard', name:'Nextcard', short:'NC', color:'#6366f1', emoji:'💳', url:'https://www.nextcard.com', articlesPage:'https://www.nextcard.com/articles', sitemap:'https://www.nextcard.com/sitemap.xml', sitemapPath:'/articles/' },
-  { id:'hyatt',  name:'Hyatt Newsroom',      short:'Hyatt',  color:'#2b6cb0', emoji:'🏨', url:'https://newsroom.hyatt.com',
-    rssFeeds: [
-      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss',
-      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=794',
-      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=788',
-      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=846',
-      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=837',
-      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=838',
-      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=839',
-      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=840',
-      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=841',
-      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=843',
-      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=844',
-      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=845',
-      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=831',
-      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=824',
-      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=835',
-    ], maxAgeDays: 30 },
+  { id:'tt',     name:'Thrifty Traveler',    short:'TT',     color:'#0f766e', emoji:'🤑', url:'https://thriftytraveler.com',          rss:'https://thriftytraveler.com/feed/' },
+  { id:'aw',     name:'AwardWallet',         short:'AW',     color:'#7c3aed', emoji:'🏆', url:'https://awardwallet.com/blog',        rss:'https://www.awardwallet.com/blog/feed/' },
 ];
 
 // ─── COMMUNITIES CONFIG ───────────────────────────────────────────────────
@@ -1377,6 +1352,83 @@ const TOOLS = [
     url: 'https://www.nextcard.com/tools/chase-sapphire-preferred-infatuation-credit-map',
     desc: 'Past-offer lookup for restaurants tied to the Sapphire Preferred Infatuation credit.',
     tags: ['Dining', 'Chase', 'Past Offer']
+  },
+  {
+    id: 'points-toolkit',
+    name: 'The Points Toolkit',
+    short: 'TPT',
+    color: '#0f766e',
+    emoji: '🧰',
+    provider: 'The Points Toolkit',
+    url: 'https://thepointstoolkit.com/',
+    desc: 'A free toolkit for award-travel planning with direct links, availability views, and trip-planning helpers.',
+    tags: ['Travel', 'Toolkit', 'Planning']
+  },
+  {
+    id: 'points-toolkit-hub',
+    name: 'Points Toolkit Tools Hub',
+    short: 'TPT',
+    color: '#0b7285',
+    emoji: '🗂️',
+    provider: 'The Points Toolkit',
+    url: 'https://thepointstoolkit.com/tools',
+    desc: 'Open the full The Points Toolkit hub for yearly availability views, direct-link building, and trip-planning helpers.',
+    tags: ['Travel', 'Toolkit', 'Hub']
+  },
+  {
+    id: 'points-fyi',
+    name: 'points.fyi',
+    short: 'FYI',
+    color: '#1d4ed8',
+    emoji: '🧭',
+    provider: 'points.fyi',
+    url: 'https://points.fyi/',
+    desc: 'Search live award flights, compare points vs cash, view transfer maps, and decide where to credit paid flights.',
+    tags: ['Travel', 'Awards', 'Compare']
+  },
+  {
+    id: 'point-calculator-transfer',
+    name: 'The Point Calculator Transfer Tool',
+    short: 'TPC',
+    color: '#7c3aed',
+    emoji: '🔁',
+    provider: 'The Point Calculator',
+    url: 'https://www.thepointcalculator.com/us/transfer-to/',
+    desc: 'Calculate transfer ratios across major card, airline, and hotel programs when you need a quick conversion check.',
+    tags: ['Transfer', 'Calculator', 'Compare']
+  },
+  {
+    id: 'point-calculator-partners',
+    name: 'The Point Calculator Partner Finder',
+    short: 'TPC',
+    color: '#6d28d9',
+    emoji: '🔎',
+    provider: 'The Point Calculator',
+    url: 'https://www.thepointcalculator.com/us/tools/credit-card-transfer-partner-finder/',
+    desc: 'Find which cards and rewards currencies transfer to a target airline or hotel program before you move points.',
+    tags: ['Transfer', 'Cards', 'Finder']
+  },
+  {
+    id: 'point-calculator-rewards',
+    name: 'The Point Calculator Rewards Tool',
+    short: 'TPC',
+    color: '#8b5cf6',
+    emoji: '📊',
+    provider: 'The Point Calculator',
+    url: 'https://www.thepointcalculator.com/us/tools/credit-card-rewards-calculator/',
+    desc: 'Model card combos, annual fees, perk values, and spending categories to compare total rewards value.',
+    tags: ['Cards', 'Rewards', 'Calculator']
+  },
+  {
+    id: 'point-calculator-best-card',
+    name: 'The Point Calculator Card Finder',
+    short: 'TPC',
+    color: '#7c3aed',
+    emoji: '🏆',
+    provider: 'The Point Calculator',
+    url: 'https://www.thepointcalculator.com/us/tools/best-credit-card-finder/',
+    desc: 'Filter and rank cards by your spending profile when you want a quick best-card recommendation.',
+    tags: ['Cards', 'Finder', 'Compare']
   }
 ];
 
@@ -1386,8 +1438,25 @@ const SUGGESTED_SOURCES = [
   { id:'up',   name:'Upgraded Points', short:'UP',   color:'#553c9a', emoji:'⬆️', url:'https://upgradedpoints.com',     rss:'https://upgradedpoints.com/feed/' },
   { id:'10xt', name:'10xTravel',       short:'10xT', color:'#c05621', emoji:'✈️', url:'https://10xtravel.com',          rss:'https://10xtravel.com/feed/' },
   { id:'ba',   name:'BoardingArea',    short:'BA',   color:'#0369a1', emoji:'🛫', url:'https://boardingarea.com',       rss:'https://boardingarea.com/feed/' },
-  { id:'tt',   name:'Thrifty Traveler',short:'TT',   color:'#0f766e', emoji:'🤑', url:'https://thriftytraveler.com',    rss:'https://thriftytraveler.com/feed/' },
-  { id:'aw',   name:'AwardWallet',     short:'AW',   color:'#7c3aed', emoji:'🏆', url:'https://awardwallet.com/blog',   rss:'https://www.awardwallet.com/blog/feed/' },
+  { id:'nextcard', name:'Nextcard', short:'NC', color:'#6366f1', emoji:'💳', url:'https://www.nextcard.com', articlesPage:'https://www.nextcard.com/articles', sitemap:'https://www.nextcard.com/sitemap.xml', sitemapPath:'/articles/' },
+  { id:'hyatt',  name:'Hyatt Newsroom',      short:'Hyatt',  color:'#2b6cb0', emoji:'🏨', url:'https://newsroom.hyatt.com',
+    rssFeeds: [
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=794',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=788',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=846',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=837',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=838',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=839',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=840',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=841',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=843',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=844',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=845',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=831',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=824',
+      'https://newsroom.hyatt.com/news-releases?pagetemplate=rss&category=835',
+    ], maxAgeDays: 30 },
 ];
 
 // CORS proxies — tried in order until one works
@@ -1415,6 +1484,8 @@ function categorize(title, desc) {
 // ─── STATE ───────────────────────────────────────────────────────────────
 let allArticles = [];
 let activeCategory = 'all';
+let visibleArticleCount = 36;
+const ARTICLE_BATCH_SIZE = 24;
 let activeSources = new Set(); // initialized after loadSettings() in init()
 let sourceState = {}; // { id: 'loading'|'ok'|'error' }
 let debugLog = [];
@@ -1431,6 +1502,7 @@ let churningSearchQuery = ''; // current filter string in thread list panel
 // ── Communities two-panel state ───────────────────────────────────────────
 let selectedCommCat = null;   // null = all, or category index
 let selectedCommSub = null;   // null = all/category, or sub id
+let redditDigestLoaded = false; // lazy-load on first Churning tab open
 let communitiesLoaded = false; // only load once; skip on News Feed refreshes
 let communitiesRefreshTimer = null; // background 60-min auto-refresh timer
 let commSearchQuery = ''; // current filter string in communities nav panel
@@ -1506,7 +1578,7 @@ function parseRSS(xmlText, source) {
     }
     const items = Array.from(doc.querySelectorAll('item'));
 
-    return items.slice(0, 15).map(item => {
+    return items.slice(0, 50).map(item => {
       let title = item.querySelector('title')?.textContent?.trim() || '';
       const rawDesc = item.querySelector('description')?.textContent?.trim()
                     || item.querySelector('summary')?.textContent?.trim()
@@ -1604,7 +1676,7 @@ function parseSitemap(xmlText, source) {
     })
     .filter(a => a.title && a.url)
     .sort((a, b) => (b.date || 0) - (a.date || 0))
-    .slice(0, 15);
+    .slice(0, 50);
 
   return items;
 }
@@ -1680,7 +1752,7 @@ function parseNextcardArticlesPage(htmlText, source) {
   }
 
   return items
-    .slice(0, 15);
+    .slice(0, 50);
 }
 
 function mergeNextcardArticleDates(articlesItems, sitemapItems) {
@@ -1748,7 +1820,7 @@ async function fetchSource(source) {
       }
     }
     articles.sort((a, b) => (b.date || 0) - (a.date || 0));
-    articles = articles.slice(0, 60);
+    articles = articles.slice(0, 200);
   } else {
     // Single-feed source
     const xml = await fetchWithProxy(source.rss);
@@ -1780,6 +1852,7 @@ async function fetchSource(source) {
 // ─── LOAD ALL ────────────────────────────────────────────────────────────
 async function loadAll() {
   allArticles = [];
+  visibleArticleCount = ARTICLE_BATCH_SIZE + 12;
   offersArticles = [];
   debugLog = [];
   document.getElementById('debugBox').style.display = 'none';
@@ -1816,10 +1889,6 @@ async function loadAll() {
     })
   );
 
-  // Start Reddit digest independently (don't block news feed)
-  loadRedditDigest();
-  loadCommunities(communitiesLoaded);
-  communitiesLoaded = true;
   // Wait for all blog sources to finish
   await Promise.allSettled(sourcePromises);
 
@@ -1856,6 +1925,7 @@ function buildPills() {
     pill.className = 'src-pill loading';
     pill.innerHTML = `${src.emoji} ${src.short} <span class="pill-count" id="pillcount-${src.id}">…</span>`;
   });
+  syncNewsPillWidths();
 }
 
 function updateAllPill() {
@@ -1872,6 +1942,7 @@ function selectAllSources() {
     if (pill) pill.classList.remove('inactive');
   });
   updateAllPill();
+  visibleArticleCount = ARTICLE_BATCH_SIZE + 12;
   renderCards();
 }
 
@@ -1910,6 +1981,7 @@ function toggleSource(id) {
     if (pill) pill.classList.toggle('inactive', !activeSources.has(s.id));
   });
   updateAllPill();
+  visibleArticleCount = ARTICLE_BATCH_SIZE + 12;
   renderCards();
 }
 
@@ -1934,6 +2006,12 @@ function setCategory(cat, btn) {
   activeCategory = cat;
   document.querySelectorAll('#panel-news .filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+  visibleArticleCount = ARTICLE_BATCH_SIZE + 12;
+  renderCards();
+}
+
+function showMoreCards() {
+  visibleArticleCount += ARTICLE_BATCH_SIZE;
   renderCards();
 }
 
@@ -1945,15 +2023,14 @@ function syncNewsPillWidths() {
     document.querySelector('#panel-news .all-filter-pill')
   ].filter(Boolean);
 
-  const uniformPills = [...sourcePills, ...categoryPills];
-  if (!uniformPills.length) return;
+  if (!categoryPills.length) return;
 
-  [...uniformPills, ...allPills].forEach(pill => { pill.style.width = 'auto'; });
-  const maxWidth = Math.max(...uniformPills.map(pill => Math.ceil(pill.getBoundingClientRect().width)));
+  [...sourcePills, ...categoryPills, ...allPills].forEach(pill => { pill.style.width = 'auto'; });
+  const maxWidth = Math.max(...categoryPills.map(pill => Math.ceil(pill.getBoundingClientRect().width)));
   const allWidth = allPills.length
     ? Math.max(...allPills.map(pill => Math.ceil(pill.getBoundingClientRect().width)))
     : 0;
-  uniformPills.forEach(pill => { pill.style.width = `${maxWidth}px`; });
+  [...sourcePills, ...categoryPills].forEach(pill => { pill.style.width = `${maxWidth}px`; });
   allPills.forEach(pill => { pill.style.width = `${allWidth}px`; });
 }
 
@@ -1977,13 +2054,30 @@ function switchTab(name) {
     document.getElementById(`panel-${t}`).style.display = name === t ? '' : 'none';
     document.getElementById(`tab-${t}`).classList.toggle('active', name === t);
   });
+  if (name === 'reddit' && !redditDigestLoaded) {
+    redditDigestLoaded = true;
+    loadRedditDigest();
+  }
+  if (name === 'communities' && !communitiesLoaded) {
+    communitiesLoaded = true;
+    loadCommunities(false);
+  }
 }
 
 function renderTools() {
   const grid = document.getElementById('toolsGrid');
   if (!grid) return;
 
-  grid.innerHTML = TOOLS.map(tool => {
+  const groups = TOOLS.reduce((acc, tool) => {
+    (acc[tool.provider] ||= []).push(tool);
+    return acc;
+  }, {});
+
+  const orderedTools = Object.entries(groups)
+    .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]))
+    .flatMap(([, items]) => items);
+
+  grid.innerHTML = orderedTools.map(tool => {
     const tags = (tool.tags || []).map(tag => `<span class="category-tag">${esc(tag)}</span>`).join('');
     return `
       <div class="card">
@@ -2966,6 +3060,8 @@ function scheduleAutoRefresh() {
 function renderCards() {
   const search = (document.getElementById('searchInput').value || '').toLowerCase();
   const grid = document.getElementById('cardGrid');
+  const moreWrap = document.getElementById('cardMoreWrap');
+  const moreBtn = document.getElementById('cardMoreBtn');
 
   const filtered = allArticles.filter(a => {
     if (!activeSources.has(a.sourceId)) return false;
@@ -2976,6 +3072,7 @@ function renderCards() {
   });
 
   if (filtered.length === 0) {
+    if (moreWrap) moreWrap.style.display = 'none';
     if (allArticles.length === 0) {
       grid.innerHTML = `<div class="empty-msg">⏳ Still loading… or all sources failed.<br><small>Check the status pills above.</small></div>`;
     } else {
@@ -2984,7 +3081,9 @@ function renderCards() {
     return;
   }
 
-  grid.innerHTML = filtered.map(a => {
+  const visible = filtered.slice(0, visibleArticleCount);
+
+  grid.innerHTML = visible.map(a => {
     const isNew = a.date && a.date.getTime() > lastVisitTime;
     const catLabel = a.category === 'news' ? '📰 News' : (CATEGORIES[a.category]?.label || a.category);
     const dateStr  = a.date ? fmtDate(a.date) : '';
@@ -3005,6 +3104,16 @@ function renderCards() {
       </div>
     </div>`;
   }).join('');
+
+  if (moreWrap && moreBtn) {
+    const remaining = filtered.length - visible.length;
+    if (remaining > 0) {
+      moreWrap.style.display = 'block';
+      moreBtn.textContent = `Show ${Math.min(ARTICLE_BATCH_SIZE, remaining)} more`;
+    } else {
+      moreWrap.style.display = 'none';
+    }
+  }
 
   updateNewBadge();
 }
@@ -3044,6 +3153,13 @@ function loadSettings() {
     if (dsub) settingsDisabledSubs    = new Set(JSON.parse(dsub));
     const csub = localStorage.getItem('pmDashCustomSubs');
     if (csub) settingsCustomSubs      = JSON.parse(csub);
+    if (localStorage.getItem('pmDashSourceSetVersion') !== '2026-04-core8') {
+      settingsDisabledSources.add('nextcard');
+      settingsDisabledSources.add('hyatt');
+      settingsDisabledSources.delete('tt');
+      settingsDisabledSources.delete('aw');
+      localStorage.setItem('pmDashSourceSetVersion', '2026-04-core8');
+    }
   } catch {}
 }
 
@@ -3106,8 +3222,17 @@ function applySettings() {
   settingsDraft = null;
   // Reload data with new effective sources
   activeSources = new Set(getEffectiveNewsSources().map(s => s.id));
+  redditDigestLoaded = false;
   communitiesLoaded = false;
   loadAll();
+  const activeTab = document.querySelector('.tab-btn.active')?.id?.replace('tab-', '');
+  if (activeTab === 'reddit') {
+    redditDigestLoaded = true;
+    loadRedditDigest();
+  } else if (activeTab === 'communities') {
+    communitiesLoaded = true;
+    loadCommunities(false);
+  }
 }
 
 function switchSettingsTab(tab) {
@@ -3131,7 +3256,8 @@ function renderSettingsNewsTab() {
     !settingsDraft.customSources.find(c => c.id === s.id)
   );
 
-  let html = `<div class="settings-section-title">Sources</div>`;
+  let html = `<div class="settings-section-title">Sources</div>
+    <div class="settings-footer-note" style="margin-bottom:10px">Up to 9 active news sources at a time.</div>`;
   allSrcs.forEach(src => {
     const isOn = !settingsDraft.disabledSources.has(src.id);
     const isCustom = !!settingsDraft.customSources.find(c => c.id === src.id);
@@ -3143,7 +3269,7 @@ function renderSettingsNewsTab() {
           <div class="settings-row-url">${src.rssFeeds ? `${src.rssFeeds.length} feeds` : esc(src.rss)}</div>
         </div>
         ${isCustom ? `<button class="settings-remove-btn" title="Remove" onclick="settingsDraft.customSources=settingsDraft.customSources.filter(s=>s.id!=='${src.id}');settingsDraft.disabledSources.delete('${src.id}');renderSettingsBody()">✕</button>` : ''}
-        <button class="settings-toggle ${isOn ? 'on' : 'off'}" onclick="if(settingsDraft.disabledSources.has('${src.id}'))settingsDraft.disabledSources.delete('${src.id}');else settingsDraft.disabledSources.add('${src.id}');renderSettingsBody()"></button>
+        <button class="settings-toggle ${isOn ? 'on' : 'off'}" onclick="toggleDraftSource('${src.id}')"></button>
       </div>`;
   });
 
@@ -3217,6 +3343,25 @@ function settingsAddSuggested(id) {
   if (!src) return;
   if (sourceExistsInDraft(src)) { alert('That source is already included.'); return; }
   settingsDraft.customSources.push(src);
+  if (getDraftActiveNewsSourceCount() >= 9) settingsDraft.disabledSources.add(src.id);
+  renderSettingsBody();
+}
+
+function getDraftActiveNewsSourceCount() {
+  const allSrcs = [...SOURCES, ...settingsDraft.customSources];
+  return allSrcs.filter(src => !settingsDraft.disabledSources.has(src.id) && !src.isOffers).length;
+}
+
+function toggleDraftSource(id) {
+  if (settingsDraft.disabledSources.has(id)) {
+    if (getDraftActiveNewsSourceCount() >= 9) {
+      alert('You can keep up to 9 active news sources.');
+      return;
+    }
+    settingsDraft.disabledSources.delete(id);
+  } else {
+    settingsDraft.disabledSources.add(id);
+  }
   renderSettingsBody();
 }
 
@@ -3248,6 +3393,7 @@ function settingsAddCustomSource() {
   const palette = ['#e53e3e','#2b6cb0','#2f855a','#6b46c1','#d97706','#0891b2','#db2777','#ea580c'];
   const color = palette[settingsDraft.customSources.length % palette.length];
   settingsDraft.customSources.push({ id, name, short, color, emoji: '📰', url: rss, rss });
+  if (getDraftActiveNewsSourceCount() >= 9) settingsDraft.disabledSources.add(id);
   renderSettingsBody();
 }
 
