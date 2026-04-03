@@ -996,7 +996,7 @@
     }
     .settings-apply-btn:hover { opacity: 0.85; }
 
-    </style>
+  </style>
   <script>
     (function() {
       try {
@@ -1146,7 +1146,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.0';
+const VERSION = '1.6.3';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -2022,6 +2022,11 @@ function syncNewsPillWidths() {
     document.getElementById('pill-all'),
     document.querySelector('#panel-news .all-filter-pill')
   ].filter(Boolean);
+
+  if (!isDesktop()) {
+    [...sourcePills, ...categoryPills, ...allPills].forEach(pill => { pill.style.width = ''; });
+    return;
+  }
 
   if (!categoryPills.length) return;
 
