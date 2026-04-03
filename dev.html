@@ -90,24 +90,20 @@
       max-width: 1400px;
       margin: 0 auto;
       padding: 18px 24px 24px;
-      height: calc(100vh - 64px);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
+      display: block;
+      overflow: visible;
     }
 
     #panel-news,
     #panel-tools,
     #panel-reddit,
     #panel-communities {
-      min-height: 0;
+      display: block;
+      overflow: visible;
     }
 
     #panel-news {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      min-height: 0;
+      display: block;
     }
 
     .news-fixed-chrome {
@@ -187,19 +183,13 @@
     }
 
     #cardGrid {
-      flex: 1 1 auto;
-      min-height: 0;
-      overflow-y: auto;
       align-content: start;
-      padding-right: 4px;
     }
 
     #panel-tools,
     #panel-reddit,
     #panel-communities {
-      flex: 1;
-      overflow-y: auto;
-      padding-right: 4px;
+      padding-right: 0;
     }
 
     /* CARD */
@@ -1169,7 +1159,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.104-dev';
+const VERSION = '1.5.105-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
