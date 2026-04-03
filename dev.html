@@ -1161,7 +1161,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.2-dev';
+const VERSION = '1.6.3-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -2037,6 +2037,11 @@ function syncNewsPillWidths() {
     document.getElementById('pill-all'),
     document.querySelector('#panel-news .all-filter-pill')
   ].filter(Boolean);
+
+  if (!isDesktop()) {
+    [...sourcePills, ...categoryPills, ...allPills].forEach(pill => { pill.style.width = ''; });
+    return;
+  }
 
   if (!categoryPills.length) return;
 
