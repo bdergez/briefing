@@ -1113,6 +1113,9 @@
         <div class="loading-sub">Fetching articles from sources via RSS</div>
       </div>
     </div>
+    <div id="cardMoreWrap" style="display:none;margin-top:18px;text-align:center">
+      <button class="btn btn-primary" id="cardMoreBtn" onclick="showMoreCards()">Show more</button>
+    </div>
 
   </div><!-- /panel-news -->
   <!-- ══ PANEL: TOOLS ══ -->
@@ -1159,7 +1162,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.5.108-dev';
+const VERSION = '1.5.109-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1453,6 +1456,8 @@ function categorize(title, desc) {
 // ─── STATE ───────────────────────────────────────────────────────────────
 let allArticles = [];
 let activeCategory = 'all';
+let visibleArticleCount = 36;
+const ARTICLE_BATCH_SIZE = 24;
 let activeSources = new Set(); // initialized after loadSettings() in init()
 let sourceState = {}; // { id: 'loading'|'ok'|'error' }
 let debugLog = [];
@@ -1544,7 +1549,7 @@ function parseRSS(xmlText, source) {
     }
     const items = Array.from(doc.querySelectorAll('item'));
 
-    return items.slice(0, 25).map(item => {
+    return items.slice(0, 35).map(item => {
       let title = item.querySelector('title')?.textContent?.trim() || '';
       const rawDesc = item.querySelector('description')?.textContent?.trim()
                     || item.querySelector('summary')?.textContent?.trim()
@@ -1642,7 +1647,7 @@ function parseSitemap(xmlText, source) {
     })
     .filter(a => a.title && a.url)
     .sort((a, b) => (b.date || 0) - (a.date || 0))
-    .slice(0, 25);
+    .slice(0, 35);
 
   return items;
 }
@@ -1718,7 +1723,7 @@ function parseNextcardArticlesPage(htmlText, source) {
   }
 
   return items
-    .slice(0, 25);
+    .slice(0, 35);
 }
 
 function mergeNextcardArticleDates(articlesItems, sitemapItems) {
@@ -1786,7 +1791,7 @@ async function fetchSource(source) {
       }
     }
     articles.sort((a, b) => (b.date || 0) - (a.date || 0));
-    articles = articles.slice(0, 100);
+    articles = articles.slice(0, 140);
   } else {
     // Single-feed source
     const xml = await fetchWithProxy(source.rss);
@@ -1818,6 +1823,7 @@ async function fetchSource(source) {
 // ─── LOAD ALL ────────────────────────────────────────────────────────────
 async function loadAll() {
   allArticles = [];
+  visibleArticleCount = ARTICLE_BATCH_SIZE + 12;
   offersArticles = [];
   debugLog = [];
   document.getElementById('debugBox').style.display = 'none';
@@ -1910,6 +1916,7 @@ function selectAllSources() {
     if (pill) pill.classList.remove('inactive');
   });
   updateAllPill();
+  visibleArticleCount = ARTICLE_BATCH_SIZE + 12;
   renderCards();
 }
 
@@ -1948,6 +1955,7 @@ function toggleSource(id) {
     if (pill) pill.classList.toggle('inactive', !activeSources.has(s.id));
   });
   updateAllPill();
+  visibleArticleCount = ARTICLE_BATCH_SIZE + 12;
   renderCards();
 }
 
@@ -1972,6 +1980,12 @@ function setCategory(cat, btn) {
   activeCategory = cat;
   document.querySelectorAll('#panel-news .filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+  visibleArticleCount = ARTICLE_BATCH_SIZE + 12;
+  renderCards();
+}
+
+function showMoreCards() {
+  visibleArticleCount += ARTICLE_BATCH_SIZE;
   renderCards();
 }
 
@@ -3004,6 +3018,8 @@ function scheduleAutoRefresh() {
 function renderCards() {
   const search = (document.getElementById('searchInput').value || '').toLowerCase();
   const grid = document.getElementById('cardGrid');
+  const moreWrap = document.getElementById('cardMoreWrap');
+  const moreBtn = document.getElementById('cardMoreBtn');
 
   const filtered = allArticles.filter(a => {
     if (!activeSources.has(a.sourceId)) return false;
@@ -3014,6 +3030,7 @@ function renderCards() {
   });
 
   if (filtered.length === 0) {
+    if (moreWrap) moreWrap.style.display = 'none';
     if (allArticles.length === 0) {
       grid.innerHTML = `<div class="empty-msg">⏳ Still loading… or all sources failed.<br><small>Check the status pills above.</small></div>`;
     } else {
@@ -3022,7 +3039,9 @@ function renderCards() {
     return;
   }
 
-  grid.innerHTML = filtered.map(a => {
+  const visible = filtered.slice(0, visibleArticleCount);
+
+  grid.innerHTML = visible.map(a => {
     const isNew = a.date && a.date.getTime() > lastVisitTime;
     const catLabel = a.category === 'news' ? '📰 News' : (CATEGORIES[a.category]?.label || a.category);
     const dateStr  = a.date ? fmtDate(a.date) : '';
@@ -3043,6 +3062,16 @@ function renderCards() {
       </div>
     </div>`;
   }).join('');
+
+  if (moreWrap && moreBtn) {
+    const remaining = filtered.length - visible.length;
+    if (remaining > 0) {
+      moreWrap.style.display = 'block';
+      moreBtn.textContent = `Show ${Math.min(ARTICLE_BATCH_SIZE, remaining)} more`;
+    } else {
+      moreWrap.style.display = 'none';
+    }
+  }
 
   updateNewBadge();
 }
