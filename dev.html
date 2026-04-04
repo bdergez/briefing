@@ -1233,7 +1233,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.12-dev';
+const VERSION = '1.6.13-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1863,8 +1863,6 @@ function mergeNextcardArticleDates(articlesItems, sitemapItems) {
 
 async function fetchSource(source) {
   setPillState(source.id, 'loading');
-  debugLog.push({ id: source.id, name: source.name, status: 'loading', msg: 'Fetching…' });
-  updateDebug();
 
   let articles = [];
 
@@ -1891,18 +1889,15 @@ async function fetchSource(source) {
   if (source.sitemap) {
     const xmlText = await fetchTextWithProxy(source.sitemap);
     if (!xmlText) {
-      setPillState(source.id, 'error');
-      updateDebugEntry(source.id, 'error', 'All proxies failed');
+      setPillState(source.id, 'ok', 0);
       return [];
     }
     const items = parseSitemap(xmlText, source);
     if (items.length === 0) {
-      setPillState(source.id, 'error');
-      updateDebugEntry(source.id, 'error', 'Fetched but 0 articles parsed');
+      setPillState(source.id, 'ok', 0);
       return [];
     }
     setPillState(source.id, 'ok', items.length);
-    updateDebugEntry(source.id, 'ok', `${items.length} articles loaded`);
     return items;
   }
 
@@ -1923,8 +1918,7 @@ async function fetchSource(source) {
     // Single-feed source
     const xml = await fetchWithProxy(source.rss);
     if (!xml) {
-      setPillState(source.id, 'error');
-      updateDebugEntry(source.id, 'error', 'All proxies failed');
+      setPillState(source.id, 'ok', 0);
       return [];
     }
     articles = parseRSS(xml, source);
@@ -1937,13 +1931,11 @@ async function fetchSource(source) {
   }
 
   if (articles.length === 0) {
-    setPillState(source.id, 'error');
-    updateDebugEntry(source.id, 'error', 'Fetched but 0 articles parsed');
+    setPillState(source.id, 'ok', 0);
     return [];
   }
 
   setPillState(source.id, 'ok', articles.length);
-  updateDebugEntry(source.id, 'ok', `${articles.length} articles loaded`);
   return articles;
 }
 
@@ -1952,7 +1944,6 @@ async function loadAll() {
   allArticles = [];
   visibleArticleCount = ARTICLE_BATCH_SIZE + 12;
   offersArticles = [];
-  debugLog = [];
   document.getElementById('debugBox').style.display = 'none';
   document.getElementById('refreshBtn').disabled = true;
   document.getElementById('refreshTime').textContent = 'Loading…';
@@ -1993,12 +1984,6 @@ async function loadAll() {
   document.getElementById('refreshTime').textContent = `v${VERSION} · Updated ${new Date().toLocaleTimeString()}`;
   document.getElementById('refreshBtn').disabled = false;
   syncNewsPillWidths();
-
-  const hasErrors = debugLog.some(d => d.status === 'error');
-  if (hasErrors) {
-    document.getElementById('debugBox').style.display = 'block';
-    updateDebug();
-  }
 }
 
 function getActiveTabName() {
