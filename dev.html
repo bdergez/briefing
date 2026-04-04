@@ -260,6 +260,25 @@
       display: flex; align-items: center; justify-content: space-between;
       margin-top: auto; padding-top: 6px;
     }
+    .card-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .card-action-btn {
+      background: transparent;
+      border: none;
+      color: var(--subtext);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 0;
+    }
+    .card-action-btn:hover {
+      color: var(--accent);
+      text-decoration: underline;
+    }
     .read-link {
       font-size: 12px; font-weight: 600; color: var(--accent);
       text-decoration: none;
@@ -1191,7 +1210,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.7-dev';
+const VERSION = '1.6.8-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1543,6 +1562,8 @@ let activeSources = new Set(); // initialized after loadSettings() in init()
 let sourceState = {}; // { id: 'loading'|'ok'|'error' }
 let debugLog = [];
 let activeToolFilter = 'all';
+let hiddenArticleUrls = new Set();
+let mutedSourcesUntil = {};
 
 // ── Churning two-panel state ──────────────────────────────────────────────
 let digestPostsData = [];       // all fetched posts
@@ -3153,6 +3174,42 @@ function updateNewBadge() {
   if (filterNew) filterNew.textContent = count > 0 ? `🆕 New (${count})` : '🆕 New';
 }
 
+function getTodayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function loadArticleControls() {
+  try {
+    const hidden = localStorage.getItem('pmDashHiddenArticles');
+    if (hidden) hiddenArticleUrls = new Set(JSON.parse(hidden));
+    const muted = localStorage.getItem('pmDashMutedSourcesUntil');
+    if (muted) mutedSourcesUntil = JSON.parse(muted);
+    const today = getTodayKey();
+    Object.keys(mutedSourcesUntil).forEach(id => {
+      if (mutedSourcesUntil[id] < today) delete mutedSourcesUntil[id];
+    });
+  } catch {}
+}
+
+function saveArticleControls() {
+  try {
+    localStorage.setItem('pmDashHiddenArticles', JSON.stringify([...hiddenArticleUrls]));
+    localStorage.setItem('pmDashMutedSourcesUntil', JSON.stringify(mutedSourcesUntil));
+  } catch {}
+}
+
+function hideArticle(url) {
+  hiddenArticleUrls.add(url);
+  saveArticleControls();
+  renderCards();
+}
+
+function muteSourceToday(sourceId) {
+  mutedSourcesUntil[sourceId] = getTodayKey();
+  saveArticleControls();
+  renderCards();
+}
+
 // ─── AUTO-REFRESH ─────────────────────────────────────────────────────────
 let autoRefreshTimer = null;
 
@@ -3176,6 +3233,8 @@ function renderCards() {
   const moreBtn = document.getElementById('cardMoreBtn');
 
   const filtered = allArticles.filter(a => {
+    if (hiddenArticleUrls.has(a.url)) return false;
+    if (mutedSourcesUntil[a.sourceId] === getTodayKey()) return false;
     if (!activeSources.has(a.sourceId)) return false;
     if (activeCategory === 'new') return a.date && a.date.getTime() > lastVisitTime;
     if (activeCategory !== 'all' && a.category !== activeCategory) return false;
@@ -3211,7 +3270,11 @@ function renderCards() {
       <div class="card-title"><a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.title)}</a></div>
       ${desc}
       <div class="card-footer">
-        <a class="read-link" href="${esc(a.url)}" target="_blank" rel="noopener">Read article →</a>
+        <div class="card-actions">
+          <a class="read-link" href="${esc(a.url)}" target="_blank" rel="noopener">Read article →</a>
+          <button class="card-action-btn" onclick="hideArticle('${esc(a.url)}')">Hide</button>
+          <button class="card-action-btn" onclick="muteSourceToday('${esc(a.sourceId)}')">Mute today</button>
+        </div>
         <span style="font-size:11px;color:var(--subtext)">${esc(a.sourceName)}</span>
       </div>
     </div>`;
@@ -3565,6 +3628,7 @@ function settingsAddCustomSub() {
 (async function init() {
   // 1. Load settings (must happen before loadAll so getEffectiveSources() is correct)
   loadSettings();
+  loadArticleControls();
   activeSources = new Set(getEffectiveNewsSources().map(s => s.id));
   updateThemeButton();
 
