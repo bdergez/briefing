@@ -1233,7 +1233,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.13-dev';
+const VERSION = '1.6.14-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1889,7 +1889,7 @@ async function fetchSource(source) {
   if (source.sitemap) {
     const xmlText = await fetchTextWithProxy(source.sitemap);
     if (!xmlText) {
-      setPillState(source.id, 'ok', 0);
+      setPillState(source.id, 'error');
       return [];
     }
     const items = parseSitemap(xmlText, source);
@@ -1918,7 +1918,7 @@ async function fetchSource(source) {
     // Single-feed source
     const xml = await fetchWithProxy(source.rss);
     if (!xml) {
-      setPillState(source.id, 'ok', 0);
+      setPillState(source.id, 'error');
       return [];
     }
     articles = parseRSS(xml, source);
