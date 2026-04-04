@@ -160,6 +160,28 @@
     .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
     .filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
+    .tools-filter-bar {
+      display: flex; align-items: center; gap: 8px;
+      margin: 12px 0 16px; flex-wrap: wrap;
+    }
+    .tool-filter-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 12px; border-radius: 20px;
+      min-height: 30px;
+      border: 2px solid transparent;
+      background: var(--card-bg); color: var(--text);
+      font-size: 12px; font-weight: 600; cursor: pointer;
+      transition: all 0.2s;
+      user-select: none;
+      justify-content: center;
+      line-height: 1;
+      font-family: inherit;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    .tool-filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .tool-filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
     .search-wrap { margin-left: auto; position: relative; }
     .search-wrap input {
       padding: 8px 14px 8px 36px;
@@ -237,6 +259,25 @@
     .card-footer {
       display: flex; align-items: center; justify-content: space-between;
       margin-top: auto; padding-top: 6px;
+    }
+    .card-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .card-action-btn {
+      background: transparent;
+      border: none;
+      color: var(--subtext);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 0;
+    }
+    .card-action-btn:hover {
+      color: var(--accent);
+      text-decoration: underline;
     }
     .read-link {
       font-size: 12px; font-weight: 600; color: var(--accent);
@@ -781,6 +822,7 @@
 
       /* Category filter: hidden on mobile */
       .filter-btn { display: none; }
+      .tool-filter-btn { display: inline-flex; }
 
       /* Keep search bar, full width */
       .filter-bar {
@@ -1033,7 +1075,7 @@
   </div>
   <div class="header-right">
     <span class="refresh-time" id="refreshTime">Not loaded</span>
-    <button class="btn btn-primary" id="refreshBtn" onclick="loadAll()">⟳ Refresh</button>
+    <button class="btn btn-primary" id="refreshBtn" onclick="refreshCurrentTab()">⟳ Refresh</button>
     <button class="btn btn-ghost" onclick="toggleTheme()">🌓 Theme</button>
     <button class="btn btn-ghost" onclick="openSettings()">⚙️ Sources</button>
   </div>
@@ -1108,6 +1150,13 @@
       <h4>🧰 Tools</h4>
       <p style="margin:0;color:var(--subtext);font-size:13px;line-height:1.5">Useful maps, calculators, and lookup pages that are better opened directly than squeezed into the feed.</p>
     </div>
+    <div class="tools-filter-bar" id="toolsFilterBar">
+      <button class="tool-filter-btn active" onclick="setToolFilter('all', this)">All</button>
+      <button class="tool-filter-btn" onclick="setToolFilter('Dining', this)">Dining</button>
+      <button class="tool-filter-btn" onclick="setToolFilter('Transfer', this)">Transfer</button>
+      <button class="tool-filter-btn" onclick="setToolFilter('Hotels', this)">Hotels</button>
+      <button class="tool-filter-btn" onclick="setToolFilter('Calculator', this)">Calculators</button>
+    </div>
     <div class="grid" id="toolsGrid"></div>
   </div><!-- /panel-tools -->
   <!-- ══ PANEL: REDDIT DIGEST ══ -->
@@ -1146,7 +1195,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.3';
+const VERSION = '1.6.8';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1158,6 +1207,14 @@ const SOURCES = [
   { id:'loyaltylobby', name:'LoyaltyLobby', short:'LL', color:'#2C7A7B', emoji:'🛎️', url:'https://loyaltylobby.com', rss:'https://loyaltylobby.com/feed/' },
   { id:'tt',     name:'Thrifty Traveler',    short:'TT',     color:'#0f766e', emoji:'🤑', url:'https://thriftytraveler.com',          rss:'https://thriftytraveler.com/feed/' },
   { id:'aw',     name:'AwardWallet',         short:'AW',     color:'#7c3aed', emoji:'🏆', url:'https://awardwallet.com/blog',        rss:'https://www.awardwallet.com/blog/feed/' },
+];
+
+const SOURCE_PRESETS = [
+  { id: 'lean',   label: 'Lean 6', ids: ['doc','fm','omaat','loyaltylobby','tt','aw'] },
+  { id: 'core',   label: 'Core',   ids: ['doc','fm','omaat','vftw','mtm','loyaltylobby','tt','aw'] },
+  { id: 'travel', label: 'Travel', ids: ['fm','omaat','vftw','loyaltylobby','tt','aw','nextcard','hyatt','ba'] },
+  { id: 'banks',  label: 'Banks',  ids: ['doc','fm','mtm','aw','tpg','up','10xt','ba'] },
+  { id: 'all',    label: 'All 9',  ids: ['doc','fm','omaat','vftw','mtm','loyaltylobby','tt','aw','nextcard'] },
 ];
 
 // ─── COMMUNITIES CONFIG ───────────────────────────────────────────────────
@@ -1489,6 +1546,9 @@ const ARTICLE_BATCH_SIZE = 24;
 let activeSources = new Set(); // initialized after loadSettings() in init()
 let sourceState = {}; // { id: 'loading'|'ok'|'error' }
 let debugLog = [];
+let activeToolFilter = 'all';
+let hiddenArticleUrls = new Set();
+let mutedSourcesUntil = {};
 
 // ── Churning two-panel state ──────────────────────────────────────────────
 let digestPostsData = [];       // all fetched posts
@@ -1903,6 +1963,40 @@ async function loadAll() {
   }
 }
 
+function getActiveTabName() {
+  return document.querySelector('.tab-btn.active')?.id?.replace('tab-', '') || 'news';
+}
+
+async function refreshCurrentTab() {
+  const activeTab = getActiveTabName();
+  if (activeTab === 'news') {
+    await loadAll();
+    return;
+  }
+
+  const refreshBtn = document.getElementById('refreshBtn');
+  const refreshTime = document.getElementById('refreshTime');
+  if (refreshBtn) refreshBtn.disabled = true;
+  if (refreshTime) refreshTime.textContent = 'Loading…';
+
+  try {
+    if (activeTab === 'reddit') {
+      redditDigestLoaded = true;
+      document.getElementById('digestGrid').innerHTML = `<div class="digest-loading"><div class="spinner"></div>Fetching r/churning threads…</div>`;
+      document.getElementById('digestMeta').textContent = 'Loading…';
+      await loadRedditDigest();
+    } else if (activeTab === 'communities') {
+      communitiesLoaded = true;
+      await loadCommunities(true);
+    } else if (activeTab === 'tools') {
+      renderTools();
+    }
+    if (refreshTime) refreshTime.textContent = `v${VERSION} · Updated ${new Date().toLocaleTimeString()}`;
+  } finally {
+    if (refreshBtn) refreshBtn.disabled = false;
+  }
+}
+
 // ─── SOURCE PILLS ────────────────────────────────────────────────────────
 function buildPills() {
   const wrap = document.getElementById('sourcePills');
@@ -2069,6 +2163,20 @@ function switchTab(name) {
   }
 }
 
+function toolMatchesFilter(tool, filter) {
+  if (filter === 'all') return true;
+  const haystack = [tool.name, tool.desc, ...(tool.tags || [])].join(' ').toLowerCase();
+  if (filter === 'Calculator') return haystack.includes('calculator');
+  return haystack.includes(filter.toLowerCase());
+}
+
+function setToolFilter(filter, btn) {
+  activeToolFilter = filter;
+  document.querySelectorAll('#toolsFilterBar .tool-filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderTools();
+}
+
 function renderTools() {
   const grid = document.getElementById('toolsGrid');
   if (!grid) return;
@@ -2080,7 +2188,13 @@ function renderTools() {
 
   const orderedTools = Object.entries(groups)
     .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]))
-    .flatMap(([, items]) => items);
+    .flatMap(([, items]) => items)
+    .filter(tool => toolMatchesFilter(tool, activeToolFilter));
+
+  if (!orderedTools.length) {
+    grid.innerHTML = `<div class="empty-msg">No tools match this filter.</div>`;
+    return;
+  }
 
   grid.innerHTML = orderedTools.map(tool => {
     const tags = (tool.tags || []).map(tag => `<span class="category-tag">${esc(tag)}</span>`).join('');
@@ -3045,6 +3159,42 @@ function updateNewBadge() {
   if (filterNew) filterNew.textContent = count > 0 ? `🆕 New (${count})` : '🆕 New';
 }
 
+function getTodayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function loadArticleControls() {
+  try {
+    const hidden = localStorage.getItem('pmDashHiddenArticles');
+    if (hidden) hiddenArticleUrls = new Set(JSON.parse(hidden));
+    const muted = localStorage.getItem('pmDashMutedSourcesUntil');
+    if (muted) mutedSourcesUntil = JSON.parse(muted);
+    const today = getTodayKey();
+    Object.keys(mutedSourcesUntil).forEach(id => {
+      if (mutedSourcesUntil[id] < today) delete mutedSourcesUntil[id];
+    });
+  } catch {}
+}
+
+function saveArticleControls() {
+  try {
+    localStorage.setItem('pmDashHiddenArticles', JSON.stringify([...hiddenArticleUrls]));
+    localStorage.setItem('pmDashMutedSourcesUntil', JSON.stringify(mutedSourcesUntil));
+  } catch {}
+}
+
+function hideArticle(url) {
+  hiddenArticleUrls.add(url);
+  saveArticleControls();
+  renderCards();
+}
+
+function muteSourceToday(sourceId) {
+  mutedSourcesUntil[sourceId] = getTodayKey();
+  saveArticleControls();
+  renderCards();
+}
+
 // ─── AUTO-REFRESH ─────────────────────────────────────────────────────────
 let autoRefreshTimer = null;
 
@@ -3052,10 +3202,9 @@ function scheduleAutoRefresh() {
   if (autoRefreshTimer) clearTimeout(autoRefreshTimer);
   autoRefreshTimer = setTimeout(async () => {
     if (!document.hidden) {
-      // Show pulsing dot while refreshing silently
       const rt = document.getElementById('refreshTime');
       if (rt) rt.innerHTML = `v${VERSION} · <span class="refresh-dot"></span> Refreshing…`;
-      await loadAll();
+      await refreshCurrentTab();
     }
     scheduleAutoRefresh(); // schedule next
   }, 30 * 60 * 1000); // 30 minutes
@@ -3069,6 +3218,8 @@ function renderCards() {
   const moreBtn = document.getElementById('cardMoreBtn');
 
   const filtered = allArticles.filter(a => {
+    if (hiddenArticleUrls.has(a.url)) return false;
+    if (mutedSourcesUntil[a.sourceId] === getTodayKey()) return false;
     if (!activeSources.has(a.sourceId)) return false;
     if (activeCategory === 'new') return a.date && a.date.getTime() > lastVisitTime;
     if (activeCategory !== 'all' && a.category !== activeCategory) return false;
@@ -3104,7 +3255,11 @@ function renderCards() {
       <div class="card-title"><a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.title)}</a></div>
       ${desc}
       <div class="card-footer">
-        <a class="read-link" href="${esc(a.url)}" target="_blank" rel="noopener">Read article →</a>
+        <div class="card-actions">
+          <a class="read-link" href="${esc(a.url)}" target="_blank" rel="noopener">Read article →</a>
+          <button class="card-action-btn" onclick="hideArticle('${esc(a.url)}')">Hide</button>
+          <button class="card-action-btn" onclick="muteSourceToday('${esc(a.sourceId)}')">Mute today</button>
+        </div>
         <span style="font-size:11px;color:var(--subtext)">${esc(a.sourceName)}</span>
       </div>
     </div>`;
@@ -3260,9 +3415,15 @@ function renderSettingsNewsTab() {
     !SOURCES.find(d => d.id === s.id) &&
     !settingsDraft.customSources.find(c => c.id === s.id)
   );
+  const activeCount = getDraftActiveNewsSourceCount();
+  const matchedPreset = getMatchingSourcePreset();
 
   let html = `<div class="settings-section-title">Sources</div>
-    <div class="settings-footer-note" style="margin-bottom:10px">Up to 9 active news sources at a time.</div>`;
+    <div class="settings-footer-note" style="margin-bottom:10px">Active now: ${activeCount}/9 news sources${matchedPreset ? ` · Preset: ${esc(matchedPreset.label)}` : ''}</div>
+    <div class="settings-section-title">Presets</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+      ${SOURCE_PRESETS.map(preset => `<button class="settings-add-inline" onclick="applySourcePreset('${preset.id}')">${esc(preset.label)} (${preset.ids.length})</button>`).join('')}
+    </div>`;
   allSrcs.forEach(src => {
     const isOn = !settingsDraft.disabledSources.has(src.id);
     const isCustom = !!settingsDraft.customSources.find(c => c.id === src.id);
@@ -3301,6 +3462,43 @@ function renderSettingsNewsTab() {
       <button class="settings-add-btn" onclick="settingsAddCustomSource()">Add Source</button>
     </div>`;
   return html;
+}
+
+function getMatchingSourcePreset() {
+  if (!settingsDraft) return null;
+  const activeIds = [...SOURCES, ...settingsDraft.customSources]
+    .filter(src => !src.isOffers && !settingsDraft.disabledSources.has(src.id))
+    .map(src => src.id)
+    .sort();
+  return SOURCE_PRESETS.find(preset => {
+    const presetIds = [...preset.ids].sort();
+    return presetIds.length === activeIds.length && presetIds.every((id, i) => id === activeIds[i]);
+  }) || null;
+}
+
+function ensureDraftSourceAvailable(id) {
+  if (SOURCES.find(s => s.id === id)) return;
+  if (settingsDraft.customSources.find(s => s.id === id)) return;
+  const suggested = SUGGESTED_SOURCES.find(s => s.id === id);
+  if (suggested) settingsDraft.customSources.push(JSON.parse(JSON.stringify(suggested)));
+}
+
+function applySourcePreset(presetId) {
+  if (!settingsDraft) return;
+  const preset = SOURCE_PRESETS.find(p => p.id === presetId);
+  if (!preset) return;
+
+  preset.ids.forEach(ensureDraftSourceAvailable);
+  const allowed = new Set(preset.ids);
+  const allSrcs = [...SOURCES, ...settingsDraft.customSources];
+  settingsDraft.disabledSources = new Set(
+    allSrcs
+      .filter(src => !src.isOffers && !allowed.has(src.id))
+      .map(src => src.id)
+  );
+  const note = document.getElementById('settingsNote');
+  if (note) note.textContent = `Preset selected: ${preset.label}`;
+  renderSettingsBody();
 }
 
 function renderSettingsCommTab() {
@@ -3419,6 +3617,7 @@ function settingsAddCustomSub() {
 (async function init() {
   // 1. Load settings (must happen before loadAll so getEffectiveSources() is correct)
   loadSettings();
+  loadArticleControls();
   activeSources = new Set(getEffectiveNewsSources().map(s => s.id));
   updateThemeButton();
 
