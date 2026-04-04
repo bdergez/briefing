@@ -1218,7 +1218,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.16';
+const VERSION = '1.6.18';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -2416,7 +2416,7 @@ function renderThreadList(posts) {
                data-post-id="${p.id}"
                onclick="selectThread('${p.id}', '${day}')">
             <span style="flex:1;line-height:1.35">${esc(simplifyThreadTitle(p.title))}</span>
-            <span class="comm-nav-cat-count" style="white-space:nowrap;margin-left:6px">💬${p.num_comments}</span>
+            <span class="comm-nav-cat-count" style="white-space:nowrap;margin-left:6px">${p.num_comments}</span>
           </div>`
         ).join('')
       );
@@ -2799,7 +2799,7 @@ function digestPostHTML(p, topics) {
     ${topicsHTML}
     <div class="digest-post-footer">
       <a class="thread-link" href="${esc(permalink)}" target="_blank" rel="noopener" style="color:${threadColor}">Open full thread →</a>
-      <span class="comment-count">💬 ${p.num_comments} comments</span>
+      <span class="comment-count">${p.num_comments} comments</span>
     </div>
   </div>`;
 }
