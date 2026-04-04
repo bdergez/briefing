@@ -1191,7 +1191,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.6-dev';
+const VERSION = '1.6.7-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -3363,12 +3363,14 @@ function renderSettingsNewsTab() {
     !SOURCES.find(d => d.id === s.id) &&
     !settingsDraft.customSources.find(c => c.id === s.id)
   );
+  const activeCount = getDraftActiveNewsSourceCount();
+  const matchedPreset = getMatchingSourcePreset();
 
   let html = `<div class="settings-section-title">Sources</div>
-    <div class="settings-footer-note" style="margin-bottom:10px">Up to 9 active news sources at a time.</div>
+    <div class="settings-footer-note" style="margin-bottom:10px">Active now: ${activeCount}/9 news sources${matchedPreset ? ` · Preset: ${esc(matchedPreset.label)}` : ''}</div>
     <div class="settings-section-title">Presets</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
-      ${SOURCE_PRESETS.map(preset => `<button class="settings-add-inline" onclick="applySourcePreset('${preset.id}')">${esc(preset.label)}</button>`).join('')}
+      ${SOURCE_PRESETS.map(preset => `<button class="settings-add-inline" onclick="applySourcePreset('${preset.id}')">${esc(preset.label)} (${preset.ids.length})</button>`).join('')}
     </div>`;
   allSrcs.forEach(src => {
     const isOn = !settingsDraft.disabledSources.has(src.id);
@@ -3408,6 +3410,18 @@ function renderSettingsNewsTab() {
       <button class="settings-add-btn" onclick="settingsAddCustomSource()">Add Source</button>
     </div>`;
   return html;
+}
+
+function getMatchingSourcePreset() {
+  if (!settingsDraft) return null;
+  const activeIds = [...SOURCES, ...settingsDraft.customSources]
+    .filter(src => !src.isOffers && !settingsDraft.disabledSources.has(src.id))
+    .map(src => src.id)
+    .sort();
+  return SOURCE_PRESETS.find(preset => {
+    const presetIds = [...preset.ids].sort();
+    return presetIds.length === activeIds.length && presetIds.every((id, i) => id === activeIds[i]);
+  }) || null;
 }
 
 function ensureDraftSourceAvailable(id) {
