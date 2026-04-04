@@ -1048,7 +1048,7 @@
   </div>
   <div class="header-right">
     <span class="refresh-time" id="refreshTime">Not loaded</span>
-    <button class="btn btn-primary" id="refreshBtn" onclick="loadAll()">⟳ Refresh</button>
+    <button class="btn btn-primary" id="refreshBtn" onclick="refreshCurrentTab()">⟳ Refresh</button>
     <button class="btn btn-ghost" onclick="toggleTheme()">🌓 Theme</button>
     <button class="btn btn-ghost" onclick="openSettings()">⚙️ Sources</button>
   </div>
@@ -1161,7 +1161,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.3-dev';
+const VERSION = '1.6.4-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1173,6 +1173,13 @@ const SOURCES = [
   { id:'loyaltylobby', name:'LoyaltyLobby', short:'LL', color:'#2C7A7B', emoji:'🛎️', url:'https://loyaltylobby.com', rss:'https://loyaltylobby.com/feed/' },
   { id:'tt',     name:'Thrifty Traveler',    short:'TT',     color:'#0f766e', emoji:'🤑', url:'https://thriftytraveler.com',          rss:'https://thriftytraveler.com/feed/' },
   { id:'aw',     name:'AwardWallet',         short:'AW',     color:'#7c3aed', emoji:'🏆', url:'https://awardwallet.com/blog',        rss:'https://www.awardwallet.com/blog/feed/' },
+];
+
+const SOURCE_PRESETS = [
+  { id: 'core',   label: 'Core',   ids: ['doc','fm','omaat','vftw','mtm','loyaltylobby','tt','aw'] },
+  { id: 'travel', label: 'Travel', ids: ['fm','omaat','vftw','loyaltylobby','tt','aw','nextcard','hyatt','ba'] },
+  { id: 'banks',  label: 'Banks',  ids: ['doc','fm','mtm','aw','tpg','up','10xt','ba'] },
+  { id: 'all',    label: 'All 9',  ids: ['doc','fm','omaat','vftw','mtm','loyaltylobby','tt','aw','nextcard'] },
 ];
 
 // ─── COMMUNITIES CONFIG ───────────────────────────────────────────────────
@@ -1915,6 +1922,40 @@ async function loadAll() {
   if (hasErrors) {
     document.getElementById('debugBox').style.display = 'block';
     updateDebug();
+  }
+}
+
+function getActiveTabName() {
+  return document.querySelector('.tab-btn.active')?.id?.replace('tab-', '') || 'news';
+}
+
+async function refreshCurrentTab() {
+  const activeTab = getActiveTabName();
+  if (activeTab === 'news') {
+    await loadAll();
+    return;
+  }
+
+  const refreshBtn = document.getElementById('refreshBtn');
+  const refreshTime = document.getElementById('refreshTime');
+  if (refreshBtn) refreshBtn.disabled = true;
+  if (refreshTime) refreshTime.textContent = 'Loading…';
+
+  try {
+    if (activeTab === 'reddit') {
+      redditDigestLoaded = true;
+      document.getElementById('digestGrid').innerHTML = `<div class="digest-loading"><div class="spinner"></div>Fetching r/churning threads…</div>`;
+      document.getElementById('digestMeta').textContent = 'Loading…';
+      await loadRedditDigest();
+    } else if (activeTab === 'communities') {
+      communitiesLoaded = true;
+      await loadCommunities(true);
+    } else if (activeTab === 'tools') {
+      renderTools();
+    }
+    if (refreshTime) refreshTime.textContent = `v${VERSION} · Updated ${new Date().toLocaleTimeString()}`;
+  } finally {
+    if (refreshBtn) refreshBtn.disabled = false;
   }
 }
 
@@ -3067,10 +3108,9 @@ function scheduleAutoRefresh() {
   if (autoRefreshTimer) clearTimeout(autoRefreshTimer);
   autoRefreshTimer = setTimeout(async () => {
     if (!document.hidden) {
-      // Show pulsing dot while refreshing silently
       const rt = document.getElementById('refreshTime');
       if (rt) rt.innerHTML = `v${VERSION} · <span class="refresh-dot"></span> Refreshing…`;
-      await loadAll();
+      await refreshCurrentTab();
     }
     scheduleAutoRefresh(); // schedule next
   }, 30 * 60 * 1000); // 30 minutes
@@ -3273,7 +3313,11 @@ function renderSettingsNewsTab() {
   );
 
   let html = `<div class="settings-section-title">Sources</div>
-    <div class="settings-footer-note" style="margin-bottom:10px">Up to 9 active news sources at a time.</div>`;
+    <div class="settings-footer-note" style="margin-bottom:10px">Up to 9 active news sources at a time.</div>
+    <div class="settings-section-title">Presets</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+      ${SOURCE_PRESETS.map(preset => `<button class="settings-add-inline" onclick="applySourcePreset('${preset.id}')">${esc(preset.label)}</button>`).join('')}
+    </div>`;
   allSrcs.forEach(src => {
     const isOn = !settingsDraft.disabledSources.has(src.id);
     const isCustom = !!settingsDraft.customSources.find(c => c.id === src.id);
@@ -3312,6 +3356,31 @@ function renderSettingsNewsTab() {
       <button class="settings-add-btn" onclick="settingsAddCustomSource()">Add Source</button>
     </div>`;
   return html;
+}
+
+function ensureDraftSourceAvailable(id) {
+  if (SOURCES.find(s => s.id === id)) return;
+  if (settingsDraft.customSources.find(s => s.id === id)) return;
+  const suggested = SUGGESTED_SOURCES.find(s => s.id === id);
+  if (suggested) settingsDraft.customSources.push(JSON.parse(JSON.stringify(suggested)));
+}
+
+function applySourcePreset(presetId) {
+  if (!settingsDraft) return;
+  const preset = SOURCE_PRESETS.find(p => p.id === presetId);
+  if (!preset) return;
+
+  preset.ids.forEach(ensureDraftSourceAvailable);
+  const allowed = new Set(preset.ids);
+  const allSrcs = [...SOURCES, ...settingsDraft.customSources];
+  settingsDraft.disabledSources = new Set(
+    allSrcs
+      .filter(src => !src.isOffers && !allowed.has(src.id))
+      .map(src => src.id)
+  );
+  const note = document.getElementById('settingsNote');
+  if (note) note.textContent = `Preset selected: ${preset.label}`;
+  renderSettingsBody();
 }
 
 function renderSettingsCommTab() {
