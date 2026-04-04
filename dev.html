@@ -1233,7 +1233,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.16-dev';
+const VERSION = '1.6.17-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -2813,7 +2813,7 @@ function digestPostHTML(p, topics) {
     ${topicsHTML}
     <div class="digest-post-footer">
       <a class="thread-link" href="${esc(permalink)}" target="_blank" rel="noopener" style="color:${threadColor}">Open full thread →</a>
-      <span class="comment-count">💬 ${p.num_comments} comments</span>
+      <span class="comment-count">${p.num_comments} comments</span>
     </div>
   </div>`;
 }
