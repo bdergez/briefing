@@ -1233,7 +1233,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.17-dev';
+const VERSION = '1.6.18-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -2430,7 +2430,7 @@ function renderThreadList(posts) {
                data-post-id="${p.id}"
                onclick="selectThread('${p.id}', '${day}')">
             <span style="flex:1;line-height:1.35">${esc(simplifyThreadTitle(p.title))}</span>
-            <span class="comm-nav-cat-count" style="white-space:nowrap;margin-left:6px">💬${p.num_comments}</span>
+            <span class="comm-nav-cat-count" style="white-space:nowrap;margin-left:6px">${p.num_comments}</span>
           </div>`
         ).join('')
       );
