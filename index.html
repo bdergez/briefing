@@ -1200,7 +1200,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.19';
+const VERSION = '1.6.20';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1829,8 +1829,6 @@ function mergeNextcardArticleDates(articlesItems, sitemapItems) {
 
 async function fetchSource(source) {
   setPillState(source.id, 'loading');
-  debugLog.push({ id: source.id, name: source.name, status: 'loading', msg: 'Fetching…' });
-  updateDebug();
 
   let articles = [];
 
