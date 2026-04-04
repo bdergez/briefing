@@ -297,18 +297,6 @@
 
     .empty-msg { grid-column: 1/-1; text-align: center; padding: 60px; color: var(--subtext); font-size: 15px; }
 
-    /* DEBUG */
-    .debug-box {
-      background: var(--card-bg); border: 1px solid var(--border);
-      border-radius: 10px; padding: 16px; margin-bottom: 20px;
-      font-size: 12px; color: var(--subtext); display: none;
-    }
-    .debug-box h4 { font-size: 13px; color: var(--text); margin-bottom: 8px; }
-    .debug-box ul { list-style: none; display: flex; flex-direction: column; gap: 4px; }
-    .debug-box li { display: flex; align-items: center; gap: 8px; }
-    .debug-ok { color: #22c55e; }
-    .debug-err { color: #ef4444; }
-
     /* ── REDDIT DIGEST ─────────────────────────────────────────── */
     .reddit-digest {
       margin-top: 48px;
@@ -1122,12 +1110,6 @@
       <span class="src-pill all-pill ok" id="pill-all" onclick="selectAllSources()" title="Show all sources">All</span>
     </div>
 
-    <!-- DEBUG (shown if errors) -->
-    <div class="debug-box" id="debugBox">
-      <h4>🔍 Source Load Status</h4>
-      <ul id="debugList"></ul>
-    </div>
-
     <!-- FILTER BAR -->
     <div class="filter-bar">
       <button class="filter-btn all-filter-pill active" onclick="setCategory('all',this)">All</button>
@@ -1218,7 +1200,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.18';
+const VERSION = '1.6.19';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1568,7 +1550,6 @@ let visibleArticleCount = 36;
 const ARTICLE_BATCH_SIZE = 24;
 let activeSources = new Set(); // initialized after loadSettings() in init()
 let sourceState = {}; // { id: 'loading'|'ok'|'error' }
-let debugLog = [];
 let activeToolFilter = 'all';
 let hiddenArticleUrls = new Set();
 let mutedSourcesUntil = {};
@@ -1930,7 +1911,6 @@ async function loadAll() {
   allArticles = [];
   visibleArticleCount = ARTICLE_BATCH_SIZE + 12;
   offersArticles = [];
-  document.getElementById('debugBox').style.display = 'none';
   document.getElementById('refreshBtn').disabled = true;
   document.getElementById('refreshTime').textContent = 'Loading…';
   document.getElementById('offersStrip').style.display = 'none';
@@ -2084,22 +2064,6 @@ function toggleSource(id) {
   updateAllPill();
   visibleArticleCount = ARTICLE_BATCH_SIZE + 12;
   renderCards();
-}
-
-// ─── DEBUG ───────────────────────────────────────────────────────────────
-function updateDebug() {
-  const list = document.getElementById('debugList');
-  list.innerHTML = debugLog.map(d => `
-    <li>
-      <span class="${d.status === 'ok' ? 'debug-ok' : d.status === 'error' ? 'debug-err' : ''}">${d.status === 'ok' ? '✓' : d.status === 'error' ? '✗' : '⏳'}</span>
-      <strong>${d.name}</strong> — ${d.msg}
-    </li>`).join('');
-}
-
-function updateDebugEntry(id, status, msg) {
-  const entry = debugLog.find(d => d.id === id);
-  if (entry) { entry.status = status; entry.msg = msg; }
-  updateDebug();
 }
 
 // ─── FILTER / RENDER ─────────────────────────────────────────────────────
