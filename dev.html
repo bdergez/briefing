@@ -160,6 +160,28 @@
     .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
     .filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
+    .tools-filter-bar {
+      display: flex; align-items: center; gap: 8px;
+      margin: 12px 0 16px; flex-wrap: wrap;
+    }
+    .tool-filter-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 12px; border-radius: 20px;
+      min-height: 30px;
+      border: 2px solid transparent;
+      background: var(--card-bg); color: var(--text);
+      font-size: 12px; font-weight: 600; cursor: pointer;
+      transition: all 0.2s;
+      user-select: none;
+      justify-content: center;
+      line-height: 1;
+      font-family: inherit;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    .tool-filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .tool-filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
     .search-wrap { margin-left: auto; position: relative; }
     .search-wrap input {
       padding: 8px 14px 8px 36px;
@@ -781,6 +803,7 @@
 
       /* Category filter: hidden on mobile */
       .filter-btn { display: none; }
+      .tool-filter-btn { display: inline-flex; }
 
       /* Keep search bar, full width */
       .filter-bar {
@@ -1123,6 +1146,13 @@
       <h4>🧰 Tools</h4>
       <p style="margin:0;color:var(--subtext);font-size:13px;line-height:1.5">Useful maps, calculators, and lookup pages that are better opened directly than squeezed into the feed.</p>
     </div>
+    <div class="tools-filter-bar" id="toolsFilterBar">
+      <button class="tool-filter-btn active" onclick="setToolFilter('all', this)">All</button>
+      <button class="tool-filter-btn" onclick="setToolFilter('Dining', this)">Dining</button>
+      <button class="tool-filter-btn" onclick="setToolFilter('Transfer', this)">Transfer</button>
+      <button class="tool-filter-btn" onclick="setToolFilter('Hotels', this)">Hotels</button>
+      <button class="tool-filter-btn" onclick="setToolFilter('Calculator', this)">Calculators</button>
+    </div>
     <div class="grid" id="toolsGrid"></div>
   </div><!-- /panel-tools -->
   <!-- ══ PANEL: REDDIT DIGEST ══ -->
@@ -1161,7 +1191,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.5-dev';
+const VERSION = '1.6.6-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1512,6 +1542,7 @@ const ARTICLE_BATCH_SIZE = 24;
 let activeSources = new Set(); // initialized after loadSettings() in init()
 let sourceState = {}; // { id: 'loading'|'ok'|'error' }
 let debugLog = [];
+let activeToolFilter = 'all';
 
 // ── Churning two-panel state ──────────────────────────────────────────────
 let digestPostsData = [];       // all fetched posts
@@ -2126,6 +2157,20 @@ function switchTab(name) {
   }
 }
 
+function toolMatchesFilter(tool, filter) {
+  if (filter === 'all') return true;
+  const haystack = [tool.name, tool.desc, ...(tool.tags || [])].join(' ').toLowerCase();
+  if (filter === 'Calculator') return haystack.includes('calculator');
+  return haystack.includes(filter.toLowerCase());
+}
+
+function setToolFilter(filter, btn) {
+  activeToolFilter = filter;
+  document.querySelectorAll('#toolsFilterBar .tool-filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderTools();
+}
+
 function renderTools() {
   const grid = document.getElementById('toolsGrid');
   if (!grid) return;
@@ -2137,7 +2182,13 @@ function renderTools() {
 
   const orderedTools = Object.entries(groups)
     .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]))
-    .flatMap(([, items]) => items);
+    .flatMap(([, items]) => items)
+    .filter(tool => toolMatchesFilter(tool, activeToolFilter));
+
+  if (!orderedTools.length) {
+    grid.innerHTML = `<div class="empty-msg">No tools match this filter.</div>`;
+    return;
+  }
 
   grid.innerHTML = orderedTools.map(tool => {
     const tags = (tool.tags || []).map(tag => `<span class="category-tag">${esc(tag)}</span>`).join('');
