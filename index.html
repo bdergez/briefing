@@ -1218,7 +1218,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.12';
+const VERSION = '1.6.14';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1866,7 +1866,6 @@ async function fetchSource(source) {
       }
       if (items.length >= 5) {
         setPillState(source.id, 'ok', items.length);
-        updateDebugEntry(source.id, 'ok', `${items.length} articles loaded`);
         return items;
       }
     }
@@ -1877,17 +1876,14 @@ async function fetchSource(source) {
     const xmlText = await fetchTextWithProxy(source.sitemap);
     if (!xmlText) {
       setPillState(source.id, 'error');
-      updateDebugEntry(source.id, 'error', 'All proxies failed');
       return [];
     }
     const items = parseSitemap(xmlText, source);
     if (items.length === 0) {
-      setPillState(source.id, 'error');
-      updateDebugEntry(source.id, 'error', 'Fetched but 0 articles parsed');
+      setPillState(source.id, 'ok', 0);
       return [];
     }
     setPillState(source.id, 'ok', items.length);
-    updateDebugEntry(source.id, 'ok', `${items.length} articles loaded`);
     return items;
   }
 
@@ -1909,7 +1905,6 @@ async function fetchSource(source) {
     const xml = await fetchWithProxy(source.rss);
     if (!xml) {
       setPillState(source.id, 'error');
-      updateDebugEntry(source.id, 'error', 'All proxies failed');
       return [];
     }
     articles = parseRSS(xml, source);
@@ -1922,13 +1917,11 @@ async function fetchSource(source) {
   }
 
   if (articles.length === 0) {
-    setPillState(source.id, 'error');
-    updateDebugEntry(source.id, 'error', 'Fetched but 0 articles parsed');
+    setPillState(source.id, 'ok', 0);
     return [];
   }
 
   setPillState(source.id, 'ok', articles.length);
-  updateDebugEntry(source.id, 'ok', `${articles.length} articles loaded`);
   return articles;
 }
 
@@ -1937,7 +1930,6 @@ async function loadAll() {
   allArticles = [];
   visibleArticleCount = ARTICLE_BATCH_SIZE + 12;
   offersArticles = [];
-  debugLog = [];
   document.getElementById('debugBox').style.display = 'none';
   document.getElementById('refreshBtn').disabled = true;
   document.getElementById('refreshTime').textContent = 'Loading…';
@@ -1978,12 +1970,6 @@ async function loadAll() {
   document.getElementById('refreshTime').textContent = `v${VERSION} · Updated ${new Date().toLocaleTimeString()}`;
   document.getElementById('refreshBtn').disabled = false;
   syncNewsPillWidths();
-
-  const hasErrors = debugLog.some(d => d.status === 'error');
-  if (hasErrors) {
-    document.getElementById('debugBox').style.display = 'block';
-    updateDebug();
-  }
 }
 
 function getActiveTabName() {
