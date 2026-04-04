@@ -1218,7 +1218,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.15';
+const VERSION = '1.6.16';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -2117,6 +2117,9 @@ function showMoreCards() {
 }
 
 function syncNewsPillWidths() {
+  const panel = document.getElementById('panel-news');
+  if (!panel || panel.style.display === 'none') return;
+
   const sourcePills = Array.from(document.querySelectorAll('#panel-news .src-pill[data-src-id]'));
   const categoryPills = Array.from(document.querySelectorAll('#panel-news .filter-btn:not(.all-filter-pill)'));
   const allPills = [
@@ -2160,6 +2163,9 @@ function switchTab(name) {
     document.getElementById(`panel-${t}`).style.display = name === t ? '' : 'none';
     document.getElementById(`tab-${t}`).classList.toggle('active', name === t);
   });
+  if (name === 'news') {
+    requestAnimationFrame(syncNewsPillWidths);
+  }
   if (name === 'reddit' && !redditDigestLoaded) {
     redditDigestLoaded = true;
     loadRedditDigest();
