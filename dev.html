@@ -1170,6 +1170,7 @@
       <button class="tool-filter-btn" onclick="setToolFilter('Dining', this)">Dining</button>
       <button class="tool-filter-btn" onclick="setToolFilter('Transfer', this)">Transfer</button>
       <button class="tool-filter-btn" onclick="setToolFilter('Hotels', this)">Hotels</button>
+      <button class="tool-filter-btn" onclick="setToolFilter('Cards', this)">Cards</button>
       <button class="tool-filter-btn" onclick="setToolFilter('Calculator', this)">Calculators</button>
     </div>
     <div class="grid" id="toolsGrid"></div>
@@ -1210,7 +1211,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.8-dev';
+const VERSION = '1.6.9-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -2180,9 +2181,13 @@ function switchTab(name) {
 
 function toolMatchesFilter(tool, filter) {
   if (filter === 'all') return true;
-  const haystack = [tool.name, tool.desc, ...(tool.tags || [])].join(' ').toLowerCase();
-  if (filter === 'Calculator') return haystack.includes('calculator');
-  return haystack.includes(filter.toLowerCase());
+  const tags = new Set((tool.tags || []).map(tag => tag.toLowerCase()));
+  if (filter === 'Calculator') return tags.has('calculator');
+  if (filter === 'Cards') return tags.has('cards') || tags.has('fees');
+  if (filter === 'Hotels') return tags.has('hotels');
+  if (filter === 'Dining') return tags.has('dining');
+  if (filter === 'Transfer') return tags.has('transfer');
+  return false;
 }
 
 function setToolFilter(filter, btn) {
