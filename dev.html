@@ -1233,7 +1233,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.14-dev';
+const VERSION = '1.6.15-dev';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1954,8 +1954,6 @@ async function loadAll() {
       <div class="loading-text" id="loadingText">Fetching articles from ${getEffectiveNewsSources().length} sources…</div>
       <div class="loading-sub">Using RSS feeds with CORS proxy — may take 10–20 seconds</div>
     </div>`;
-  document.getElementById('digestGrid').innerHTML = `<div class="digest-loading"><div class="spinner"></div>Fetching r/churning threads…</div>`;
-  document.getElementById('digestMeta').textContent = 'Loading…';
 
   buildPills();
 
