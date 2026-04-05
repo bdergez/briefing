@@ -17,7 +17,6 @@ cp "$ROOT/icon.svg" "$ROOT/docs/icon.svg"
 cp "$ROOT/icon-dev.svg" "$ROOT/docs/icon-dev.svg"
 cp "$ROOT/service-worker.js" "$ROOT/docs/service-worker.js"
 cp "$ROOT/homes.html" "$ROOT/docs/homes.html"
-cp "$ROOT/news-dashboard.html" "$ROOT/docs/news-dashboard.html"
 cp "$ROOT/data/house-markets.json" "$ROOT/docs/data/house-markets.json"
 
 cp "$ROOT/homes/index.html" "$ROOT/docs/homes/index.html"

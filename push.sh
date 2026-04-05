@@ -16,7 +16,7 @@ else
 fi
 
 git add \
-  index.html dev.html news-dashboard.html \
+  index.html dev.html \
   manifest.json manifest-dev.json \
   icon.svg icon-dev.svg \
   service-worker.js homes.html \
