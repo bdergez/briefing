@@ -13,6 +13,9 @@
 **Legacy Homes URL:** [https://bdergez.github.io/briefing/homes.html](https://bdergez.github.io/briefing/homes.html)  
 This legacy URL should remain as a redirect to `/homes/`.
 
+**GitHub Pages publish root:** `docs/`  
+Only public web assets should live in the published Pages root.
+
 ---
 
 ## What Exists Now
@@ -87,6 +90,8 @@ Current intended set:
 | --- | --- |
 | [dev.html](/Users/bedergez/Code/Codex/Briefing_claude/dev.html) | Main app development file |
 | [index.html](/Users/bedergez/Code/Codex/Briefing_claude/index.html) | Main app production file |
+| [docs/dev.html](/Users/bedergez/Code/Codex/Briefing_claude/docs/dev.html) | Published dev copy for GitHub Pages |
+| [docs/index.html](/Users/bedergez/Code/Codex/Briefing_claude/docs/index.html) | Published prod copy for GitHub Pages |
 | [manifest-dev.json](/Users/bedergez/Code/Codex/Briefing_claude/manifest-dev.json) | Main app dev manifest |
 | [manifest.json](/Users/bedergez/Code/Codex/Briefing_claude/manifest.json) | Main app prod manifest |
 | [icon-dev.svg](/Users/bedergez/Code/Codex/Briefing_claude/icon-dev.svg) | Main app dev icon |
@@ -101,8 +106,16 @@ After Berto confirms the dev preview looks right:
 - promote the approved change into [index.html](/Users/bedergez/Code/Codex/Briefing_claude/index.html)
 - commit
 - push to `main`
+- sync public files into [docs/](/Users/bedergez/Code/Codex/Briefing_claude/docs) before deploy
 
 Do not promote main-app dev changes to prod without confirmation.
+
+### GitHub Pages Publishing
+
+- GitHub Pages should publish from `main /docs`
+- repo-internal files should stay outside `docs/`
+- before pushing deployable changes, sync the public files with:
+  - [scripts/sync_public_to_docs.sh](/Users/bedergez/Code/Codex/Briefing_claude/scripts/sync_public_to_docs.sh)
 
 ### Dev / Prod Rules
 
@@ -147,6 +160,7 @@ Homes Dash is a separate housing/listings watchlist app.
 | File | Purpose |
 | --- | --- |
 | [homes/index.html](/Users/bedergez/Code/Codex/Briefing_claude/homes/index.html) | Standalone Homes app |
+| [docs/homes/index.html](/Users/bedergez/Code/Codex/Briefing_claude/docs/homes/index.html) | Published Homes app copy |
 | [homes/manifest.json](/Users/bedergez/Code/Codex/Briefing_claude/homes/manifest.json) | Homes app manifest |
 | [homes/service-worker.js](/Users/bedergez/Code/Codex/Briefing_claude/homes/service-worker.js) | Homes app service worker |
 | [homes/icon.svg](/Users/bedergez/Code/Codex/Briefing_claude/homes/icon.svg) | Homes app icon |
@@ -247,6 +261,8 @@ Do not expose:
 - commit and push changes after meaningful work is complete
 - GitHub Pages is the web host, so pushes are required before Berto can test live behavior
 - keep working tree clean when possible
+- the public publish tree is [docs/](/Users/bedergez/Code/Codex/Briefing_claude/docs)
+- repo-only files should not be added to the published web root
 
 ### Ignore Rules
 Important ignored items:

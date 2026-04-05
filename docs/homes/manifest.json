@@ -1,0 +1,17 @@
+{
+  "name": "Homes Dash",
+  "short_name": "Homes",
+  "start_url": "/briefing/homes/",
+  "scope": "/briefing/homes/",
+  "display": "standalone",
+  "background_color": "#f0f2f5",
+  "theme_color": "#c0392b",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

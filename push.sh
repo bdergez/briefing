@@ -1,6 +1,10 @@
 #!/bin/bash
-cd "/Users/bedergez/Code/Claude Code/Briefing"
+set -euo pipefail
+
+cd "/Users/bedergez/Code/Codex/Briefing_claude"
 rm -f .git/index.lock
+
+./scripts/sync_public_to_docs.sh
 
 # Use argument if provided, otherwise prompt
 if [ -n "$1" ]; then
@@ -11,7 +15,15 @@ else
   msg=${msg:-"Update dashboard"}
 fi
 
-git add index.html news-dashboard.html dev.html manifest.json manifest-dev.json service-worker.js icon.svg icon-dev.svg push.sh PROJECT.md
+git add \
+  index.html dev.html news-dashboard.html \
+  manifest.json manifest-dev.json \
+  icon.svg icon-dev.svg \
+  service-worker.js homes.html \
+  data/house-markets.json \
+  homes/index.html homes/manifest.json homes/icon.svg homes/service-worker.js homes/data/house-markets.json \
+  docs \
+  push.sh PROJECT.md scripts/sync_public_to_docs.sh
 git commit -m "$msg"
 git push
 echo ""
