@@ -39,8 +39,8 @@ The old “Homes inside Briefing” setup is no longer the intended architecture
 
 ## Current Versions
 
-- `dev.html`: `1.6.14-dev`
-- `index.html`: `1.6.14`
+- `dev.html`: `1.6.20-dev`
+- `index.html`: `1.6.20`
 - `homes/index.html`: `homes-1.1.1`
 
 Update these when appropriate as part of changes.
