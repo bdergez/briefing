@@ -21,7 +21,7 @@ git add \
   icon.svg icon-dev.svg \
   service-worker.js \
   docs \
-  push.sh PROJECT.md scripts/sync_public_to_docs.sh
+  push.sh README.md scripts/sync_public_to_docs.sh
 git commit -m "$msg"
 git push
 echo ""
