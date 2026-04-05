@@ -19,9 +19,7 @@ git add \
   index.html dev.html \
   manifest.json manifest-dev.json \
   icon.svg icon-dev.svg \
-  service-worker.js homes.html \
-  data/house-markets.json \
-  homes/index.html homes/manifest.json homes/icon.svg homes/service-worker.js homes/data/house-markets.json \
+  service-worker.js \
   docs \
   push.sh PROJECT.md scripts/sync_public_to_docs.sh
 git commit -m "$msg"

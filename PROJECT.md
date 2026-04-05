@@ -1,4 +1,4 @@
-# Briefing / Homes — Project Notes
+# Briefing — Project Notes
 
 > This is the current operating document for the repo.
 > Read it at the start of a session before making changes.
@@ -9,10 +9,6 @@
 **Main app prod:** [https://bdergez.github.io/briefing/](https://bdergez.github.io/briefing/)  
 **Main app dev:** [https://bdergez.github.io/briefing/dev.html](https://bdergez.github.io/briefing/dev.html)
 
-**Homes app prod:** [https://bdergez.github.io/briefing/homes/](https://bdergez.github.io/briefing/homes/)  
-**Legacy Homes URL:** [https://bdergez.github.io/briefing/homes.html](https://bdergez.github.io/briefing/homes.html)  
-This legacy URL should remain as a redirect to `/homes/`.
-
 **GitHub Pages publish root:** `docs/`  
 Only public web assets should live in the published Pages root.
 
@@ -20,7 +16,7 @@ Only public web assets should live in the published Pages root.
 
 ## What Exists Now
 
-This repo now contains **two related but separate web apps**:
+This repo now contains **one web app**:
 
 1. **Briefing**
    - Main Points & Miles dashboard
@@ -31,20 +27,12 @@ This repo now contains **two related but separate web apps**:
      - `🌐 Reddit`
      - `🧰 Tools`
 
-2. **Homes Dash**
-   - Separate standalone housing/listings app
-   - Lives under `/homes/`
-   - No longer part of the main app tab flow
-
-The old “Homes inside Briefing” setup is no longer the intended architecture.
-
 ---
 
 ## Current Versions
 
 - `dev.html`: `1.6.20-dev`
 - `index.html`: `1.6.20`
-- `homes/index.html`: `homes-1.1.1`
 
 Update these when appropriate as part of changes.
 
@@ -53,7 +41,7 @@ Update these when appropriate as part of changes.
 ## Main App Architecture
 
 ### Purpose
-The main app is a personal points / miles / travel dashboard.
+The app is a personal points / miles / travel dashboard.
 
 ### Tabs
 - `💳 Points`
@@ -134,124 +122,9 @@ Do not promote main-app dev changes to prod without confirmation.
 - `dev` uses the current numeric prod version plus `-dev`
 - each dev-only change increments the patch version in `dev`
 - when a dev build is approved, `prod` jumps directly to that same numeric version
-  - example: `1.6.14-dev` promotes to `1.6.14`
+  - example: `1.6.20-dev` promotes to `1.6.20`
 - when the minor version changes, the patch version resets
   - example: `1.5.x` → `1.6.0`
-
----
-
-## Homes App Architecture
-
-### Purpose
-Homes Dash is a separate housing/listings watchlist app.
-
-### Important Product Rules
-- Homes is **standalone**
-- Homes is **not** part of the main app navigation anymore
-- Homes changes can go directly to production unless Berto asks for a separate dev path
-- only **real listing data** should be shown
-- currently live imported markets are:
-  - `Miami Area`
-  - `Miami Beach`
-- other configured markets can exist as optional locations, but should show empty state unless real data exists
-
-### Homes Files
-
-| File | Purpose |
-| --- | --- |
-| [homes/index.html](/Users/bedergez/Code/Codex/Briefing_claude/homes/index.html) | Standalone Homes app |
-| [docs/homes/index.html](/Users/bedergez/Code/Codex/Briefing_claude/docs/homes/index.html) | Published Homes app copy |
-| [homes/manifest.json](/Users/bedergez/Code/Codex/Briefing_claude/homes/manifest.json) | Homes app manifest |
-| [homes/service-worker.js](/Users/bedergez/Code/Codex/Briefing_claude/homes/service-worker.js) | Homes app service worker |
-| [homes/icon.svg](/Users/bedergez/Code/Codex/Briefing_claude/homes/icon.svg) | Homes app icon |
-| [homes/data/house-markets.json](/Users/bedergez/Code/Codex/Briefing_claude/homes/data/house-markets.json) | Homes market metadata / defaults |
-| [homes.html](/Users/bedergez/Code/Codex/Briefing_claude/homes.html) | Redirect stub to `/homes/` |
-
-### Homes State
-
-The standalone Homes app has its own localStorage keys:
-- `homesDashTheme`
-- `homesDashLastVisit`
-- `homesDashDisabledListings`
-- `homesDashCustomListings`
-
-These should stay separate from the main app.
-
-### Homes Data Flow
-
-The browser does **not** call RentCast directly.
-
-Current flow:
-
-1. Browser opens [homes/index.html](/Users/bedergez/Code/Codex/Briefing_claude/homes/index.html)
-2. Homes app fetches markets + listing cards from **Supabase**
-3. Listings render from Supabase data
-4. RentCast is only used by the **local importer script**
-
-That means page refreshes do **not** consume RentCast API quota.
-
-### Homes Backend / Data
-
-- Backend/data host: **Supabase**
-- Upstream source for imported live listings: **RentCast**
-- Current importer script:
-  - [scripts/import_rentcast_miami.py](/Users/bedergez/Code/Codex/Briefing_claude/scripts/import_rentcast_miami.py)
-
-### Supabase
-
-Current important tables/views:
-- `markets`
-- `listings`
-- `listing_markets`
-- `listing_cards`
-
-Frontend read path:
-- uses Supabase **publishable** key
-
-Importer write path:
-- uses Supabase **secret/service** credential stored locally only
-
-### Homes Market / Source Rules
-
-- default active markets should currently be Miami-focused
-- Boston and Stamford are optional, not default
-- live imports should be conservative because RentCast quota is limited
-
-### Homes Link Rules
-
-For listing actions:
-- prefer Zillow-style direct/search link behavior
-- use Google fallback if needed
-- do not show fake provider links
-
----
-
-## Secrets / Security
-
-Never commit secrets.
-
-### Local Secret File
-Use:
-- [`.env.local`](/Users/bedergez/Code/Codex/Briefing_claude/.env.local)
-
-It is ignored by Git and should stay that way.
-
-Expected keys:
-- `RENTCAST_API_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
-
-### Allowed in Frontend
-These are acceptable in frontend code:
-- Supabase publishable key
-
-### Not Allowed in Frontend
-Do not expose:
-- Supabase secret/service key
-- RentCast API key
-
-### Git
-- remote should stay clean
-- do **not** embed GitHub tokens in `.git/config`
 
 ---
 
@@ -272,9 +145,8 @@ Important ignored items:
 - `.DS_Store`
 
 ### Editing Rules
-- prefer editing the real active file for the target app
-- do not leave fake fallback content live when the product expects real data
-- keep Homes and Briefing decoupled
+- prefer editing the real active source file, not the published `docs/` copy
+- keep `docs/` as the public output tree
 
 ---
 
@@ -286,7 +158,7 @@ Important ignored items:
 - `Reddit` should stay curated and focused
 - `Tools` should stay a utility shelf, not a pseudo-feed
 - source failures on the Points page should be quiet:
-  - failed source load = `X`
+  - failed source load = `✗`
   - real empty source = `0`
   - do not show a noisy error box for source failures
 
@@ -312,42 +184,19 @@ Important ignored items:
   - `Cards`
   - `Calculators`
 
-### Homes
-- separate product surface
-- honest empty states are better than fake listings
-- only real imported listing data should appear
-- current live emphasis is Miami + Miami Beach
-
 ### Nextcard
-- in main dev app, Nextcard currently uses the sitemap parser
-- title-only cards are preferred over fake slug-based previews
+- Nextcard currently uses the stable articles-page + sitemap-date approach
 
 ---
 
-## Known Issues / Follow-Up
-
-### Main App
-- Nextcard preview quality is limited because sitemap mode is the stable option
-
-### Homes App
-- [homes/index.html](/Users/bedergez/Code/Codex/Briefing_claude/homes/index.html) is much cleaner now, but may still contain some old helper code that can be pruned later
-- importer automation is intentionally conservative because of RentCast quota limits
-
----
-
-## Working Rules For Claude
+## Working Rules
 
 At the start of a session:
 1. read this file
-2. identify whether the task is for:
-   - main Briefing app
-   - standalone Homes app
-3. work in the correct file set
+2. assume the task is for the main Briefing app unless clearly stated otherwise
+3. work in the source files, then sync to `docs/` for deployment
 
 If task is for Briefing:
 - usually edit [dev.html](/Users/bedergez/Code/Codex/Briefing_claude/dev.html) first
 
-If task is for Homes:
-- edit [homes/index.html](/Users/bedergez/Code/Codex/Briefing_claude/homes/index.html) directly unless told otherwise
-
-Always prefer the current architecture over older integrated assumptions.
+Always prefer the current architecture over older assumptions.
