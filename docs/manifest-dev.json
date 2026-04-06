@@ -3,7 +3,7 @@
   "short_name": "P&M DEV",
   "description": "DEV version — your personalized rewards & travel news hub",
   "start_url": "/briefing/dev.html",
-  "scope": "/briefing/dev.html",
+  "scope": "/briefing/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#c0392b",
