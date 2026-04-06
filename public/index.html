@@ -103,10 +103,6 @@
       overflow: visible;
     }
 
-    #panel-news {
-      display: block;
-    }
-
     .news-fixed-chrome {
       flex: 0 0 auto;
       padding-bottom: 12px;
@@ -497,7 +493,6 @@
     /* ── COMMUNITIES TAB ────────────────────────────────────────── */
     .communities-wrap { display: flex; flex-direction: column; gap: 32px; }
 
-    .community-category {}
     .category-header {
       display: flex; align-items: center; justify-content: space-between;
       padding: 10px 0; margin-bottom: 14px;
@@ -1149,7 +1144,7 @@
   </div><!-- /panel-news -->
   <!-- ══ PANEL: TOOLS ══ -->
   <div id="panel-tools" style="display:none">
-    <div class="debug-box" style="display:block">
+    <div style="display:block">
       <h4>🧰 Tools</h4>
       <p style="margin:0;color:var(--subtext);font-size:13px;line-height:1.5">Useful maps, calculators, and lookup pages that are better opened directly than squeezed into the feed.</p>
     </div>
@@ -1199,7 +1194,8 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.30';
+const VERSION = '1.6.31';
+const MAX_ACTIVE_NEWS_SOURCES = 9;
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1572,6 +1568,8 @@ let communitiesRefreshTimer = null; // background 60-min auto-refresh timer
 let commSearchQuery = ''; // current filter string in communities nav panel
 const SUBREDDIT_FETCH_BATCH_SIZE = 3;
 const SUBREDDIT_FETCH_BATCH_DELAY_MS = 250;
+let lastNewsPillWidth = '';
+let lastAllPillWidth = '';
 
 
 // ── Offers state ─────────────────────────────────────────────────────────
@@ -2085,15 +2083,17 @@ function syncNewsPillWidths() {
   const panel = document.getElementById('panel-news');
   if (!panel || panel.style.display === 'none') return;
 
-  const sourcePills = Array.from(document.querySelectorAll('#panel-news .src-pill[data-src-id]'));
-  const categoryPills = Array.from(document.querySelectorAll('#panel-news .filter-btn:not(.all-filter-pill)'));
+  const sourcePills = Array.from(panel.querySelectorAll('.src-pill[data-src-id]'));
+  const categoryPills = Array.from(panel.querySelectorAll('.filter-btn:not(.all-filter-pill)'));
   const allPills = [
     document.getElementById('pill-all'),
-    document.querySelector('#panel-news .all-filter-pill')
+    panel.querySelector('.all-filter-pill')
   ].filter(Boolean);
 
   if (!isDesktop()) {
     [...sourcePills, ...categoryPills, ...allPills].forEach(pill => { pill.style.width = ''; });
+    lastNewsPillWidth = '';
+    lastAllPillWidth = '';
     return;
   }
 
@@ -2104,8 +2104,16 @@ function syncNewsPillWidths() {
   const allWidth = allPills.length
     ? Math.max(...allPills.map(pill => Math.ceil(pill.getBoundingClientRect().width)))
     : 0;
-  [...sourcePills, ...categoryPills].forEach(pill => { pill.style.width = `${maxWidth}px`; });
-  allPills.forEach(pill => { pill.style.width = `${allWidth}px`; });
+  const newsWidth = `${maxWidth}px`;
+  const allWidthPx = `${allWidth}px`;
+  if (newsWidth !== lastNewsPillWidth) {
+    [...sourcePills, ...categoryPills].forEach(pill => { pill.style.width = newsWidth; });
+    lastNewsPillWidth = newsWidth;
+  }
+  if (allWidthPx !== lastAllPillWidth) {
+    allPills.forEach(pill => { pill.style.width = allWidthPx; });
+    lastAllPillWidth = allWidthPx;
+  }
 }
 
 function esc(s) {
@@ -3068,6 +3076,11 @@ function scheduleCommunitiesRefresh() {
   }, 60 * 60 * 1000); // 60 minutes
 }
 
+function clearCommunitiesRefresh() {
+  if (communitiesRefreshTimer) clearTimeout(communitiesRefreshTimer);
+  communitiesRefreshTimer = null;
+}
+
 function toggleCategory(ci) {
   const body    = document.getElementById(`cat-body-${ci}`);
   const toggle  = document.getElementById(`cat-toggle-${ci}`);
@@ -3461,7 +3474,7 @@ function renderSettingsNewsTab() {
   const matchedPreset = getMatchingSourcePreset();
 
   let html = `<div class="settings-section-title">Sources</div>
-    <div class="settings-footer-note" style="margin-bottom:10px">Active now: ${activeCount}/9 news sources${matchedPreset ? ` · Preset: ${esc(matchedPreset.label)}` : ''}</div>
+    <div class="settings-footer-note" style="margin-bottom:10px">Active now: ${activeCount}/${MAX_ACTIVE_NEWS_SOURCES} news sources${matchedPreset ? ` · Preset: ${esc(matchedPreset.label)}` : ''}</div>
     <div class="settings-section-title">Presets</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
       ${SOURCE_PRESETS.map(preset => `<button class="settings-add-inline" onclick="applySourcePreset('${preset.id}')">${esc(preset.label)} (${preset.ids.length})</button>`).join('')}
@@ -3592,7 +3605,7 @@ function settingsAddSuggested(id) {
   if (!src) return;
   if (sourceExistsInDraft(src)) { alert('That source is already included.'); return; }
   settingsDraft.customSources.push(src);
-  if (getDraftActiveNewsSourceCount() >= 9) settingsDraft.disabledSources.add(src.id);
+  if (getDraftActiveNewsSourceCount() >= MAX_ACTIVE_NEWS_SOURCES) settingsDraft.disabledSources.add(src.id);
   renderSettingsBody();
 }
 
@@ -3603,8 +3616,8 @@ function getDraftActiveNewsSourceCount() {
 
 function toggleDraftSource(id) {
   if (settingsDraft.disabledSources.has(id)) {
-    if (getDraftActiveNewsSourceCount() >= 9) {
-      alert('You can keep up to 9 active news sources.');
+    if (getDraftActiveNewsSourceCount() >= MAX_ACTIVE_NEWS_SOURCES) {
+      alert(`You can keep up to ${MAX_ACTIVE_NEWS_SOURCES} active news sources.`);
       return;
     }
     settingsDraft.disabledSources.delete(id);
@@ -3642,7 +3655,7 @@ function settingsAddCustomSource() {
   const palette = ['#e53e3e','#2b6cb0','#2f855a','#6b46c1','#d97706','#0891b2','#db2777','#ea580c'];
   const color = palette[settingsDraft.customSources.length % palette.length];
   settingsDraft.customSources.push({ id, name, short, color, emoji: '📰', url: rss, rss });
-  if (getDraftActiveNewsSourceCount() >= 9) settingsDraft.disabledSources.add(id);
+  if (getDraftActiveNewsSourceCount() >= MAX_ACTIVE_NEWS_SOURCES) settingsDraft.disabledSources.add(id);
   renderSettingsBody();
 }
 
@@ -3685,6 +3698,14 @@ function settingsAddCustomSub() {
     if (resizeSyncTimer) clearTimeout(resizeSyncTimer);
     resizeSyncTimer = setTimeout(syncNewsPillWidths, 100);
   });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      clearCommunitiesRefresh();
+    } else if (communitiesLoaded) {
+      scheduleCommunitiesRefresh();
+    }
+  });
+  window.addEventListener('beforeunload', clearCommunitiesRefresh);
   loadAll();
   scheduleAutoRefresh();
 })();
