@@ -3218,6 +3218,7 @@ function muteSourceToday(sourceId) {
 // ─── AUTO-REFRESH ─────────────────────────────────────────────────────────
 let autoRefreshTimer = null;
 let searchRenderTimer = null;
+let resizeSyncTimer = null;
 
 function scheduleAutoRefresh() {
   if (autoRefreshTimer) clearTimeout(autoRefreshTimer);
@@ -3654,7 +3655,10 @@ function settingsAddCustomSub() {
   // 5. Load content and start auto-refresh
   renderTools();
   syncNewsPillWidths();
-  window.addEventListener('resize', syncNewsPillWidths);
+  window.addEventListener('resize', () => {
+    if (resizeSyncTimer) clearTimeout(resizeSyncTimer);
+    resizeSyncTimer = setTimeout(syncNewsPillWidths, 100);
+  });
   loadAll();
   scheduleAutoRefresh();
 })();
