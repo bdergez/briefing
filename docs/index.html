@@ -1199,7 +1199,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.25';
+const VERSION = '1.6.26';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1930,18 +1930,19 @@ async function loadAll() {
         return;
       }
       allArticles.push(...articles);
-      allArticles.sort((a, b) => {
-        if (a.date && b.date) return b.date - a.date;
-        if (a.date) return -1;
-        if (b.date) return 1;
-        return 0;
-      });
-      renderCards();
     })
   );
 
   // Wait for all blog sources to finish
   await Promise.allSettled(sourcePromises);
+
+  allArticles.sort((a, b) => {
+    if (a.date && b.date) return b.date - a.date;
+    if (a.date) return -1;
+    if (b.date) return 1;
+    return 0;
+  });
+  renderCards();
 
   document.getElementById('refreshTime').textContent = `v${VERSION} · Updated ${new Date().toLocaleTimeString()}`;
   document.getElementById('refreshBtn').disabled = false;
