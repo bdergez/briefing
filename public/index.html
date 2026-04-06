@@ -65,11 +65,36 @@
       top: 0;
       z-index: 100;
       box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+      overflow: hidden;
+      isolation: isolate;
+    }
+    header::before,
+    header::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background-repeat: repeat-x;
+      background-image: url("plane-tile.png");
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: crisp-edges;
+    }
+    header::before {
+      opacity: 0.42;
+      background-size: 84px 20px;
+      background-position: 0 10px;
+    }
+    header::after {
+      opacity: 0.22;
+      background-size: 84px 20px;
+      background-position: 42px 36px;
     }
     .logo { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
     .logo span { color: #818cf8; }
     .tagline { font-size: 12px; opacity: 0.5; margin-top: 2px; }
     .header-right { display: flex; align-items: center; gap: 12px; }
+    header > * { position: relative; z-index: 1; }
 
     .btn {
       display: inline-flex; align-items: center; gap: 6px;
@@ -779,6 +804,16 @@
       header {
         padding: 0 16px;
         height: 54px;
+      }
+      header::before {
+        opacity: 0.38;
+        background-size: 62px 16px;
+        background-position: 0 10px;
+      }
+      header::after {
+        opacity: 0.2;
+        background-size: 62px 16px;
+        background-position: 31px 28px;
       }
       .logo { font-size: 18px; }
       .tagline { display: none; }
