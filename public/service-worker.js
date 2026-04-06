@@ -1,9 +1,9 @@
-const CACHE = 'pmd-v2';
+const CACHE = 'pmd-v3';
 const SHELL = [
-  '/briefing/',
-  '/briefing/index.html',
-  '/briefing/manifest.json',
-  '/briefing/icon.svg',
+  '/',
+  '/index.html',
+  '/manifest.json',
+  '/icon.svg',
 ];
 
 // Install: cache the app shell
