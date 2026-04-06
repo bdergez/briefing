@@ -14,5 +14,5 @@ Main sections:
 
 Repository notes:
 - deployable app assets live in `public/`
-- `docs/` is kept temporarily as a mirrored fallback during the hosting migration
+- Cloudflare serves the app directly from the `public/` asset tree
 - internal workflow notes are kept out of the public repo and deployed site

@@ -4,8 +4,6 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT"
 
-bash ./scripts/sync_public_to_docs.sh
-
 # Use argument if provided, otherwise prompt
 if [ "$#" -gt 0 ] && [ -n "${1-}" ]; then
   msg="$1"
@@ -17,9 +15,7 @@ fi
 
 git add \
   public \
-  docs \
   push.sh README.md wrangler.toml \
-  scripts/sync_public_to_docs.sh \
   .gitignore
 git commit -m "$msg"
 git push
