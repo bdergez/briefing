@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT"
 
-./scripts/sync_public_to_docs.sh
+bash ./scripts/sync_public_to_docs.sh
 
 # Use argument if provided, otherwise prompt
 if [ "$#" -gt 0 ] && [ -n "${1-}" ]; then
@@ -16,15 +16,14 @@ else
 fi
 
 git add \
-  index.html dev.html \
-  manifest.json manifest-dev.json \
-  icon.svg icon-dev.svg \
-  service-worker.js \
+  public \
   docs \
-  push.sh README.md scripts/sync_public_to_docs.sh
+  push.sh README.md wrangler.toml \
+  scripts/sync_public_to_docs.sh \
+  .gitignore
 git commit -m "$msg"
 git push
 echo ""
-echo "✅ Done! Site will update at https://bdergez.github.io/briefing/ in ~60 seconds."
+echo "✅ Done! Cloudflare should update https://pmdash.bdergez.workers.dev/ in ~60 seconds."
 echo ""
 read -p "Press Enter to close..."
