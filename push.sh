@@ -7,7 +7,7 @@ cd "$ROOT"
 ./scripts/sync_public_to_docs.sh
 
 # Use argument if provided, otherwise prompt
-if [ -n "$1" ]; then
+if [ "$#" -gt 0 ] && [ -n "${1-}" ]; then
   msg="$1"
 else
   echo ""
