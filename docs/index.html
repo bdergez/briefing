@@ -223,7 +223,6 @@
       box-shadow: var(--shadow);
       transition: box-shadow 0.2s, transform 0.2s;
       display: flex; flex-direction: column; gap: 10px;
-      animation: fadeIn 0.3s ease;
     }
     .card:hover { box-shadow: var(--shadow-hover); transform: translateY(-2px); }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
@@ -332,7 +331,6 @@
       border-radius: 14px;
       overflow: hidden;
       box-shadow: var(--shadow);
-      animation: fadeIn 0.3s ease;
     }
     .digest-post-header {
       padding: 16px 20px 12px;
@@ -1122,7 +1120,7 @@
       <button class="filter-btn" onclick="setCategory('news',this)">📰 News</button>
       <div class="search-wrap">
         <span class="search-icon">🔍</span>
-        <input type="text" id="searchInput" placeholder="Search articles…" oninput="renderCards()" />
+        <input type="text" id="searchInput" placeholder="Search articles…" oninput="debouncedRenderCards()" />
       </div>
     </div>
 
@@ -1201,7 +1199,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.23';
+const VERSION = '1.6.24';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -3183,6 +3181,7 @@ function muteSourceToday(sourceId) {
 
 // ─── AUTO-REFRESH ─────────────────────────────────────────────────────────
 let autoRefreshTimer = null;
+let searchRenderTimer = null;
 
 function scheduleAutoRefresh() {
   if (autoRefreshTimer) clearTimeout(autoRefreshTimer);
@@ -3196,16 +3195,22 @@ function scheduleAutoRefresh() {
   }, 30 * 60 * 1000); // 30 minutes
 }
 
+function debouncedRenderCards() {
+  if (searchRenderTimer) clearTimeout(searchRenderTimer);
+  searchRenderTimer = setTimeout(renderCards, 150);
+}
+
 // ─── RENDER (updated to support "new" filter) ────────────────────────────
 function renderCards() {
   const search = (document.getElementById('searchInput').value || '').toLowerCase();
   const grid = document.getElementById('cardGrid');
   const moreWrap = document.getElementById('cardMoreWrap');
   const moreBtn = document.getElementById('cardMoreBtn');
+  const today = getTodayKey();
 
   const filtered = allArticles.filter(a => {
     if (hiddenArticleUrls.has(a.url)) return false;
-    if (mutedSourcesUntil[a.sourceId] === getTodayKey()) return false;
+    if (mutedSourcesUntil[a.sourceId] === today) return false;
     if (!activeSources.has(a.sourceId)) return false;
     if (activeCategory === 'new') return a.date && a.date.getTime() > lastVisitTime;
     if (activeCategory !== 'all' && a.category !== activeCategory) return false;
