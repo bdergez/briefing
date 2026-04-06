@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; connect-src https:; img-src 'self' https: data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';" />
   <meta name="theme-color" content="#1a1a2e" />
   <meta name="color-scheme" content="light dark" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -2125,6 +2126,12 @@ function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+function safeUrl(url) {
+  if (!url) return '#';
+  const trimmed = String(url).trim();
+  return /^https?:\/\//i.test(trimmed) ? trimmed : '#';
+}
+
 function fmtDate(d) {
   const diff = (Date.now() - d) / 1000;
   if (diff < 60)    return 'just now';
@@ -2198,10 +2205,10 @@ function renderTools() {
           <span class="source-badge" style="background:${tool.color}">${esc(tool.short)}</span>
           ${tags}
         </div>
-        <div class="card-title"><a href="${esc(tool.url)}" target="_blank" rel="noopener">${esc(tool.emoji)} ${esc(tool.name)}</a></div>
+        <div class="card-title"><a href="${safeUrl(tool.url)}" target="_blank" rel="noopener noreferrer">${esc(tool.emoji)} ${esc(tool.name)}</a></div>
         <div class="card-desc">${esc(tool.desc)}</div>
         <div class="card-footer">
-          <a class="read-link" href="${esc(tool.url)}" target="_blank" rel="noopener">Open tool →</a>
+          <a class="read-link" href="${safeUrl(tool.url)}" target="_blank" rel="noopener noreferrer">Open tool →</a>
           <span style="font-size:11px;color:var(--subtext)">${esc(tool.provider)}</span>
         </div>
       </div>`;
@@ -2745,7 +2752,7 @@ function digestPostHTML(p, topics) {
             <div class="topic-text"><span class="topic-headline">${esc(headline)}${rawBody.length > 120 ? '…' : ''}</span><br>
               <span class="topic-preview">${esc(preview)}${rawBody.length > 260 ? '…' : ''}</span>
             </div>
-            <a class="topic-link" href="${esc(commentUrl)}" target="_blank" rel="noopener">↗ Jump to this comment</a>
+            <a class="topic-link" href="${safeUrl(commentUrl)}" target="_blank" rel="noopener noreferrer">↗ Jump to this comment</a>
           </div>
         </div>`;
     }).join('');
@@ -2770,12 +2777,12 @@ function digestPostHTML(p, topics) {
         <span class="post-time">${timeAgo}</span>
       </div>
       <div class="digest-post-title">
-        <a href="${esc(permalink)}" target="_blank" rel="noopener" style="color:var(--text)">${esc(p.title)}</a>
+        <a href="${safeUrl(permalink)}" target="_blank" rel="noopener noreferrer" style="color:var(--text)">${esc(p.title)}</a>
       </div>
     </div>
     ${topicsHTML}
     <div class="digest-post-footer">
-      <a class="thread-link" href="${esc(permalink)}" target="_blank" rel="noopener" style="color:${threadColor}">Open full thread →</a>
+      <a class="thread-link" href="${safeUrl(permalink)}" target="_blank" rel="noopener noreferrer" style="color:${threadColor}">Open full thread →</a>
       <span class="comment-count">${p.num_comments} comments</span>
     </div>
   </div>`;
@@ -3000,7 +3007,7 @@ async function loadCommunities(quiet = false) {
       const flair = p.link_flair_text ? `<span class="sub-flair">${esc(p.link_flair_text)}</span>` : '';
       const link  = `https://www.reddit.com${p.permalink}`;
       return `
-        <a class="sub-post${hidden ? ' sub-post-hidden' : ''}" href="${esc(link)}" target="_blank" rel="noopener">
+        <a class="sub-post${hidden ? ' sub-post-hidden' : ''}" href="${safeUrl(link)}" target="_blank" rel="noopener noreferrer">
           <div class="sub-post-score">↑${p.score}</div>
           <div class="sub-post-body">
             <div class="sub-post-title">${esc(p.title)}</div>
@@ -3023,7 +3030,7 @@ async function loadCommunities(quiet = false) {
       (hidden.length > 0
         ? `<button class="sub-show-more" id="sub-more-${sub.id}" onclick="showMoreSub('${sub.id}')">Show ${hidden.length} more ↓</button>`
         : '') +
-      `<a class="sub-view-all" href="https://reddit.com/r/${sub.id}" target="_blank" rel="noopener">View all of ${sub.name} →</a>`;
+      `<a class="sub-view-all" href="${safeUrl(`https://reddit.com/r/${sub.id}`)}" target="_blank" rel="noopener noreferrer">View all of ${sub.name} →</a>`;
   }));
 
   // Update category counts
@@ -3246,11 +3253,11 @@ function renderCards() {
         ${isNew ? '<span class="new-badge">New</span>' : ''}
         <span class="card-date">${dateStr}</span>
       </div>
-      <div class="card-title"><a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.title)}</a></div>
+      <div class="card-title"><a href="${safeUrl(a.url)}" target="_blank" rel="noopener noreferrer">${esc(a.title)}</a></div>
       ${desc}
       <div class="card-footer">
         <div class="card-actions">
-          <a class="read-link" href="${esc(a.url)}" target="_blank" rel="noopener">Read article →</a>
+          <a class="read-link" href="${safeUrl(a.url)}" target="_blank" rel="noopener noreferrer">Read article →</a>
           <button class="card-action-btn" onclick="hideArticle('${esc(a.url)}')">Hide</button>
           <button class="card-action-btn" onclick="muteSourceToday('${esc(a.sourceId)}')">Mute today</button>
         </div>
@@ -3285,7 +3292,7 @@ function renderOffers() {
   strip.style.display = '';
   document.getElementById('offersCount').textContent = `${offersArticles.length} offers`;
   grid.innerHTML = offersArticles.map(a => `
-    <a class="offer-card" href="${esc(a.url)}" target="_blank" rel="noopener">
+    <a class="offer-card" href="${safeUrl(a.url)}" target="_blank" rel="noopener noreferrer">
       <div class="offer-card-store">${esc(a.sourceName)}</div>
       <div class="offer-card-title">${esc(a.title)}</div>
     </a>`).join('');
