@@ -3350,6 +3350,7 @@ function loadSettings() {
       settingsDisabledSources.add('hyatt');
       settingsDisabledSources.delete('tt');
       settingsDisabledSources.delete('aw');
+      localStorage.setItem('pmDashDisabledSources', JSON.stringify([...settingsDisabledSources]));
       localStorage.setItem('pmDashSourceSetVersion', '2026-04-core8');
     }
   } catch {}
