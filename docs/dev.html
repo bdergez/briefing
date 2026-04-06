@@ -1568,6 +1568,7 @@ let activeSources = new Set(); // initialized after loadSettings() in init()
 let sourceState = {}; // { id: 'loading'|'ok'|'error' }
 let activeToolFilter = 'all';
 let hiddenArticleUrls = new Set();
+let hiddenArticlesMeta = {};
 let mutedSourcesUntil = {};
 
 // ── Churning two-panel state ──────────────────────────────────────────────
@@ -3164,10 +3165,27 @@ function getTodayKey() {
   return new Date().toISOString().slice(0, 10);
 }
 
+const HIDDEN_ARTICLE_RETENTION_DAYS = 30;
+
 function loadArticleControls() {
   try {
     const hidden = localStorage.getItem('pmDashHiddenArticles');
-    if (hidden) hiddenArticleUrls = new Set(JSON.parse(hidden));
+    if (hidden) {
+      const parsed = JSON.parse(hidden);
+      const cutoff = Date.now() - (HIDDEN_ARTICLE_RETENTION_DAYS * 86400 * 1000);
+      hiddenArticlesMeta = {};
+      if (Array.isArray(parsed)) {
+        parsed.forEach(entry => {
+          if (typeof entry === 'string') {
+            hiddenArticlesMeta[entry] = Date.now();
+          } else if (entry && typeof entry.url === 'string') {
+            const hiddenAt = Number(entry.hiddenAt) || Date.now();
+            if (hiddenAt >= cutoff) hiddenArticlesMeta[entry.url] = hiddenAt;
+          }
+        });
+      }
+      hiddenArticleUrls = new Set(Object.keys(hiddenArticlesMeta));
+    }
     const muted = localStorage.getItem('pmDashMutedSourcesUntil');
     if (muted) mutedSourcesUntil = JSON.parse(muted);
     const today = getTodayKey();
@@ -3179,13 +3197,16 @@ function loadArticleControls() {
 
 function saveArticleControls() {
   try {
-    localStorage.setItem('pmDashHiddenArticles', JSON.stringify([...hiddenArticleUrls]));
+    localStorage.setItem('pmDashHiddenArticles', JSON.stringify(
+      Object.entries(hiddenArticlesMeta).map(([url, hiddenAt]) => ({ url, hiddenAt }))
+    ));
     localStorage.setItem('pmDashMutedSourcesUntil', JSON.stringify(mutedSourcesUntil));
   } catch {}
 }
 
 function hideArticle(url) {
   hiddenArticleUrls.add(url);
+  hiddenArticlesMeta[url] = Date.now();
   saveArticleControls();
   renderCards();
 }
