@@ -1199,7 +1199,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.26';
+const VERSION = '1.6.27';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -2326,15 +2326,17 @@ function postDayLabel(dayKey) {
 }
 
 function filterChurningThreads(q) {
-  churningSearchQuery = q;
-  renderThreadList(digestPostsData);
-  // Restore focus + cursor after re-render
-  const input = document.getElementById('churningSearch');
-  if (input) {
-    input.focus();
-    input.value = q;
-    input.setSelectionRange(q.length, q.length); // force cursor to end
-  }
+  if (churningSearchTimer) clearTimeout(churningSearchTimer);
+  churningSearchTimer = setTimeout(() => {
+    churningSearchQuery = q;
+    renderThreadList(digestPostsData);
+    const input = document.getElementById('churningSearch');
+    if (input) {
+      input.focus();
+      input.value = q;
+      input.setSelectionRange(q.length, q.length);
+    }
+  }, 120);
 }
 
 function renderThreadList(posts) {
@@ -2776,14 +2778,17 @@ function digestPostHTML(p, topics) {
 // ─── COMMUNITIES NAV ─────────────────────────────────────────────────────
 
 function filterCommNav(q) {
-  commSearchQuery = q;
-  renderCommNav();
-  const input = document.getElementById('commSearch');
-  if (input) {
-    input.focus();
-    input.value = q;
-    input.setSelectionRange(q.length, q.length);
-  }
+  if (commSearchTimer) clearTimeout(commSearchTimer);
+  commSearchTimer = setTimeout(() => {
+    commSearchQuery = q;
+    renderCommNav();
+    const input = document.getElementById('commSearch');
+    if (input) {
+      input.focus();
+      input.value = q;
+      input.setSelectionRange(q.length, q.length);
+    }
+  }, 120);
 }
 
 function renderCommNav() {
@@ -3205,6 +3210,8 @@ function muteSourceToday(sourceId) {
 let autoRefreshTimer = null;
 let searchRenderTimer = null;
 let resizeSyncTimer = null;
+let churningSearchTimer = null;
+let commSearchTimer = null;
 
 function scheduleAutoRefresh() {
   if (autoRefreshTimer) clearTimeout(autoRefreshTimer);
