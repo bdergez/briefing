@@ -1199,7 +1199,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.29';
+const VERSION = '1.6.30';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -1570,6 +1570,8 @@ let redditDigestLoaded = false; // lazy-load on first Churning tab open
 let communitiesLoaded = false; // only load once; skip on News Feed refreshes
 let communitiesRefreshTimer = null; // background 60-min auto-refresh timer
 let commSearchQuery = ''; // current filter string in communities nav panel
+const SUBREDDIT_FETCH_BATCH_SIZE = 3;
+const SUBREDDIT_FETCH_BATCH_DELAY_MS = 250;
 
 
 // ── Offers state ─────────────────────────────────────────────────────────
@@ -2216,6 +2218,10 @@ function fetchWithTimeout(url, options = {}, ms = 15000) {
   const timer = setTimeout(() => controller.abort(), ms);
   return fetch(url, { ...options, signal: controller.signal })
     .finally(() => clearTimeout(timer));
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 // ─── REDDIT DAILY DIGEST ─────────────────────────────────────────────────
@@ -2972,64 +2978,70 @@ async function loadCommunities(quiet = false) {
   // Apply initial filter (default: first category)
   if (!quiet) renderCommDetail();
 
-  // Fetch all subreddits in parallel
+  // Fetch subreddits in small batches to reduce Reddit/proxy burstiness.
   const allSubs = getEffectiveCommunities().flatMap(c => c.subs);
-  await Promise.allSettled(allSubs.map(async sub => {
-    const data = await fetchSubreddit(sub.id);
-    const postsEl  = document.getElementById(`sub-posts-${sub.id}`);
-    const metaEl   = document.getElementById(`sub-meta-${sub.id}`);
-    if (!postsEl) return;
+  for (let i = 0; i < allSubs.length; i += SUBREDDIT_FETCH_BATCH_SIZE) {
+    const batch = allSubs.slice(i, i + SUBREDDIT_FETCH_BATCH_SIZE);
+    await Promise.allSettled(batch.map(async sub => {
+      const data = await fetchSubreddit(sub.id);
+      const postsEl  = document.getElementById(`sub-posts-${sub.id}`);
+      const metaEl   = document.getElementById(`sub-meta-${sub.id}`);
+      if (!postsEl) return;
 
-    if (!data) {
-      postsEl.innerHTML = `<div class="sub-error">⚠️ Could not load</div>`;
-      metaEl.textContent = 'error';
-      return;
-    }
+      if (!data) {
+        postsEl.innerHTML = `<div class="sub-error">⚠️ Could not load</div>`;
+        metaEl.textContent = 'error';
+        return;
+      }
 
-    const posts = (data?.data?.children || [])
-      .map(c => c.data)
-      .filter(p => !p.stickied)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 20);
+      const posts = (data?.data?.children || [])
+        .map(c => c.data)
+        .filter(p => !p.stickied)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 20);
 
-    metaEl.textContent = `${posts.length} posts`;
+      metaEl.textContent = `${posts.length} posts`;
 
-    if (posts.length === 0) {
-      postsEl.innerHTML = `<div class="sub-error">No posts found.</div>`;
-      return;
-    }
+      if (posts.length === 0) {
+        postsEl.innerHTML = `<div class="sub-error">No posts found.</div>`;
+        return;
+      }
 
-    const INITIAL_SHOW = 8;
-    const renderSubPost = (p, hidden = false) => {
-      const desc = p.selftext ? p.selftext.replace(/\n+/g,' ').trim().slice(0, 160) : '';
-      const flair = p.link_flair_text ? `<span class="sub-flair">${esc(p.link_flair_text)}</span>` : '';
-      const link  = `https://www.reddit.com${p.permalink}`;
-      return `
-        <a class="sub-post${hidden ? ' sub-post-hidden' : ''}" href="${safeUrl(link)}" target="_blank" rel="noopener noreferrer">
-          <div class="sub-post-score">↑${p.score}</div>
-          <div class="sub-post-body">
-            <div class="sub-post-title">${esc(p.title)}</div>
-            ${desc ? `<div class="sub-post-desc">${esc(desc)}</div>` : ''}
-            <div class="sub-post-footer">
-              ${flair}
-              <span class="sub-post-time">${fmtDate(new Date(p.created_utc * 1000))}</span>
-              <span class="sub-post-comments">💬 ${p.num_comments}</span>
+      const INITIAL_SHOW = 8;
+      const renderSubPost = (p, hidden = false) => {
+        const desc = p.selftext ? p.selftext.replace(/\n+/g,' ').trim().slice(0, 160) : '';
+        const flair = p.link_flair_text ? `<span class="sub-flair">${esc(p.link_flair_text)}</span>` : '';
+        const link  = `https://www.reddit.com${p.permalink}`;
+        return `
+          <a class="sub-post${hidden ? ' sub-post-hidden' : ''}" href="${safeUrl(link)}" target="_blank" rel="noopener noreferrer">
+            <div class="sub-post-score">↑${p.score}</div>
+            <div class="sub-post-body">
+              <div class="sub-post-title">${esc(p.title)}</div>
+              ${desc ? `<div class="sub-post-desc">${esc(desc)}</div>` : ''}
+              <div class="sub-post-footer">
+                ${flair}
+                <span class="sub-post-time">${fmtDate(new Date(p.created_utc * 1000))}</span>
+                <span class="sub-post-comments">💬 ${p.num_comments}</span>
+              </div>
             </div>
-          </div>
-        </a>`;
-    };
+          </a>`;
+      };
 
-    const visible = posts.slice(0, INITIAL_SHOW);
-    const hidden  = posts.slice(INITIAL_SHOW);
+      const visible = posts.slice(0, INITIAL_SHOW);
+      const hidden  = posts.slice(INITIAL_SHOW);
 
-    postsEl.innerHTML =
-      visible.map(p => renderSubPost(p)).join('') +
-      hidden.map(p => renderSubPost(p, true)).join('') +
-      (hidden.length > 0
-        ? `<button class="sub-show-more" id="sub-more-${sub.id}" onclick="showMoreSub('${sub.id}')">Show ${hidden.length} more ↓</button>`
-        : '') +
-      `<a class="sub-view-all" href="${safeUrl(`https://reddit.com/r/${sub.id}`)}" target="_blank" rel="noopener noreferrer">View all of ${sub.name} →</a>`;
-  }));
+      postsEl.innerHTML =
+        visible.map(p => renderSubPost(p)).join('') +
+        hidden.map(p => renderSubPost(p, true)).join('') +
+        (hidden.length > 0
+          ? `<button class="sub-show-more" id="sub-more-${sub.id}" onclick="showMoreSub('${sub.id}')">Show ${hidden.length} more ↓</button>`
+          : '') +
+        `<a class="sub-view-all" href="${safeUrl(`https://reddit.com/r/${sub.id}`)}" target="_blank" rel="noopener noreferrer">View all of ${sub.name} →</a>`;
+    }));
+    if (i + SUBREDDIT_FETCH_BATCH_SIZE < allSubs.length) {
+      await sleep(SUBREDDIT_FETCH_BATCH_DELAY_MS);
+    }
+  }
 
   // Update category counts
   getEffectiveCommunities().forEach((cat, ci) => {
