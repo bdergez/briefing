@@ -74,8 +74,8 @@
       position: absolute;
       inset: 0;
       pointer-events: none;
-      z-index: -1;
-      opacity: 0.12;
+      z-index: 0;
+      opacity: 0.16;
       background-repeat: no-repeat;
       background-position: 14% 58%, 43% 24%, 72% 62%, 90% 28%;
       background-size: 84px 84px, 64px 64px, 72px 72px, 60px 60px;
@@ -88,7 +88,7 @@
         url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='2.1' stroke-linecap='round' stroke-linejoin='round' opacity='0.42'%3E%3Cpath d='M30 40h45l16 18-16 18H30z'/%3E%3Cpath d='M44 40v36M59 49h11M59 58h11M59 67h11'/%3E%3C/g%3E%3C/svg%3E");
     }
     header::after {
-      opacity: 0.07;
+      opacity: 0.10;
       background-position: 24% 18%, 58% 72%, 78% 18%, 96% 70%;
       background-size: 110px 110px, 92px 92px, 88px 88px, 90px 90px;
       background-image:
@@ -101,6 +101,7 @@
     .logo span { color: #818cf8; }
     .tagline { font-size: 12px; opacity: 0.5; margin-top: 2px; }
     .header-right { display: flex; align-items: center; gap: 12px; }
+    header > * { position: relative; z-index: 1; }
 
     .btn {
       display: inline-flex; align-items: center; gap: 6px;
@@ -813,11 +814,11 @@
       }
       header::before,
       header::after {
-        opacity: 0.08;
+        opacity: 0.11;
         background-position: 8% 55%, 56% 22%, 82% 70%, 98% 18%;
         background-size: 60px 60px, 46px 46px, 52px 52px, 44px 44px;
       }
-      header::after { opacity: 0.05; }
+      header::after { opacity: 0.07; }
       .logo { font-size: 18px; }
       .tagline { display: none; }
       .refresh-time { display: none; }
@@ -1247,7 +1248,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.31-dev';
+const VERSION = '1.6.32-dev';
 const MAX_ACTIVE_NEWS_SOURCES = 9;
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
