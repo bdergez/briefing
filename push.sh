@@ -1,8 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-cd "/Users/bedergez/Code/Codex/Briefing_claude"
-rm -f .git/index.lock
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+cd "$ROOT"
 
 ./scripts/sync_public_to_docs.sh
 
