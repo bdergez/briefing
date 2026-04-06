@@ -2132,6 +2132,14 @@ function safeUrl(url) {
   return /^https?:\/\//i.test(trimmed) ? trimmed : '#';
 }
 
+function escapeInlineArg(value) {
+  return String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
+function sanitizeSubredditId(value) {
+  return String(value).toLowerCase().replace(/[^a-z0-9_]/g, '');
+}
+
 function fmtDate(d) {
   const diff = (Date.now() - d) / 1000;
   if (diff < 60)    return 'just now';
@@ -3460,6 +3468,7 @@ function renderSettingsNewsTab() {
   allSrcs.forEach(src => {
     const isOn = !settingsDraft.disabledSources.has(src.id);
     const isCustom = !!settingsDraft.customSources.find(c => c.id === src.id);
+    const srcIdArg = escapeInlineArg(src.id);
     html += `
       <div class="settings-row">
         <div class="settings-dot" style="background:${src.color}"></div>
@@ -3467,14 +3476,15 @@ function renderSettingsNewsTab() {
           <div class="settings-row-name">${esc(src.emoji || '📰')} ${esc(src.name)}</div>
           <div class="settings-row-url">${src.rssFeeds ? `${src.rssFeeds.length} feeds` : esc(src.rss)}</div>
         </div>
-        ${isCustom ? `<button class="settings-remove-btn" title="Remove" onclick="settingsDraft.customSources=settingsDraft.customSources.filter(s=>s.id!=='${src.id}');settingsDraft.disabledSources.delete('${src.id}');renderSettingsBody()">✕</button>` : ''}
-        <button class="settings-toggle ${isOn ? 'on' : 'off'}" onclick="toggleDraftSource('${src.id}')"></button>
+        ${isCustom ? `<button class="settings-remove-btn" title="Remove" onclick="settingsDraft.customSources=settingsDraft.customSources.filter(s=>s.id!=='${srcIdArg}');settingsDraft.disabledSources.delete('${srcIdArg}');renderSettingsBody()">✕</button>` : ''}
+        <button class="settings-toggle ${isOn ? 'on' : 'off'}" onclick="toggleDraftSource('${srcIdArg}')"></button>
       </div>`;
   });
 
   if (suggested.length > 0) {
     html += `<div class="settings-section-title">Suggested</div>`;
     suggested.forEach(src => {
+      const srcIdArg = escapeInlineArg(src.id);
       html += `
         <div class="settings-row">
           <div class="settings-dot" style="background:${src.color}"></div>
@@ -3482,7 +3492,7 @@ function renderSettingsNewsTab() {
             <div class="settings-row-name">${esc(src.emoji)} ${esc(src.name)}</div>
             <div class="settings-row-url">${esc(src.rss)}</div>
           </div>
-          <button class="settings-add-inline" onclick="settingsAddSuggested('${src.id}')">+ Add</button>
+          <button class="settings-add-inline" onclick="settingsAddSuggested('${srcIdArg}')">+ Add</button>
         </div>`;
     });
   }
@@ -3542,11 +3552,12 @@ function renderSettingsCommTab() {
     html += `<div class="settings-cat-header">${esc(cat.label)}</div>`;
     cat.subs.forEach(sub => {
       const isOn = !settingsDraft.disabledSubs.has(sub.id);
+      const subIdArg = escapeInlineArg(sub.id);
       html += `
         <div class="settings-row">
           <div class="settings-dot" style="background:${sub.color}"></div>
           <div class="settings-row-info"><div class="settings-row-name">${esc(sub.name)}</div></div>
-          <button class="settings-toggle ${isOn ? 'on' : 'off'}" onclick="if(settingsDraft.disabledSubs.has('${sub.id}'))settingsDraft.disabledSubs.delete('${sub.id}');else settingsDraft.disabledSubs.add('${sub.id}');renderSettingsBody()"></button>
+          <button class="settings-toggle ${isOn ? 'on' : 'off'}" onclick="if(settingsDraft.disabledSubs.has('${subIdArg}'))settingsDraft.disabledSubs.delete('${subIdArg}');else settingsDraft.disabledSubs.add('${subIdArg}');renderSettingsBody()"></button>
         </div>`;
     });
   });
@@ -3555,12 +3566,13 @@ function renderSettingsCommTab() {
     html += `<div class="settings-cat-header">⭐ Custom</div>`;
     settingsDraft.customSubs.forEach(sub => {
       const isOn = !settingsDraft.disabledSubs.has(sub.id);
+      const subIdArg = escapeInlineArg(sub.id);
       html += `
         <div class="settings-row">
           <div class="settings-dot" style="background:${sub.color}"></div>
           <div class="settings-row-info"><div class="settings-row-name">${esc(sub.name)}</div></div>
-          <button class="settings-remove-btn" title="Remove" onclick="settingsDraft.customSubs=settingsDraft.customSubs.filter(s=>s.id!=='${sub.id}');settingsDraft.disabledSubs.delete('${sub.id}');renderSettingsBody()">✕</button>
-          <button class="settings-toggle ${isOn ? 'on' : 'off'}" onclick="if(settingsDraft.disabledSubs.has('${sub.id}'))settingsDraft.disabledSubs.delete('${sub.id}');else settingsDraft.disabledSubs.add('${sub.id}');renderSettingsBody()"></button>
+          <button class="settings-remove-btn" title="Remove" onclick="settingsDraft.customSubs=settingsDraft.customSubs.filter(s=>s.id!=='${subIdArg}');settingsDraft.disabledSubs.delete('${subIdArg}');renderSettingsBody()">✕</button>
+          <button class="settings-toggle ${isOn ? 'on' : 'off'}" onclick="if(settingsDraft.disabledSubs.has('${subIdArg}'))settingsDraft.disabledSubs.delete('${subIdArg}');else settingsDraft.disabledSubs.add('${subIdArg}');renderSettingsBody()"></button>
         </div>`;
     });
   }
@@ -3636,13 +3648,17 @@ function settingsAddCustomSource() {
 function settingsAddCustomSub() {
   let raw = (document.getElementById('csSubName')?.value || '').trim().replace(/^r\//i, '');
   if (!raw) { alert('Please enter a subreddit name.'); return; }
-  const id = raw.toLowerCase();
+  const id = sanitizeSubredditId(raw);
+  if (!id || id !== raw.toLowerCase()) {
+    alert('Subreddit names can only use letters, numbers, and underscores.');
+    return;
+  }
   const builtInIds = COMMUNITIES.flatMap(cat => cat.subs.map(s => String(s.id).toLowerCase()));
   if (builtInIds.includes(id)) { alert('That subreddit is already included.'); return; }
   if (settingsDraft.customSubs.find(s => s.id === id)) return;
   const palette = ['#6b46c1','#e53e3e','#2b6cb0','#2f855a','#d97706','#c53030','#0891b2'];
   const color = palette[settingsDraft.customSubs.length % palette.length];
-  settingsDraft.customSubs.push({ id, name: `r/${raw}`, color });
+  settingsDraft.customSubs.push({ id, name: `r/${id}`, color });
   renderSettingsBody();
 }
 
