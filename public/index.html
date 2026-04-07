@@ -1162,9 +1162,9 @@
   </div>
   <div class="header-right">
     <span class="refresh-time" id="refreshTime">Not loaded</span>
-    <button class="btn btn-primary" id="refreshBtn" onclick="refreshCurrentTab()">⟳ Refresh</button>
-    <button class="btn btn-ghost" onclick="toggleTheme()">🌓 Theme</button>
-    <button class="btn btn-ghost" onclick="openSettings()">⚙️ Sources</button>
+    <button class="btn btn-primary" id="refreshBtn">⟳ Refresh</button>
+    <button class="btn btn-ghost" id="themeBtn">🌓 Theme</button>
+    <button class="btn btn-ghost" id="sourcesBtn">⚙️ Sources</button>
   </div>
 </header>
 
@@ -1172,10 +1172,10 @@
 
   <!-- TAB BAR -->
   <div class="tab-bar">
-    <button class="tab-btn active" id="tab-news"        onclick="switchTab('news')"><span class="tab-label">💳 <span>Points</span></span></button>
-    <button class="tab-btn"        id="tab-reddit"      onclick="switchTab('reddit')"><span class="tab-label">🤝 <span>Churning</span></span></button>
-    <button class="tab-btn"        id="tab-communities" onclick="switchTab('communities')"><span class="tab-label">🔴 <span>Reddit</span></span></button>
-    <button class="tab-btn"        id="tab-tools"       onclick="switchTab('tools')"><span class="tab-label">🧰 <span>Tools</span></span></button>
+    <button class="tab-btn active" id="tab-news" data-tab="news"><span class="tab-label">💳 <span>Points</span></span></button>
+    <button class="tab-btn"        id="tab-reddit" data-tab="reddit"><span class="tab-label">🤝 <span>Churning</span></span></button>
+    <button class="tab-btn"        id="tab-communities" data-tab="communities"><span class="tab-label">🔴 <span>Reddit</span></span></button>
+    <button class="tab-btn"        id="tab-tools" data-tab="tools"><span class="tab-label">🧰 <span>Tools</span></span></button>
   </div>
 
   <!-- ══ PANEL: NEWS FEED ══ -->
@@ -1184,21 +1184,21 @@
 
     <!-- SOURCE STATUS PILLS -->
     <div class="source-status" id="sourcePills">
-      <span class="src-pill all-pill ok" id="pill-all" onclick="selectAllSources()" title="Show all sources">All</span>
+      <span class="src-pill all-pill ok" id="pill-all" title="Show all sources">All</span>
     </div>
 
     <!-- FILTER BAR -->
     <div class="filter-bar">
-      <button class="filter-btn all-filter-pill active" onclick="setCategory('all',this)">All</button>
-      <button class="filter-btn" onclick="setCategory('new',this)" id="filterNew">🆕 New</button>
-      <button class="filter-btn" onclick="setCategory('credit-cards',this)">💳 Credit Cards</button>
-      <button class="filter-btn" onclick="setCategory('bank-bonuses',this)">🏦 Bank Bonuses</button>
-      <button class="filter-btn" onclick="setCategory('points-miles',this)">✈️ Points &amp; Miles</button>
-      <button class="filter-btn" onclick="setCategory('travel',this)">🌍 Travel Deals</button>
-      <button class="filter-btn" onclick="setCategory('news',this)">📰 News</button>
+      <button class="filter-btn all-filter-pill active" data-category="all">All</button>
+      <button class="filter-btn" data-category="new" id="filterNew">🆕 New</button>
+      <button class="filter-btn" data-category="credit-cards">💳 Credit Cards</button>
+      <button class="filter-btn" data-category="bank-bonuses">🏦 Bank Bonuses</button>
+      <button class="filter-btn" data-category="points-miles">✈️ Points &amp; Miles</button>
+      <button class="filter-btn" data-category="travel">🌍 Travel Deals</button>
+      <button class="filter-btn" data-category="news">📰 News</button>
       <div class="search-wrap">
         <span class="search-icon">🔍</span>
-        <input type="text" id="searchInput" placeholder="Search articles…" oninput="debouncedRenderCards()" />
+        <input type="text" id="searchInput" placeholder="Search articles…" />
       </div>
     </div>
 
@@ -1286,7 +1286,7 @@
       </div>
     </div>
     <div id="cardMoreWrap" style="display:none;margin-top:18px;text-align:center">
-      <button class="btn btn-primary" id="cardMoreBtn" onclick="showMoreCards()">Show more</button>
+      <button class="btn btn-primary" id="cardMoreBtn">Show more</button>
     </div>
 
   </div><!-- /panel-news -->
@@ -1342,7 +1342,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.60';
+const VERSION = '1.6.61';
 const MAX_ACTIVE_NEWS_SOURCES = 9;
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
@@ -3351,7 +3351,7 @@ function toggleTheme() {
 }
 
 function updateThemeButton() {
-  const btn = document.querySelector('button[onclick="toggleTheme()"]');
+  const btn = document.getElementById('themeBtn');
   if (!btn) return;
   const saved = localStorage.getItem('pmDashTheme');
   if (!saved)              btn.textContent = '🌓 Auto';
@@ -3923,6 +3923,18 @@ function settingsAddCustomSub() {
 
   // 5. Load content and start auto-refresh
   renderTools();
+  document.getElementById('refreshBtn')?.addEventListener('click', refreshCurrentTab);
+  document.getElementById('themeBtn')?.addEventListener('click', toggleTheme);
+  document.getElementById('sourcesBtn')?.addEventListener('click', openSettings);
+  document.getElementById('pill-all')?.addEventListener('click', selectAllSources);
+  document.getElementById('cardMoreBtn')?.addEventListener('click', showMoreCards);
+  document.getElementById('searchInput')?.addEventListener('input', debouncedRenderCards);
+  document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+  });
+  document.querySelectorAll('#panel-news .filter-btn[data-category]').forEach(btn => {
+    btn.addEventListener('click', () => setCategory(btn.dataset.category, btn));
+  });
   syncNewsPillWidths();
   window.addEventListener('resize', () => {
     if (resizeSyncTimer) clearTimeout(resizeSyncTimer);
