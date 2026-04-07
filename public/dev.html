@@ -1357,7 +1357,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.59-dev';
+const VERSION = '1.6.60-dev';
 const MAX_ACTIVE_NEWS_SOURCES = 9;
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
@@ -2097,7 +2097,7 @@ async function loadAll() {
   document.getElementById('refreshBtn').disabled = true;
   document.getElementById('refreshTime').textContent = 'Loading…';
   document.getElementById('offersStrip').style.display = 'none';
-  document.getElementById('cardGrid').innerHTML = newsSkeletonCardsHTML(6);
+  renderNewsSkeletons();
 
   buildPills();
 
@@ -2307,7 +2307,16 @@ function safeUrl(url) {
   return /^https?:\/\//i.test(trimmed) ? trimmed : '#';
 }
 
-function newsSkeletonCardsHTML(count = 6) {
+function getNewsSkeletonCount() {
+  const grid = document.getElementById('cardGrid');
+  const width = grid?.clientWidth || window.innerWidth || 1024;
+  const minCardWidth = 340;
+  const gap = 16;
+  const columns = Math.max(1, Math.floor((width + gap) / (minCardWidth + gap)));
+  return columns * 2;
+}
+
+function newsSkeletonCardsHTML(count = getNewsSkeletonCount()) {
   const cards = Array.from({ length: count }, () => `
     <div class="card skeleton-card">
       <div class="card-meta">
@@ -2337,6 +2346,12 @@ function newsSkeletonCardsHTML(count = 6) {
     <div class="skeleton-wrap">
       <div class="skeleton-grid">${cards}</div>
     </div>`;
+}
+
+function renderNewsSkeletons() {
+  const grid = document.getElementById('cardGrid');
+  if (!grid) return;
+  grid.innerHTML = newsSkeletonCardsHTML(getNewsSkeletonCount());
 }
 
 function escapeInlineArg(value) {
@@ -3922,7 +3937,10 @@ function settingsAddCustomSub() {
   syncNewsPillWidths();
   window.addEventListener('resize', () => {
     if (resizeSyncTimer) clearTimeout(resizeSyncTimer);
-    resizeSyncTimer = setTimeout(syncNewsPillWidths, 100);
+    resizeSyncTimer = setTimeout(() => {
+      syncNewsPillWidths();
+      if (!allArticles.length && document.querySelector('#cardGrid .skeleton-wrap')) renderNewsSkeletons();
+    }, 100);
   });
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
@@ -3932,6 +3950,7 @@ function settingsAddCustomSub() {
     }
   });
   window.addEventListener('beforeunload', clearCommunitiesRefresh);
+  renderNewsSkeletons();
   loadAll();
   scheduleAutoRefresh();
 })();
