@@ -1076,6 +1076,23 @@
       cursor: pointer; flex-shrink: 0;
     }
     .settings-add-inline:hover { opacity: 0.85; }
+    .settings-utility-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 8px 0 14px;
+    }
+    .settings-utility-btn {
+      padding: 6px 10px;
+      background: var(--tag-bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .settings-utility-btn:hover { border-color: var(--accent); color: var(--accent); }
     .settings-add-form {
       border: 1px dashed var(--border); border-radius: 8px; padding: 12px; margin-top: 6px;
     }
@@ -1325,7 +1342,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.57';
+const VERSION = '1.6.58';
 const MAX_ACTIVE_NEWS_SOURCES = 9;
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
@@ -3397,6 +3414,19 @@ function muteSourceToday(sourceId) {
   renderCards();
 }
 
+function resetHiddenArticles() {
+  hiddenArticleUrls = new Set();
+  hiddenArticlesMeta = {};
+  saveArticleControls();
+  renderCards();
+}
+
+function clearMutedSources() {
+  mutedSourcesUntil = {};
+  saveArticleControls();
+  renderCards();
+}
+
 // ─── AUTO-REFRESH ─────────────────────────────────────────────────────────
 let autoRefreshTimer = null;
 let searchRenderTimer = null;
@@ -3636,6 +3666,11 @@ function renderSettingsNewsTab() {
     <div class="settings-section-title">Presets</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
       ${SOURCE_PRESETS.map(preset => `<button class="settings-add-inline" onclick="applySourcePreset('${preset.id}')">${esc(preset.label)} (${preset.ids.length})</button>`).join('')}
+    </div>
+    <div class="settings-section-title">Feed Controls</div>
+    <div class="settings-utility-actions">
+      <button class="settings-utility-btn" onclick="resetHiddenArticles()">Reset hidden articles</button>
+      <button class="settings-utility-btn" onclick="clearMutedSources()">Clear muted sources</button>
     </div>`;
   allSrcs.forEach(src => {
     const isOn = !settingsDraft.disabledSources.has(src.id);
