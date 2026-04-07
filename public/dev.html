@@ -1542,9 +1542,8 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.67-dev';
+const VERSION = '1.6.63-dev';
 const MAX_ACTIVE_NEWS_SOURCES = 9;
-const DEV_REDDIT_API_BASE = 'https://pmdash.bdergez.workers.dev/api/reddit';
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
 const SOURCES = [
@@ -2890,11 +2889,6 @@ async function fetchThreadComments(postId, limit = 25) {
   let data = null;
   const strategies = [
     async () => {
-      const res = await fetchWithTimeout(`${DEV_REDDIT_API_BASE}/comments/${encodeURIComponent(postId)}?limit=${limit}&sort=top&depth=1`, {}, 8000);
-      if (!res.ok) throw new Error();
-      return res.json();
-    },
-    async () => {
       const res = await fetchWithTimeout(url, { headers: { Accept: 'application/json' }, credentials: 'omit' }, 8000);
       if (!res.ok) throw new Error();
       return res.json();
@@ -3000,11 +2994,6 @@ async function loadRedditDigest() {
   // Try direct first, then CORS proxies as fallback (needed for some mobile browsers)
   const STRATEGIES = [
     async () => {
-      const res = await fetchWithTimeout(`${DEV_REDDIT_API_BASE}/churning-hot`, {}, 12000);
-      if (!res.ok) throw new Error('Bad status: ' + res.status);
-      return res.json();
-    },
-    async () => {
       const res = await fetchWithTimeout(REDDIT_URL, { headers: { Accept: 'application/json' }, credentials: 'omit' }, 15000);
       if (!res.ok) throw new Error('Bad status: ' + res.status);
       return res.json();
@@ -3021,13 +3010,6 @@ async function loadRedditDigest() {
     async () => {
       const res = await fetchWithTimeout(
         `https://corsproxy.io/?${encodeURIComponent(REDDIT_URL)}`, {}, 18000
-      );
-      if (!res.ok) throw new Error('Proxy error');
-      return res.json();
-    },
-    async () => {
-      const res = await fetchWithTimeout(
-        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(REDDIT_URL)}`, {}, 18000
       );
       if (!res.ok) throw new Error('Proxy error');
       return res.json();
@@ -3411,15 +3393,12 @@ function selectCommSub(subId, ci) {
 async function fetchSubreddit(subId) {
   const url = `https://www.reddit.com/r/${subId}/hot.json?limit=50&raw_json=1`;
   const strategies = [
-    () => fetchWithTimeout(`${DEV_REDDIT_API_BASE}/sub/${encodeURIComponent(subId)}?limit=50`, {}, 10000).then(r => r.ok ? r.json() : Promise.reject()),
     // Direct — credentials:omit helps bypass iOS ITP blocking
     () => fetchWithTimeout(url, { headers: { Accept: 'application/json' }, credentials: 'omit' }, 10000).then(r => r.ok ? r.json() : Promise.reject()),
     // allorigins proxy fallback
     () => fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, {}, 14000).then(r => r.json()).then(w => JSON.parse(w.contents)),
     // corsproxy.io as second proxy fallback (iOS/Android compatibility)
     () => fetchWithTimeout(`https://corsproxy.io/?${encodeURIComponent(url)}`, {}, 14000).then(r => r.ok ? r.json() : Promise.reject()),
-    // codetabs fallback
-    () => fetchWithTimeout(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`, {}, 14000).then(r => r.ok ? r.json() : Promise.reject()),
   ];
   for (const s of strategies) {
     try { return await s(); } catch(e) {}
