@@ -1312,12 +1312,12 @@
       <p style="margin:0;color:var(--subtext);font-size:13px;line-height:1.5">Useful maps, calculators, and lookup pages that are better opened directly than squeezed into the feed.</p>
     </div>
     <div class="tools-filter-bar" id="toolsFilterBar">
-      <button class="tool-filter-btn active" onclick="setToolFilter('all', this)">All</button>
-      <button class="tool-filter-btn" onclick="setToolFilter('Dining', this)">Dining</button>
-      <button class="tool-filter-btn" onclick="setToolFilter('Transfer', this)">Transfer</button>
-      <button class="tool-filter-btn" onclick="setToolFilter('Hotels', this)">Hotels</button>
-      <button class="tool-filter-btn" onclick="setToolFilter('Cards', this)">Cards</button>
-      <button class="tool-filter-btn" onclick="setToolFilter('Calculator', this)">Calculators</button>
+      <button class="tool-filter-btn active" data-tool-filter="all">All</button>
+      <button class="tool-filter-btn" data-tool-filter="Dining">Dining</button>
+      <button class="tool-filter-btn" data-tool-filter="Transfer">Transfer</button>
+      <button class="tool-filter-btn" data-tool-filter="Hotels">Hotels</button>
+      <button class="tool-filter-btn" data-tool-filter="Cards">Cards</button>
+      <button class="tool-filter-btn" data-tool-filter="Calculator">Calculators</button>
     </div>
     <div class="grid" id="toolsGrid"></div>
   </div><!-- /panel-tools -->
@@ -1357,7 +1357,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.61-dev';
+const VERSION = '1.6.62-dev';
 const MAX_ACTIVE_NEWS_SOURCES = 9;
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
@@ -3946,6 +3946,16 @@ function settingsAddCustomSub() {
   document.querySelectorAll('#panel-news .filter-btn[data-category]').forEach(btn => {
     btn.addEventListener('click', () => setCategory(btn.dataset.category, btn));
   });
+  document.querySelectorAll('#toolsFilterBar .tool-filter-btn[data-tool-filter]').forEach(btn => {
+    btn.addEventListener('click', () => setToolFilter(btn.dataset.toolFilter, btn));
+  });
+  document.getElementById('settingsCloseBtn')?.addEventListener('click', closeSettings);
+  document.querySelectorAll('.settings-tab[data-settings-tab]').forEach(btn => {
+    btn.addEventListener('click', () => switchSettingsTab(btn.dataset.settingsTab));
+  });
+  document.getElementById('settingsOverlay')?.addEventListener('click', e => {
+    if (e.target.id === 'settingsOverlay') closeSettings();
+  });
   syncNewsPillWidths();
   window.addEventListener('resize', () => {
     if (resizeSyncTimer) clearTimeout(resizeSyncTimer);
@@ -3969,15 +3979,15 @@ function settingsAddCustomSub() {
 </script>
 
 <!-- ══ SETTINGS MODAL ══ -->
-<div class="settings-overlay" id="settingsOverlay" onclick="if(event.target===this)closeSettings()">
+<div class="settings-overlay" id="settingsOverlay">
   <div class="settings-modal">
     <div class="settings-header">
       <h2>⚙️ Source Settings</h2>
-      <button class="settings-close" onclick="closeSettings()">✕</button>
+      <button class="settings-close" id="settingsCloseBtn">✕</button>
     </div>
     <div class="settings-tabs">
-      <button class="settings-tab active" id="stab-news" onclick="switchSettingsTab('news')">📰 News Sources</button>
-      <button class="settings-tab" id="stab-comm" onclick="switchSettingsTab('comm')">🌐 Reddit</button>
+      <button class="settings-tab active" id="stab-news" data-settings-tab="news">📰 News Sources</button>
+      <button class="settings-tab" id="stab-comm" data-settings-tab="comm">🌐 Reddit</button>
     </div>
     <div class="settings-body" id="settingsBody"></div>
     <div class="settings-footer">
