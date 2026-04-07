@@ -517,6 +517,12 @@
     .tab-btn .tab-icon.reddit svg {
       overflow: visible;
     }
+    #tab-news .tab-label > span:last-child,
+    #tab-reddit .tab-label > span:last-child,
+    #tab-tools .tab-label > span:last-child {
+      position: relative;
+      top: -1px;
+    }
     #tab-communities .tab-label > span:last-child {
       position: relative;
       top: 1px;
@@ -1346,7 +1352,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.54-dev';
+const VERSION = '1.6.55-dev';
 const MAX_ACTIVE_NEWS_SOURCES = 9;
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
