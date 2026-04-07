@@ -532,6 +532,11 @@
       background: var(--card-bg); border: 1px solid var(--border);
       border-radius: 14px;
     }
+    .fallback-note {
+      font-size: 12px;
+      color: var(--subtext);
+      line-height: 1.5;
+    }
     .debug-panel {
       margin-bottom: 12px;
       padding: 10px 12px;
@@ -1566,7 +1571,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.66-dev';
+const VERSION = '1.6.67-dev';
 const MAX_ACTIVE_NEWS_SOURCES = 9;
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
@@ -2607,6 +2612,50 @@ function renderRedditDebug() {
   renderForPrefix('communitiesDebugBox', 'community');
 }
 
+function churningFallbackHTML() {
+  const links = [
+    {
+      title: 'Open r/churning',
+      desc: 'Reddit data is unavailable on this device right now, but you can still open the subreddit directly.',
+      url: 'https://www.reddit.com/r/churning/',
+      cta: 'Open subreddit →',
+    },
+    {
+      title: 'Daily discussion search',
+      desc: 'Jump straight to recent daily discussion threads if that is the main view you want on mobile.',
+      url: 'https://www.reddit.com/r/churning/search/?q=daily%20discussion&restrict_sr=1&sort=new',
+      cta: 'Search discussions →',
+    },
+    {
+      title: 'Top posts this week',
+      desc: 'Use Reddit’s own ranking view as a fallback when the app cannot fetch structured thread data.',
+      url: 'https://www.reddit.com/r/churning/top/?t=week',
+      cta: 'View top posts →',
+    },
+  ];
+
+  return links.map(item => `
+    <div class="digest-post">
+      <div class="digest-post-header">
+        <div class="digest-post-title">
+          <a href="${safeUrl(item.url)}" target="_blank" rel="noopener noreferrer" style="color:var(--text)">${esc(item.title)}</a>
+        </div>
+        <div class="fallback-note">${esc(item.desc)}</div>
+      </div>
+      <div class="digest-post-footer">
+        <a class="thread-link" href="${safeUrl(item.url)}" target="_blank" rel="noopener noreferrer">${esc(item.cta)}</a>
+      </div>
+    </div>
+  `).join('');
+}
+
+function subredditFallbackHTML(sub) {
+  return `
+    <div class="sub-error">Live posts are unavailable right now on this device.</div>
+    <a class="sub-view-all" href="${safeUrl(`https://reddit.com/r/${sub.id}`)}" target="_blank" rel="noopener noreferrer">Open ${esc(sub.name)} →</a>
+  `;
+}
+
 function looksLikeHtmlDocument(text) {
   const trimmed = String(text || '').trim().toLowerCase();
   return trimmed.startsWith('<!doctype html') ||
@@ -3150,8 +3199,8 @@ async function loadRedditDigest() {
   }
 
   if (allFailed) {
-    grid.innerHTML = `<div class="digest-error">⚠️ Could not reach Reddit. Check your connection and try refreshing.</div>`;
-    meta.textContent = 'Failed to load';
+    grid.innerHTML = churningFallbackHTML();
+    meta.textContent = 'Using direct Reddit links';
     return;
   }
 
@@ -3575,8 +3624,8 @@ async function loadCommunities(quiet = false) {
       if (!postsEl) return;
 
       if (!data) {
-        postsEl.innerHTML = `<div class="sub-error">⚠️ Could not load</div>`;
-        metaEl.textContent = 'error';
+        postsEl.innerHTML = subredditFallbackHTML(sub);
+        metaEl.textContent = 'Open on Reddit';
         return;
       }
 
