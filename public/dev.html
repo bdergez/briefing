@@ -3484,7 +3484,7 @@ function renderCards() {
       <div class="card-footer">
         <div class="card-actions">
           <a class="read-link" href="${safeUrl(a.url)}" target="_blank" rel="noopener noreferrer">Read article →</a>
-          <button class="card-action-btn" onclick="hideArticle('${esc(a.url)}')">Hide</button>
+          <button class="card-action-btn" onclick="hideArticle('${esc(escapeInlineArg(a.url))}')">Hide</button>
           <button class="card-action-btn" onclick="muteSourceToday('${esc(a.sourceId)}')">Mute today</button>
         </div>
         <span style="font-size:11px;color:var(--subtext)">${esc(a.sourceName)}</span>
