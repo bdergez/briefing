@@ -1342,7 +1342,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.58';
+const VERSION = '1.6.59';
 const MAX_ACTIVE_NEWS_SOURCES = 9;
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
@@ -1693,6 +1693,7 @@ let visibleArticleCount = 36;
 const ARTICLE_BATCH_SIZE = 24;
 let activeSources = new Set(); // initialized after loadSettings() in init()
 let sourceState = {}; // { id: 'loading'|'ok'|'error' }
+let sourceArticlesCache = {}; // in-session fallback cache for flaky sources
 let activeToolFilter = 'all';
 let hiddenArticleUrls = new Set();
 let hiddenArticlesMeta = {};
@@ -1979,6 +1980,16 @@ async function fetchSource(source) {
   setPillState(source.id, 'loading');
 
   let articles = [];
+  const getCachedArticles = () => sourceArticlesCache[source.id] ? [...sourceArticlesCache[source.id]] : null;
+  const cacheArticles = items => {
+    if (items && items.length) sourceArticlesCache[source.id] = [...items];
+  };
+  const useCachedArticles = () => {
+    const cached = getCachedArticles();
+    if (!cached) return null;
+    setPillState(source.id, 'ok', cached.length);
+    return cached;
+  };
 
   if (source.articlesPage) {
     const htmlText = await fetchTextWithProxy(source.articlesPage);
@@ -1992,6 +2003,7 @@ async function fetchSource(source) {
         }
       }
       if (items.length >= 5) {
+        cacheArticles(items);
         setPillState(source.id, 'ok', items.length);
         return items;
       }
@@ -2002,6 +2014,8 @@ async function fetchSource(source) {
   if (source.sitemap) {
     const xmlText = await fetchTextWithProxy(source.sitemap);
     if (!xmlText) {
+      const cached = useCachedArticles();
+      if (cached) return cached;
       setPillState(source.id, 'error');
       return [];
     }
@@ -2010,6 +2024,7 @@ async function fetchSource(source) {
       setPillState(source.id, 'ok', 0);
       return [];
     }
+    cacheArticles(items);
     setPillState(source.id, 'ok', items.length);
     return items;
   }
@@ -2025,12 +2040,18 @@ async function fetchSource(source) {
         }
       }
     }
+    if (!articles.length) {
+      const cached = useCachedArticles();
+      if (cached) return cached;
+    }
     articles.sort((a, b) => (b.date || 0) - (a.date || 0));
     articles = articles.slice(0, 200);
   } else {
     // Single-feed source
     const xml = await fetchWithProxy(source.rss);
     if (!xml) {
+      const cached = useCachedArticles();
+      if (cached) return cached;
       setPillState(source.id, 'error');
       return [];
     }
@@ -2048,6 +2069,7 @@ async function fetchSource(source) {
     return [];
   }
 
+  cacheArticles(articles);
   setPillState(source.id, 'ok', articles.length);
   return articles;
 }
