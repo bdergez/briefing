@@ -537,29 +537,6 @@
       color: var(--subtext);
       line-height: 1.5;
     }
-    .debug-panel {
-      margin-bottom: 12px;
-      padding: 10px 12px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background: var(--tag-bg);
-      color: var(--subtext);
-      font-size: 11px;
-      line-height: 1.45;
-    }
-    .debug-panel[hidden] { display: none; }
-    .debug-panel-title {
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.4px;
-      color: var(--text);
-      margin-bottom: 6px;
-    }
-    .debug-panel-entry { margin-top: 4px; word-break: break-word; }
-    .debug-ok { color: #16a34a; }
-    .debug-fail { color: #dc2626; }
-
     /* ── TAB BAR ───────────────────────────────────────────────── */
     .tab-bar {
       display: flex; gap: 4px;
@@ -1427,7 +1404,6 @@
   <div id="panel-reddit" style="display:none">
 
     <div class="digest-meta" id="digestMeta" style="font-size:12px;color:var(--subtext);margin-bottom:12px">Loading threads…</div>
-    <div class="debug-panel" id="redditDebugBox" hidden></div>
     <div class="digest-layout">
       <div class="thread-list-panel" id="threadListPanel" style="display:none"></div>
       <div class="thread-detail-panel">
@@ -1514,7 +1490,6 @@
     <div class="comm-layout">
       <div class="comm-nav-panel" id="commNavPanel" style="display:none"></div>
       <div class="comm-detail-panel">
-        <div class="debug-panel" id="communitiesDebugBox" hidden></div>
         <div class="communities-wrap" id="communitiesWrap">
           <div class="community-category">
             <div class="category-header">
@@ -1571,7 +1546,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.67-dev';
+const VERSION = '1.6.68-dev';
 const MAX_ACTIVE_NEWS_SOURCES = 9;
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
@@ -1944,7 +1919,6 @@ let redditDigestLoaded = false; // lazy-load on first Churning tab open
 let communitiesLoaded = false; // only load once; skip on News Feed refreshes
 let communitiesRefreshTimer = null; // background 60-min auto-refresh timer
 let commSearchQuery = ''; // current filter string in communities nav panel
-let redditDebugEntries = [];
 const SUBREDDIT_FETCH_BATCH_SIZE = 3;
 const SUBREDDIT_FETCH_BATCH_DELAY_MS = 250;
 let lastNewsPillWidth = '';
@@ -2569,49 +2543,6 @@ function renderNewsSkeletons() {
   grid.innerHTML = newsSkeletonCardsHTML(getNewsSkeletonCount());
 }
 
-function resetRedditDebug(scopePrefix = '') {
-  if (!scopePrefix) {
-    redditDebugEntries = [];
-  } else {
-    redditDebugEntries = redditDebugEntries.filter(entry => !entry.scope.startsWith(scopePrefix));
-  }
-  renderRedditDebug();
-}
-
-function recordRedditDebug(scope, strategy, status, detail = '') {
-  redditDebugEntries.unshift({
-    scope,
-    strategy,
-    status,
-    detail: detail ? String(detail).slice(0, 160) : '',
-  });
-  redditDebugEntries = redditDebugEntries.slice(0, 18);
-  renderRedditDebug();
-}
-
-function renderRedditDebug() {
-  const renderForPrefix = (id, prefix) => {
-    const box = document.getElementById(id);
-    if (!box) return;
-    const entries = redditDebugEntries.filter(entry => entry.scope.startsWith(prefix)).slice(0, 8);
-    if (!entries.length) {
-      box.hidden = true;
-      box.innerHTML = '';
-      return;
-    }
-    box.hidden = false;
-    box.innerHTML =
-      `<div class="debug-panel-title">Reddit fetch diagnostics</div>` +
-      entries.map(entry => {
-        const cls = entry.status === 'ok' ? 'debug-ok' : 'debug-fail';
-        const detail = entry.detail ? ` · ${esc(entry.detail)}` : '';
-        return `<div class="debug-panel-entry"><span class="${cls}">${esc(entry.status.toUpperCase())}</span> ${esc(entry.scope)} via ${esc(entry.strategy)}${detail}</div>`;
-      }).join('');
-  };
-  renderForPrefix('redditDebugBox', 'churning');
-  renderForPrefix('communitiesDebugBox', 'community');
-}
-
 function churningFallbackHTML() {
   const links = [
     {
@@ -3054,10 +2985,9 @@ async function fetchThreadComments(postId, limit = 25) {
   for (const [name, run] of strategies) {
     try {
       data = await run();
-      recordRedditDebug('churning-comments', name, 'ok', `post ${postId}`);
       break;
     } catch(e) {
-      recordRedditDebug('churning-comments', name, 'fail', e?.message || 'request failed');
+      // try next strategy
     }
   }
   return data
@@ -3140,7 +3070,6 @@ function selectThread(postId, day) {
 async function loadRedditDigest() {
   const grid = document.getElementById('digestGrid');
   const meta = document.getElementById('digestMeta');
-  resetRedditDebug('churning');
 
   const REDDIT_URL = 'https://www.reddit.com/r/churning/hot.json?limit=50&raw_json=1';
 
@@ -3176,7 +3105,6 @@ async function loadRedditDigest() {
   for (const [name, strategy] of STRATEGIES) {
     try {
       const data = await strategy();
-      recordRedditDebug('churning-feed', name, 'ok', 'feed loaded');
       const children = data?.data?.children || [];
       if (children.length === 0) continue;
       const now = new Date();
@@ -3193,9 +3121,7 @@ async function loadRedditDigest() {
         .slice(0, 50);
       allFailed = false;
       break;
-    } catch (e) {
-      recordRedditDebug('churning-feed', name, 'fail', e?.message || 'request failed');
-    }
+    } catch (e) { /* try next */ }
   }
 
   if (allFailed) {
@@ -3562,10 +3488,9 @@ async function fetchSubreddit(subId) {
   for (const [name, run] of strategies) {
     try {
       const data = await run();
-      recordRedditDebug(`community:${subId}`, name, 'ok', 'subreddit loaded');
       return data;
     } catch(e) {
-      recordRedditDebug(`community:${subId}`, name, 'fail', e?.message || 'request failed');
+      // try next
     }
   }
   return null;
@@ -3573,7 +3498,6 @@ async function fetchSubreddit(subId) {
 
 async function loadCommunities(quiet = false) {
   const wrap = document.getElementById('communitiesWrap');
-  if (!quiet) resetRedditDebug('community');
   if (!quiet) {
     // Full load: reset state and build scaffold with skeletons
     selectedCommCat = 0;

@@ -532,6 +532,11 @@
       background: var(--card-bg); border: 1px solid var(--border);
       border-radius: 14px;
     }
+    .fallback-note {
+      font-size: 12px;
+      color: var(--subtext);
+      line-height: 1.5;
+    }
 
     /* ── TAB BAR ───────────────────────────────────────────────── */
     .tab-bar {
@@ -1527,7 +1532,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.63';
+const VERSION = '1.6.68';
 const MAX_ACTIVE_NEWS_SOURCES = 9;
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
@@ -2524,6 +2529,79 @@ function renderNewsSkeletons() {
   grid.innerHTML = newsSkeletonCardsHTML(getNewsSkeletonCount());
 }
 
+function churningFallbackHTML() {
+  const links = [
+    {
+      title: 'Open r/churning',
+      desc: 'Reddit data is unavailable on this device right now, but you can still open the subreddit directly.',
+      url: 'https://www.reddit.com/r/churning/',
+      cta: 'Open subreddit →',
+    },
+    {
+      title: 'Daily discussion search',
+      desc: 'Jump straight to recent daily discussion threads if that is the main view you want on mobile.',
+      url: 'https://www.reddit.com/r/churning/search/?q=daily%20discussion&restrict_sr=1&sort=new',
+      cta: 'Search discussions →',
+    },
+    {
+      title: 'Top posts this week',
+      desc: 'Use Reddit’s own ranking view as a fallback when the app cannot fetch structured thread data.',
+      url: 'https://www.reddit.com/r/churning/top/?t=week',
+      cta: 'View top posts →',
+    },
+  ];
+
+  return links.map(item => `
+    <div class="digest-post">
+      <div class="digest-post-header">
+        <div class="digest-post-title">
+          <a href="${safeUrl(item.url)}" target="_blank" rel="noopener noreferrer" style="color:var(--text)">${esc(item.title)}</a>
+        </div>
+        <div class="fallback-note">${esc(item.desc)}</div>
+      </div>
+      <div class="digest-post-footer">
+        <a class="thread-link" href="${safeUrl(item.url)}" target="_blank" rel="noopener noreferrer">${esc(item.cta)}</a>
+      </div>
+    </div>
+  `).join('');
+}
+
+function subredditFallbackHTML(sub) {
+  return `
+    <div class="sub-error">Live posts are unavailable right now on this device.</div>
+    <a class="sub-view-all" href="${safeUrl(`https://reddit.com/r/${sub.id}`)}" target="_blank" rel="noopener noreferrer">Open ${esc(sub.name)} →</a>
+  `;
+}
+
+function looksLikeHtmlDocument(text) {
+  const trimmed = String(text || '').trim().toLowerCase();
+  return trimmed.startsWith('<!doctype html') ||
+    trimmed.startsWith('<html') ||
+    trimmed.startsWith('<body') ||
+    trimmed.includes('<head') ||
+    trimmed.includes('<body');
+}
+
+function parseRedditJsonText(text) {
+  const trimmed = String(text || '').trim();
+  if (!trimmed) throw new Error('Empty response');
+  if (looksLikeHtmlDocument(trimmed)) throw new Error('Received HTML instead of JSON');
+  const first = trimmed[0];
+  if (first !== '{' && first !== '[') throw new Error('Unexpected non-JSON response');
+  return JSON.parse(trimmed);
+}
+
+async function readRedditJsonResponse(res, opts = {}) {
+  if (!res.ok) throw new Error(`Bad status: ${res.status}`);
+  const text = await res.text();
+  if (opts.allOrigins) {
+    const wrapper = JSON.parse(text);
+    if (!wrapper || typeof wrapper.contents !== 'string') throw new Error('Invalid proxy wrapper');
+    return parseRedditJsonText(wrapper.contents);
+  }
+  return parseRedditJsonText(text);
+}
+
 function discussionSkeletonHTML() {
   return `
     <div class="topic-list skeleton-topic-list">
@@ -2875,19 +2953,19 @@ async function fetchThreadComments(postId, limit = 25) {
   const strategies = [
     async () => {
       const res = await fetchWithTimeout(url, { headers: { Accept: 'application/json' }, credentials: 'omit' }, 8000);
-      if (!res.ok) throw new Error();
-      return res.json();
+      return readRedditJsonResponse(res);
     },
     async () => {
       const res = await fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, {}, 12000);
-      if (!res.ok) throw new Error();
-      const w = await res.json();
-      return JSON.parse(w.contents);
+      return readRedditJsonResponse(res, { allOrigins: true });
     },
     async () => {
       const res = await fetchWithTimeout(`https://corsproxy.io/?${encodeURIComponent(url)}`, {}, 12000);
-      if (!res.ok) throw new Error();
-      return res.json();
+      return readRedditJsonResponse(res);
+    },
+    async () => {
+      const res = await fetchWithTimeout(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`, {}, 12000);
+      return readRedditJsonResponse(res);
     },
   ];
   for (const s of strategies) {
@@ -2980,24 +3058,25 @@ async function loadRedditDigest() {
   const STRATEGIES = [
     async () => {
       const res = await fetchWithTimeout(REDDIT_URL, { headers: { Accept: 'application/json' }, credentials: 'omit' }, 15000);
-      if (!res.ok) throw new Error('Bad status: ' + res.status);
-      return res.json();
+      return readRedditJsonResponse(res);
     },
     async () => {
-      // allorigins proxy wraps response in { contents: "json string" }
       const res = await fetchWithTimeout(
         `https://api.allorigins.win/get?url=${encodeURIComponent(REDDIT_URL)}`, {}, 18000
       );
-      if (!res.ok) throw new Error('Proxy error');
-      const wrapper = await res.json();
-      return JSON.parse(wrapper.contents);
+      return readRedditJsonResponse(res, { allOrigins: true });
     },
     async () => {
       const res = await fetchWithTimeout(
         `https://corsproxy.io/?${encodeURIComponent(REDDIT_URL)}`, {}, 18000
       );
-      if (!res.ok) throw new Error('Proxy error');
-      return res.json();
+      return readRedditJsonResponse(res);
+    },
+    async () => {
+      const res = await fetchWithTimeout(
+        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(REDDIT_URL)}`, {}, 18000
+      );
+      return readRedditJsonResponse(res);
     },
   ];
 
@@ -3027,8 +3106,8 @@ async function loadRedditDigest() {
   }
 
   if (allFailed) {
-    grid.innerHTML = `<div class="digest-error">⚠️ Could not reach Reddit. Check your connection and try refreshing.</div>`;
-    meta.textContent = 'Failed to load';
+    grid.innerHTML = churningFallbackHTML();
+    meta.textContent = 'Using direct Reddit links';
     return;
   }
 
@@ -3379,11 +3458,13 @@ async function fetchSubreddit(subId) {
   const url = `https://www.reddit.com/r/${subId}/hot.json?limit=50&raw_json=1`;
   const strategies = [
     // Direct — credentials:omit helps bypass iOS ITP blocking
-    () => fetchWithTimeout(url, { headers: { Accept: 'application/json' }, credentials: 'omit' }, 10000).then(r => r.ok ? r.json() : Promise.reject()),
+    () => fetchWithTimeout(url, { headers: { Accept: 'application/json' }, credentials: 'omit' }, 10000).then(r => readRedditJsonResponse(r)),
     // allorigins proxy fallback
-    () => fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, {}, 14000).then(r => r.json()).then(w => JSON.parse(w.contents)),
+    () => fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, {}, 14000).then(r => readRedditJsonResponse(r, { allOrigins: true })),
     // corsproxy.io as second proxy fallback (iOS/Android compatibility)
-    () => fetchWithTimeout(`https://corsproxy.io/?${encodeURIComponent(url)}`, {}, 14000).then(r => r.ok ? r.json() : Promise.reject()),
+    () => fetchWithTimeout(`https://corsproxy.io/?${encodeURIComponent(url)}`, {}, 14000).then(r => readRedditJsonResponse(r)),
+    // codetabs fallback
+    () => fetchWithTimeout(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`, {}, 14000).then(r => readRedditJsonResponse(r)),
   ];
   for (const s of strategies) {
     try { return await s(); } catch(e) {}
@@ -3443,8 +3524,8 @@ async function loadCommunities(quiet = false) {
       if (!postsEl) return;
 
       if (!data) {
-        postsEl.innerHTML = `<div class="sub-error">⚠️ Could not load</div>`;
-        metaEl.textContent = 'error';
+        postsEl.innerHTML = subredditFallbackHTML(sub);
+        metaEl.textContent = 'Open on Reddit';
         return;
       }
 
