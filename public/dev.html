@@ -1566,7 +1566,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.65-dev';
+const VERSION = '1.6.66-dev';
 const MAX_ACTIVE_NEWS_SOURCES = 9;
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
@@ -2997,6 +2997,10 @@ async function fetchThreadComments(postId, limit = 25) {
       const res = await fetchWithTimeout(`https://corsproxy.io/?${encodeURIComponent(url)}`, {}, 12000);
       return readRedditJsonResponse(res);
     }],
+    ['codetabs', async () => {
+      const res = await fetchWithTimeout(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`, {}, 12000);
+      return readRedditJsonResponse(res);
+    }],
   ];
   for (const [name, run] of strategies) {
     try {
@@ -3106,6 +3110,12 @@ async function loadRedditDigest() {
     ['corsproxy', async () => {
       const res = await fetchWithTimeout(
         `https://corsproxy.io/?${encodeURIComponent(REDDIT_URL)}`, {}, 18000
+      );
+      return readRedditJsonResponse(res);
+    }],
+    ['codetabs', async () => {
+      const res = await fetchWithTimeout(
+        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(REDDIT_URL)}`, {}, 18000
       );
       return readRedditJsonResponse(res);
     }],
@@ -3497,6 +3507,8 @@ async function fetchSubreddit(subId) {
     ['allorigins', () => fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, {}, 14000).then(r => readRedditJsonResponse(r, { allOrigins: true }))],
     // corsproxy.io as second proxy fallback (iOS/Android compatibility)
     ['corsproxy', () => fetchWithTimeout(`https://corsproxy.io/?${encodeURIComponent(url)}`, {}, 14000).then(r => readRedditJsonResponse(r))],
+    // codetabs fallback
+    ['codetabs', () => fetchWithTimeout(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`, {}, 14000).then(r => readRedditJsonResponse(r))],
   ];
   for (const [name, run] of strategies) {
     try {
