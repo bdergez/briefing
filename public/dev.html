@@ -323,20 +323,7 @@
     }
     .skeleton-wrap {
       grid-column: 1 / -1;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-    .skeleton-caption {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 0 2px;
-    }
-    .skeleton-caption .loading-text,
-    .skeleton-caption .loading-sub {
-      text-align: center;
+      display: block;
     }
     .skeleton-card {
       pointer-events: none;
@@ -1344,7 +1331,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.46-dev';
+const VERSION = '1.6.47-dev';
 const MAX_ACTIVE_NEWS_SOURCES = 9;
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
@@ -2062,11 +2049,7 @@ async function loadAll() {
   document.getElementById('refreshBtn').disabled = true;
   document.getElementById('refreshTime').textContent = 'Loading…';
   document.getElementById('offersStrip').style.display = 'none';
-  document.getElementById('cardGrid').innerHTML = newsSkeletonCardsHTML(
-    6,
-    `Fetching articles from ${getEffectiveNewsSources().length} sources…`,
-    'Using RSS feeds with CORS proxy — may take 10-20 seconds'
-  );
+  document.getElementById('cardGrid').innerHTML = newsSkeletonCardsHTML(6);
 
   buildPills();
 
@@ -2276,7 +2259,7 @@ function safeUrl(url) {
   return /^https?:\/\//i.test(trimmed) ? trimmed : '#';
 }
 
-function newsSkeletonCardsHTML(count = 6, message = 'Fetching articles…', sub = 'Loading the latest items from your active sources') {
+function newsSkeletonCardsHTML(count = 6) {
   const cards = Array.from({ length: count }, () => `
     <div class="card skeleton-card">
       <div class="card-meta">
@@ -2298,10 +2281,6 @@ function newsSkeletonCardsHTML(count = 6, message = 'Fetching articles…', sub 
 
   return `
     <div class="skeleton-wrap">
-      <div class="skeleton-caption">
-        <div class="loading-text">${esc(message)}</div>
-        <div class="loading-sub">${esc(sub)}</div>
-      </div>
       <div class="skeleton-grid">${cards}</div>
     </div>`;
 }
