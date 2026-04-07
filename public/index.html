@@ -1198,10 +1198,6 @@
     <!-- CARDS GRID -->
     <div class="grid" id="cardGrid">
       <div class="skeleton-wrap">
-        <div class="skeleton-caption">
-          <div class="loading-text">Loading your dashboard…</div>
-          <div class="loading-sub">Fetching articles from sources via RSS</div>
-        </div>
         <div class="skeleton-grid">
           <div class="card skeleton-card">
             <div class="card-meta">
@@ -1211,11 +1207,17 @@
             </div>
             <span class="skeleton-block skeleton-title"></span>
             <span class="skeleton-block skeleton-title short"></span>
-            <span class="skeleton-block skeleton-desc"></span>
-            <span class="skeleton-block skeleton-desc mid"></span>
-            <span class="skeleton-block skeleton-desc short"></span>
+            <div class="card-desc">
+              <span class="skeleton-block skeleton-desc"></span>
+              <span class="skeleton-block skeleton-desc mid" style="margin-top:8px"></span>
+              <span class="skeleton-block skeleton-desc short" style="margin-top:8px"></span>
+            </div>
             <div class="card-footer">
-              <span class="skeleton-block skeleton-link"></span>
+              <div class="card-actions">
+                <span class="skeleton-block skeleton-link"></span>
+                <span class="skeleton-block skeleton-action"></span>
+                <span class="skeleton-block skeleton-action mute"></span>
+              </div>
               <span class="skeleton-block skeleton-source"></span>
             </div>
           </div>
@@ -1227,11 +1229,17 @@
             </div>
             <span class="skeleton-block skeleton-title"></span>
             <span class="skeleton-block skeleton-title short"></span>
-            <span class="skeleton-block skeleton-desc"></span>
-            <span class="skeleton-block skeleton-desc mid"></span>
-            <span class="skeleton-block skeleton-desc short"></span>
+            <div class="card-desc">
+              <span class="skeleton-block skeleton-desc"></span>
+              <span class="skeleton-block skeleton-desc mid" style="margin-top:8px"></span>
+              <span class="skeleton-block skeleton-desc short" style="margin-top:8px"></span>
+            </div>
             <div class="card-footer">
-              <span class="skeleton-block skeleton-link"></span>
+              <div class="card-actions">
+                <span class="skeleton-block skeleton-link"></span>
+                <span class="skeleton-block skeleton-action"></span>
+                <span class="skeleton-block skeleton-action mute"></span>
+              </div>
               <span class="skeleton-block skeleton-source"></span>
             </div>
           </div>
@@ -1243,11 +1251,17 @@
             </div>
             <span class="skeleton-block skeleton-title"></span>
             <span class="skeleton-block skeleton-title short"></span>
-            <span class="skeleton-block skeleton-desc"></span>
-            <span class="skeleton-block skeleton-desc mid"></span>
-            <span class="skeleton-block skeleton-desc short"></span>
+            <div class="card-desc">
+              <span class="skeleton-block skeleton-desc"></span>
+              <span class="skeleton-block skeleton-desc mid" style="margin-top:8px"></span>
+              <span class="skeleton-block skeleton-desc short" style="margin-top:8px"></span>
+            </div>
             <div class="card-footer">
-              <span class="skeleton-block skeleton-link"></span>
+              <div class="card-actions">
+                <span class="skeleton-block skeleton-link"></span>
+                <span class="skeleton-block skeleton-action"></span>
+                <span class="skeleton-block skeleton-action mute"></span>
+              </div>
               <span class="skeleton-block skeleton-source"></span>
             </div>
           </div>
@@ -1311,7 +1325,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.56';
+const VERSION = '1.6.57';
 const MAX_ACTIVE_NEWS_SOURCES = 9;
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
