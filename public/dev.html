@@ -1542,7 +1542,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.64-dev';
+const VERSION = '1.6.65-dev';
 const MAX_ACTIVE_NEWS_SOURCES = 9;
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
@@ -2889,6 +2889,11 @@ async function fetchThreadComments(postId, limit = 25) {
   let data = null;
   const strategies = [
     async () => {
+      const res = await fetchWithTimeout(`/api/reddit/comments/${encodeURIComponent(postId)}?limit=${limit}&sort=top&depth=1`, {}, 8000);
+      if (!res.ok) throw new Error();
+      return res.json();
+    },
+    async () => {
       const res = await fetchWithTimeout(url, { headers: { Accept: 'application/json' }, credentials: 'omit' }, 8000);
       if (!res.ok) throw new Error();
       return res.json();
@@ -2993,6 +2998,11 @@ async function loadRedditDigest() {
 
   // Try direct first, then CORS proxies as fallback (needed for some mobile browsers)
   const STRATEGIES = [
+    async () => {
+      const res = await fetchWithTimeout('/api/reddit/churning-hot', {}, 12000);
+      if (!res.ok) throw new Error('Bad status: ' + res.status);
+      return res.json();
+    },
     async () => {
       const res = await fetchWithTimeout(REDDIT_URL, { headers: { Accept: 'application/json' }, credentials: 'omit' }, 15000);
       if (!res.ok) throw new Error('Bad status: ' + res.status);
@@ -3400,6 +3410,7 @@ function selectCommSub(subId, ci) {
 async function fetchSubreddit(subId) {
   const url = `https://www.reddit.com/r/${subId}/hot.json?limit=50&raw_json=1`;
   const strategies = [
+    () => fetchWithTimeout(`/api/reddit/sub/${encodeURIComponent(subId)}?limit=50`, {}, 10000).then(r => r.ok ? r.json() : Promise.reject()),
     // Direct — credentials:omit helps bypass iOS ITP blocking
     () => fetchWithTimeout(url, { headers: { Accept: 'application/json' }, credentials: 'omit' }, 10000).then(r => r.ok ? r.json() : Promise.reject()),
     // allorigins proxy fallback
