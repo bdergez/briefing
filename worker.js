@@ -3,14 +3,21 @@ export default {
     const url = new URL(request.url);
 
     if (url.pathname.startsWith('/api/reddit/')) {
-      return handleRedditApi(url);
+      return handleRedditApi(request, url);
     }
 
     return env.ASSETS.fetch(request);
   },
 };
 
-async function handleRedditApi(url) {
+async function handleRedditApi(request, url) {
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders(request.headers.get('Origin')),
+    });
+  }
+
   let upstreamUrl = null;
 
   if (url.pathname === '/api/reddit/churning-hot') {
@@ -48,6 +55,7 @@ async function handleRedditApi(url) {
     headers: {
       'content-type': 'application/json; charset=UTF-8',
       'cache-control': 'no-store',
+      ...corsHeaders(request.headers.get('Origin')),
     },
   });
 }
@@ -58,6 +66,16 @@ function jsonError(message, status) {
     headers: {
       'content-type': 'application/json; charset=UTF-8',
       'cache-control': 'no-store',
+      ...corsHeaders(),
     },
   });
+}
+
+function corsHeaders(origin = '*') {
+  return {
+    'access-control-allow-origin': origin || '*',
+    'access-control-allow-methods': 'GET, OPTIONS',
+    'access-control-allow-headers': 'Content-Type',
+    vary: 'Origin',
+  };
 }
