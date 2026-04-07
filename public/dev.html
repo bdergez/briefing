@@ -476,6 +476,56 @@
       color: var(--subtext); font-size: 14px;
       display: flex; flex-direction: column; align-items: center; gap: 12px;
     }
+    .digest-skeleton-stack { display: flex; flex-direction: column; gap: 16px; }
+    .digest-skeleton-post {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-left: 4px solid #ff4500;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      pointer-events: none;
+    }
+    .digest-skeleton-header {
+      padding: 16px 20px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .digest-skeleton-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .digest-skeleton-meta .skeleton-block { height: 12px; border-radius: 7px; }
+    .digest-skeleton-meta .meta-long { width: 92px; }
+    .digest-skeleton-meta .meta-short { width: 48px; }
+    .digest-skeleton-meta .meta-time { width: 64px; margin-left: auto; }
+    .digest-skeleton-title { height: 14px; border-radius: 8px; }
+    .digest-skeleton-title.short { width: 74%; }
+    .topic-list.skeleton-topic-list { pointer-events: none; }
+    .topic-list.skeleton-topic-list .topic-list-label { margin-bottom: 12px; }
+    .topic-item.topic-skeleton-item { align-items: center; gap: 12px; }
+    .topic-votes.skeleton-topic-votes {
+      min-width: 36px;
+      height: 24px;
+      padding: 0;
+      background: transparent;
+    }
+    .topic-content.skeleton-topic-content { gap: 7px; }
+    .skeleton-topic-author { width: 72px; height: 10px; border-radius: 7px; }
+    .skeleton-topic-line { width: 100%; height: 11px; border-radius: 7px; }
+    .skeleton-topic-line.short { width: 78%; }
+    .digest-skeleton-footer {
+      padding: 10px 20px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .digest-skeleton-link { width: 118px; height: 12px; border-radius: 7px; }
+    .digest-skeleton-count { width: 84px; height: 12px; border-radius: 7px; }
     .digest-error {
       text-align: center; padding: 30px;
       color: var(--subtext); font-size: 14px;
@@ -609,6 +659,31 @@
     .sub-loading { padding: 20px; text-align: center; color: var(--subtext); font-size: 13px;
       display: flex; align-items: center; justify-content: center; gap: 8px; }
     .sub-error { padding: 16px; text-align: center; color: var(--subtext); font-size: 12px; }
+    .sub-skeleton-post {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--border);
+      pointer-events: none;
+    }
+    .sub-skeleton-post:last-child { border-bottom: none; }
+    .sub-skeleton-score {
+      min-width: 32px;
+      height: 24px;
+      border-radius: 6px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .sub-skeleton-body { flex: 1; display: flex; flex-direction: column; gap: 7px; }
+    .sub-skeleton-title { height: 12px; width: 100%; border-radius: 7px; }
+    .sub-skeleton-title.short { width: 72%; }
+    .sub-skeleton-desc { height: 10px; width: 88%; border-radius: 7px; }
+    .sub-skeleton-footer { display: flex; align-items: center; gap: 10px; margin-top: 2px; }
+    .sub-skeleton-chip { height: 10px; border-radius: 7px; }
+    .sub-skeleton-chip.short { width: 52px; }
+    .sub-skeleton-chip.mid { width: 68px; }
+    .sub-skeleton-chip.long { width: 84px; }
     .sub-view-all {
       display: block; text-align: center; padding: 10px;
       font-size: 12px; font-weight: 600; color: var(--accent);
@@ -1330,9 +1405,75 @@
       <div class="thread-detail-panel">
         <div class="section-label" id="digestSectionLabel"></div>
         <div class="digest-grid" id="digestGrid">
-          <div class="digest-loading">
-            <div class="spinner"></div>
-            Fetching threads and discussion topics…
+          <div class="digest-skeleton-stack">
+            <div class="digest-skeleton-post">
+              <div class="digest-skeleton-header">
+                <div class="digest-skeleton-meta">
+                  <span class="skeleton-block meta-long"></span>
+                  <span class="skeleton-block meta-short"></span>
+                  <span class="skeleton-block meta-time"></span>
+                </div>
+                <span class="skeleton-block digest-skeleton-title"></span>
+                <span class="skeleton-block digest-skeleton-title short"></span>
+              </div>
+              <div class="topic-list skeleton-topic-list">
+                <div class="topic-list-label"><span class="skeleton-block skeleton-topic-author" style="width:108px"></span></div>
+                <div class="topic-item topic-skeleton-item">
+                  <span class="skeleton-block skeleton-topic-votes"></span>
+                  <div class="topic-content skeleton-topic-content">
+                    <span class="skeleton-block skeleton-topic-author"></span>
+                    <span class="skeleton-block skeleton-topic-line"></span>
+                    <span class="skeleton-block skeleton-topic-line short"></span>
+                  </div>
+                </div>
+                <div class="topic-item topic-skeleton-item">
+                  <span class="skeleton-block skeleton-topic-votes"></span>
+                  <div class="topic-content skeleton-topic-content">
+                    <span class="skeleton-block skeleton-topic-author"></span>
+                    <span class="skeleton-block skeleton-topic-line"></span>
+                    <span class="skeleton-block skeleton-topic-line short"></span>
+                  </div>
+                </div>
+              </div>
+              <div class="digest-skeleton-footer">
+                <span class="skeleton-block digest-skeleton-link"></span>
+                <span class="skeleton-block digest-skeleton-count"></span>
+              </div>
+            </div>
+            <div class="digest-skeleton-post">
+              <div class="digest-skeleton-header">
+                <div class="digest-skeleton-meta">
+                  <span class="skeleton-block meta-long"></span>
+                  <span class="skeleton-block meta-short"></span>
+                  <span class="skeleton-block meta-time"></span>
+                </div>
+                <span class="skeleton-block digest-skeleton-title"></span>
+                <span class="skeleton-block digest-skeleton-title short"></span>
+              </div>
+              <div class="topic-list skeleton-topic-list">
+                <div class="topic-list-label"><span class="skeleton-block skeleton-topic-author" style="width:108px"></span></div>
+                <div class="topic-item topic-skeleton-item">
+                  <span class="skeleton-block skeleton-topic-votes"></span>
+                  <div class="topic-content skeleton-topic-content">
+                    <span class="skeleton-block skeleton-topic-author"></span>
+                    <span class="skeleton-block skeleton-topic-line"></span>
+                    <span class="skeleton-block skeleton-topic-line short"></span>
+                  </div>
+                </div>
+                <div class="topic-item topic-skeleton-item">
+                  <span class="skeleton-block skeleton-topic-votes"></span>
+                  <div class="topic-content skeleton-topic-content">
+                    <span class="skeleton-block skeleton-topic-author"></span>
+                    <span class="skeleton-block skeleton-topic-line"></span>
+                    <span class="skeleton-block skeleton-topic-line short"></span>
+                  </div>
+                </div>
+              </div>
+              <div class="digest-skeleton-footer">
+                <span class="skeleton-block digest-skeleton-link"></span>
+                <span class="skeleton-block digest-skeleton-count"></span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1346,7 +1487,51 @@
       <div class="comm-nav-panel" id="commNavPanel" style="display:none"></div>
       <div class="comm-detail-panel">
         <div class="communities-wrap" id="communitiesWrap">
-          <div class="digest-loading"><div class="spinner"></div>Loading communities…</div>
+          <div class="community-category">
+            <div class="category-header">
+              <div class="category-header-left">
+                <h3><span class="skeleton-block skeleton-topic-author" style="width:132px;height:16px"></span></h3>
+              </div>
+            </div>
+            <div class="category-body">
+              <div class="sub-block">
+                <div class="sub-header">
+                  <div class="sub-title"><span class="skeleton-block skeleton-topic-author" style="width:116px;height:14px"></span></div>
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <span class="skeleton-block skeleton-topic-author" style="width:58px"></span>
+                  </div>
+                </div>
+                <div>
+                  <div class="sub-skeleton-post">
+                    <span class="skeleton-block sub-skeleton-score"></span>
+                    <div class="sub-skeleton-body">
+                      <span class="skeleton-block sub-skeleton-title"></span>
+                      <span class="skeleton-block sub-skeleton-title short"></span>
+                      <span class="skeleton-block sub-skeleton-desc"></span>
+                      <div class="sub-skeleton-footer">
+                        <span class="skeleton-block sub-skeleton-chip short"></span>
+                        <span class="skeleton-block sub-skeleton-chip mid"></span>
+                        <span class="skeleton-block sub-skeleton-chip long"></span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="sub-skeleton-post">
+                    <span class="skeleton-block sub-skeleton-score"></span>
+                    <div class="sub-skeleton-body">
+                      <span class="skeleton-block sub-skeleton-title"></span>
+                      <span class="skeleton-block sub-skeleton-title short"></span>
+                      <span class="skeleton-block sub-skeleton-desc"></span>
+                      <div class="sub-skeleton-footer">
+                        <span class="skeleton-block sub-skeleton-chip short"></span>
+                        <span class="skeleton-block sub-skeleton-chip mid"></span>
+                        <span class="skeleton-block sub-skeleton-chip long"></span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1357,7 +1542,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.62-dev';
+const VERSION = '1.6.63-dev';
 const MAX_ACTIVE_NEWS_SOURCES = 9;
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
@@ -2148,7 +2333,7 @@ async function refreshCurrentTab() {
   try {
     if (activeTab === 'reddit') {
       redditDigestLoaded = true;
-      document.getElementById('digestGrid').innerHTML = `<div class="digest-loading"><div class="spinner"></div>Fetching r/churning threads…</div>`;
+      document.getElementById('digestGrid').innerHTML = digestSkeletonPostsHTML();
       document.getElementById('digestMeta').textContent = 'Loading…';
       await loadRedditDigest();
     } else if (activeTab === 'communities') {
@@ -2352,6 +2537,62 @@ function renderNewsSkeletons() {
   const grid = document.getElementById('cardGrid');
   if (!grid) return;
   grid.innerHTML = newsSkeletonCardsHTML(getNewsSkeletonCount());
+}
+
+function discussionSkeletonHTML() {
+  return `
+    <div class="topic-list skeleton-topic-list">
+      <div class="topic-list-label"><span class="skeleton-block skeleton-topic-author" style="width:108px"></span></div>
+      ${Array.from({ length: 2 }).map(() => `
+        <div class="topic-item topic-skeleton-item">
+          <span class="skeleton-block skeleton-topic-votes"></span>
+          <div class="topic-content skeleton-topic-content">
+            <span class="skeleton-block skeleton-topic-author"></span>
+            <span class="skeleton-block skeleton-topic-line"></span>
+            <span class="skeleton-block skeleton-topic-line short"></span>
+          </div>
+        </div>`).join('')}
+    </div>`;
+}
+
+function digestSkeletonPostsHTML(count = 2) {
+  return `
+    <div class="digest-skeleton-stack">
+      ${Array.from({ length: count }).map(() => `
+        <div class="digest-skeleton-post">
+          <div class="digest-skeleton-header">
+            <div class="digest-skeleton-meta">
+              <span class="skeleton-block meta-long"></span>
+              <span class="skeleton-block meta-short"></span>
+              <span class="skeleton-block meta-time"></span>
+            </div>
+            <span class="skeleton-block digest-skeleton-title"></span>
+            <span class="skeleton-block digest-skeleton-title short"></span>
+          </div>
+          ${discussionSkeletonHTML()}
+          <div class="digest-skeleton-footer">
+            <span class="skeleton-block digest-skeleton-link"></span>
+            <span class="skeleton-block digest-skeleton-count"></span>
+          </div>
+        </div>`).join('')}
+    </div>`;
+}
+
+function subredditPostSkeletonsHTML(count = 2) {
+  return Array.from({ length: count }).map(() => `
+    <div class="sub-skeleton-post">
+      <span class="skeleton-block sub-skeleton-score"></span>
+      <div class="sub-skeleton-body">
+        <span class="skeleton-block sub-skeleton-title"></span>
+        <span class="skeleton-block sub-skeleton-title short"></span>
+        <span class="skeleton-block sub-skeleton-desc"></span>
+        <div class="sub-skeleton-footer">
+          <span class="skeleton-block sub-skeleton-chip short"></span>
+          <span class="skeleton-block sub-skeleton-chip mid"></span>
+          <span class="skeleton-block sub-skeleton-chip long"></span>
+        </div>
+      </div>
+    </div>`).join('');
 }
 
 function escapeInlineArg(value) {
@@ -2900,9 +3141,9 @@ async function loadRedditDigest() {
     deadline.then(() => null),
   ]);
 
-  // If deadline fired, clear any remaining spinners
+  // If deadline fired, clear any remaining loading skeletons
   document.querySelectorAll('[id^="digest-post-"]').forEach(card => {
-    if (card.innerHTML.includes('Loading discussion')) {
+    if (card.querySelector('.skeleton-topic-list')) {
       const postId = card.id.replace('digest-post-', '');
       const post = posts.find(p => p.id === postId);
       if (post) card.outerHTML = digestPostHTML(post, []);
@@ -2952,14 +3193,7 @@ function digestPostHTML(p, topics) {
   // Topic list from comments
   let topicsHTML = '';
   if (topics === null) {
-    // skeleton
-    topicsHTML = `
-      <div class="topic-list">
-        <div class="topic-list-label">Discussion Topics</div>
-        <div style="font-size:12px;color:var(--subtext);padding:6px 0;display:flex;align-items:center;gap:8px">
-          <div class="spinner" style="width:14px;height:14px;border-width:2px"></div> Loading discussion…
-        </div>
-      </div>`;
+    topicsHTML = discussionSkeletonHTML();
   } else if (topics.length > 0) {
     const TOPICS_INITIAL = 5;
     const TOPICS_PAGE    = 10;
@@ -3204,7 +3438,7 @@ async function loadCommunities(quiet = false) {
               </div>
             </div>
             <div id="sub-posts-${sub.id}">
-              <div class="sub-loading"><div class="spinner" style="width:16px;height:16px;border-width:2px"></div> Fetching…</div>
+              ${subredditPostSkeletonsHTML(2)}
             </div>
           </div>`).join('')}
       </div>
