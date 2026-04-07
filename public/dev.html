@@ -1542,7 +1542,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.63-dev';
+const VERSION = '1.6.64-dev';
 const MAX_ACTIVE_NEWS_SOURCES = 9;
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
@@ -3014,6 +3014,13 @@ async function loadRedditDigest() {
       if (!res.ok) throw new Error('Proxy error');
       return res.json();
     },
+    async () => {
+      const res = await fetchWithTimeout(
+        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(REDDIT_URL)}`, {}, 18000
+      );
+      if (!res.ok) throw new Error('Proxy error');
+      return res.json();
+    },
   ];
 
   let posts = [];
@@ -3399,6 +3406,8 @@ async function fetchSubreddit(subId) {
     () => fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, {}, 14000).then(r => r.json()).then(w => JSON.parse(w.contents)),
     // corsproxy.io as second proxy fallback (iOS/Android compatibility)
     () => fetchWithTimeout(`https://corsproxy.io/?${encodeURIComponent(url)}`, {}, 14000).then(r => r.ok ? r.json() : Promise.reject()),
+    // codetabs fallback
+    () => fetchWithTimeout(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`, {}, 14000).then(r => r.ok ? r.json() : Promise.reject()),
   ];
   for (const s of strategies) {
     try { return await s(); } catch(e) {}
