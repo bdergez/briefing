@@ -46,12 +46,11 @@ async function handleRedditApi(request, url) {
     Accept: 'application/json',
     'User-Agent': 'PMDash/1.0 (+https://pmdash.evrolab.net)',
   };
-
-  const response = await fetch(upstreamUrl.toString(), { headers });
-  const body = await response.text();
+  const body = await fetchRedditJson(upstreamUrl.toString(), headers);
+  if (!body) return jsonError('Upstream fetch failed', 502, request.headers.get('Origin'));
 
   return new Response(body, {
-    status: response.status,
+    status: 200,
     headers: {
       'content-type': 'application/json; charset=UTF-8',
       'cache-control': 'no-store',
@@ -60,13 +59,49 @@ async function handleRedditApi(request, url) {
   });
 }
 
-function jsonError(message, status) {
+async function fetchRedditJson(url, headers) {
+  const strategies = [
+    async () => {
+      const response = await fetch(url, { headers });
+      if (!response.ok) throw new Error(`Direct failed: ${response.status}`);
+      return response.text();
+    },
+    async () => {
+      const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+      if (!response.ok) throw new Error(`AllOrigins failed: ${response.status}`);
+      const wrapper = await response.json();
+      return wrapper.contents;
+    },
+    async () => {
+      const response = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`);
+      if (!response.ok) throw new Error(`Corsproxy failed: ${response.status}`);
+      return response.text();
+    },
+    async () => {
+      const response = await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`);
+      if (!response.ok) throw new Error(`Codetabs failed: ${response.status}`);
+      return response.text();
+    },
+  ];
+
+  for (const strategy of strategies) {
+    try {
+      return await strategy();
+    } catch (error) {
+      // try the next fallback
+    }
+  }
+
+  return null;
+}
+
+function jsonError(message, status, origin) {
   return new Response(JSON.stringify({ error: message }), {
     status,
     headers: {
       'content-type': 'application/json; charset=UTF-8',
       'cache-control': 'no-store',
-      ...corsHeaders(),
+      ...corsHeaders(origin),
     },
   });
 }
