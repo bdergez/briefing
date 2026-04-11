@@ -1541,7 +1541,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.7.0';
+const VERSION = '1.7.1';
 const MAX_ACTIVE_NEWS_SOURCES = 9;
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
@@ -2693,9 +2693,17 @@ function isMobileNewsOnlyMode() {
   return !isDesktop();
 }
 
+function shouldRunAuxiliaryTabs() {
+  return !isMobileNewsOnlyMode();
+}
+
 function enforceMobileNewsMode() {
-  if (isMobileNewsOnlyMode() && getRawActiveTabName() !== 'news') {
-    switchTab('news');
+  if (isMobileNewsOnlyMode()) {
+    clearCommunitiesRefresh();
+    communitiesLoaded = false;
+    if (getRawActiveTabName() !== 'news') {
+      switchTab('news');
+    }
   }
 }
 
@@ -2708,6 +2716,7 @@ function switchTab(name) {
   if (name === 'news') {
     requestAnimationFrame(syncNewsPillWidths);
   }
+  if (!shouldRunAuxiliaryTabs()) return;
   if (name === 'reddit' && !redditDigestLoaded) {
     redditDigestLoaded = true;
     loadRedditDigest();
@@ -2733,7 +2742,7 @@ function setToolFilter(filter, btn) {
   activeToolFilter = filter;
   document.querySelectorAll('#toolsFilterBar .tool-filter-btn').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
-  renderTools();
+  if (shouldRunAuxiliaryTabs()) renderTools();
 }
 
 function renderTools() {
@@ -4261,7 +4270,7 @@ function settingsAddCustomSub() {
   registerSW();
 
   // 5. Load content and start auto-refresh
-  renderTools();
+  if (shouldRunAuxiliaryTabs()) renderTools();
   document.getElementById('refreshBtn')?.addEventListener('click', refreshCurrentTab);
   document.getElementById('themeBtn')?.addEventListener('click', toggleTheme);
   document.getElementById('sourcesBtn')?.addEventListener('click', openSettings);
@@ -4296,7 +4305,7 @@ function settingsAddCustomSub() {
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
       clearCommunitiesRefresh();
-    } else if (communitiesLoaded) {
+    } else if (shouldRunAuxiliaryTabs() && communitiesLoaded) {
       scheduleCommunitiesRefresh();
     }
   });
