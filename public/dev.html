@@ -948,11 +948,17 @@
 
       .news-fixed-chrome { padding-bottom: 0; }
 
-      /* Tabs: fill full width, bigger tap targets */
-      .tab-bar { gap: 0; }
+      /* Mobile uses a focused news-only layout */
+      .tab-bar { display: none; }
       .tab-btn {
         flex: 1; text-align: center;
         padding: 12px 4px; font-size: 12px;
+      }
+
+      #panel-tools,
+      #panel-reddit,
+      #panel-communities {
+        display: none !important;
       }
 
       /* Source pills: equal-width 3-column grid */
@@ -1546,7 +1552,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.68-dev';
+const VERSION = '1.6.69-dev';
 const MAX_ACTIVE_NEWS_SOURCES = 9;
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
@@ -2318,8 +2324,12 @@ async function loadAll() {
   syncNewsPillWidths();
 }
 
-function getActiveTabName() {
+function getRawActiveTabName() {
   return document.querySelector('.tab-btn.active')?.id?.replace('tab-', '') || 'news';
+}
+
+function getActiveTabName() {
+  return isMobileNewsOnlyMode() ? 'news' : getRawActiveTabName();
 }
 
 async function refreshCurrentTab() {
@@ -2690,7 +2700,18 @@ function fmtDate(d) {
 }
 
 // ─── TAB SWITCHING ───────────────────────────────────────────────────────
+function isMobileNewsOnlyMode() {
+  return !isDesktop();
+}
+
+function enforceMobileNewsMode() {
+  if (isMobileNewsOnlyMode() && getRawActiveTabName() !== 'news') {
+    switchTab('news');
+  }
+}
+
 function switchTab(name) {
+  if (isMobileNewsOnlyMode() && name !== 'news') name = 'news';
   ['news','tools','reddit','communities'].forEach(t => {
     document.getElementById(`panel-${t}`).style.display = name === t ? '' : 'none';
     document.getElementById(`tab-${t}`).classList.toggle('active', name === t);
@@ -4284,6 +4305,7 @@ function settingsAddCustomSub() {
   window.addEventListener('resize', () => {
     if (resizeSyncTimer) clearTimeout(resizeSyncTimer);
     resizeSyncTimer = setTimeout(() => {
+      enforceMobileNewsMode();
       syncNewsPillWidths();
       if (!allArticles.length && document.querySelector('#cardGrid .skeleton-wrap')) renderNewsSkeletons();
     }, 100);
@@ -4296,6 +4318,7 @@ function settingsAddCustomSub() {
     }
   });
   window.addEventListener('beforeunload', clearCommunitiesRefresh);
+  enforceMobileNewsMode();
   renderNewsSkeletons();
   loadAll();
   scheduleAutoRefresh();
