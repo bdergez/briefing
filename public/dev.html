@@ -1555,7 +1555,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.7.1-dev';
+const VERSION = '1.7.3-dev';
 const MAX_ACTIVE_NEWS_SOURCES = 9;
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
@@ -1904,6 +1904,8 @@ let allArticles = [];
 let activeCategory = 'all';
 let visibleArticleCount = 36;
 const ARTICLE_BATCH_SIZE = 24;
+const MOBILE_INITIAL_SOURCE_BATCH_SIZE = 3;
+const MOBILE_PRIORITY_SOURCE_IDS = ['doc', 'fm', 'omaat', 'vftw'];
 let activeSources = new Set(); // initialized after loadSettings() in init()
 let sourceState = {}; // { id: 'loading'|'ok'|'error' }
 let sourceArticlesCache = {}; // in-session fallback cache for flaky sources
@@ -1911,6 +1913,7 @@ let activeToolFilter = 'all';
 let hiddenArticleUrls = new Set();
 let hiddenArticlesMeta = {};
 let mutedSourcesUntil = {};
+let newsLoadToken = 0;
 
 // ── Churning two-panel state ──────────────────────────────────────────────
 let digestPostsData = [];       // all fetched posts
@@ -2189,8 +2192,11 @@ function mergeNextcardArticleDates(articlesItems, sitemapItems) {
   }));
 }
 
-async function fetchSource(source) {
-  setPillState(source.id, 'loading');
+async function fetchSource(source, loadToken = newsLoadToken) {
+  const guardedSetPillState = (...args) => {
+    if (loadToken === newsLoadToken) setPillState(...args);
+  };
+  guardedSetPillState(source.id, 'loading');
 
   let articles = [];
   const getCachedArticles = () => sourceArticlesCache[source.id] ? [...sourceArticlesCache[source.id]] : null;
@@ -2200,7 +2206,7 @@ async function fetchSource(source) {
   const useCachedArticles = () => {
     const cached = getCachedArticles();
     if (!cached) return null;
-    setPillState(source.id, 'ok', cached.length);
+    guardedSetPillState(source.id, 'ok', cached.length);
     return cached;
   };
 
@@ -2217,7 +2223,7 @@ async function fetchSource(source) {
       }
       if (items.length >= 5) {
         cacheArticles(items);
-        setPillState(source.id, 'ok', items.length);
+        guardedSetPillState(source.id, 'ok', items.length);
         return items;
       }
     }
@@ -2229,16 +2235,16 @@ async function fetchSource(source) {
     if (!xmlText) {
       const cached = useCachedArticles();
       if (cached) return cached;
-      setPillState(source.id, 'error');
+      guardedSetPillState(source.id, 'error');
       return [];
     }
     const items = parseSitemap(xmlText, source);
     if (items.length === 0) {
-      setPillState(source.id, 'ok', 0);
+      guardedSetPillState(source.id, 'ok', 0);
       return [];
     }
     cacheArticles(items);
-    setPillState(source.id, 'ok', items.length);
+    guardedSetPillState(source.id, 'ok', items.length);
     return items;
   }
 
@@ -2265,7 +2271,7 @@ async function fetchSource(source) {
     if (!xml) {
       const cached = useCachedArticles();
       if (cached) return cached;
-      setPillState(source.id, 'error');
+      guardedSetPillState(source.id, 'error');
       return [];
     }
     articles = parseRSS(xml, source);
@@ -2278,17 +2284,64 @@ async function fetchSource(source) {
   }
 
   if (articles.length === 0) {
-    setPillState(source.id, 'ok', 0);
+    guardedSetPillState(source.id, 'ok', 0);
     return [];
   }
 
   cacheArticles(articles);
-  setPillState(source.id, 'ok', articles.length);
+  guardedSetPillState(source.id, 'ok', articles.length);
   return articles;
 }
 
 // ─── LOAD ALL ────────────────────────────────────────────────────────────
+function sortAllArticles() {
+  allArticles.sort((a, b) => {
+    if (a.date && b.date) return b.date - a.date;
+    if (a.date) return -1;
+    if (b.date) return 1;
+    return 0;
+  });
+}
+
+function updateRefreshTime(loadingMore = false) {
+  const refreshTime = document.getElementById('refreshTime');
+  if (!refreshTime) return;
+  refreshTime.textContent = loadingMore
+    ? `v${VERSION} · Updated ${new Date().toLocaleTimeString()} · Loading more…`
+    : `v${VERSION} · Updated ${new Date().toLocaleTimeString()}`;
+}
+
+function getMobileSourceLoadBatches(sources) {
+  const originalOrder = new Map(sources.map((source, index) => [source.id, index]));
+  const priorityOrder = new Map(MOBILE_PRIORITY_SOURCE_IDS.map((id, index) => [id, index]));
+  const ordered = [...sources].sort((a, b) => {
+    const aPriority = priorityOrder.has(a.id) ? priorityOrder.get(a.id) : Number.MAX_SAFE_INTEGER;
+    const bPriority = priorityOrder.has(b.id) ? priorityOrder.get(b.id) : Number.MAX_SAFE_INTEGER;
+    if (aPriority !== bPriority) return aPriority - bPriority;
+    return originalOrder.get(a.id) - originalOrder.get(b.id);
+  });
+  return {
+    initial: ordered.slice(0, MOBILE_INITIAL_SOURCE_BATCH_SIZE),
+    deferred: ordered.slice(MOBILE_INITIAL_SOURCE_BATCH_SIZE),
+  };
+}
+
+async function loadSourceBatch(sources, loadToken) {
+  await Promise.allSettled(sources.map(async source => {
+    const articles = await fetchSource(source, loadToken);
+    if (loadToken !== newsLoadToken) return;
+    if (source.isOffers) {
+      offersArticles.push(...articles);
+      renderOffers();
+      return;
+    }
+    allArticles.push(...articles);
+  }));
+  return loadToken === newsLoadToken;
+}
+
 async function loadAll() {
+  const loadToken = ++newsLoadToken;
   allArticles = [];
   visibleArticleCount = ARTICLE_BATCH_SIZE + 12;
   offersArticles = [];
@@ -2299,30 +2352,36 @@ async function loadAll() {
 
   buildPills();
 
-  // Fetch each source independently; offer sources go to the offers strip, others to main feed
-  const sourcePromises = getEffectiveSources().map(s =>
-    fetchSource(s).then(articles => {
-      if (s.isOffers) {
-        offersArticles.push(...articles);
-        renderOffers();
-        return;
-      }
-      allArticles.push(...articles);
-    })
-  );
+  const sources = getEffectiveSources();
+  if (isMobileNewsOnlyMode()) {
+    const { initial, deferred } = getMobileSourceLoadBatches(sources);
+    await loadSourceBatch(initial, loadToken);
+    if (loadToken !== newsLoadToken) return;
 
-  // Wait for all blog sources to finish
-  await Promise.allSettled(sourcePromises);
+    sortAllArticles();
+    renderCards();
+    updateRefreshTime(deferred.length > 0);
+    document.getElementById('refreshBtn').disabled = false;
+    syncNewsPillWidths();
 
-  allArticles.sort((a, b) => {
-    if (a.date && b.date) return b.date - a.date;
-    if (a.date) return -1;
-    if (b.date) return 1;
-    return 0;
-  });
+    if (deferred.length > 0) {
+      loadSourceBatch(deferred, loadToken).then(stillCurrent => {
+        if (!stillCurrent) return;
+        sortAllArticles();
+        renderCards();
+        updateRefreshTime(false);
+        syncNewsPillWidths();
+      });
+    }
+    return;
+  }
+
+  await loadSourceBatch(sources, loadToken);
+  if (loadToken !== newsLoadToken) return;
+
+  sortAllArticles();
   renderCards();
-
-  document.getElementById('refreshTime').textContent = `v${VERSION} · Updated ${new Date().toLocaleTimeString()}`;
+  updateRefreshTime(false);
   document.getElementById('refreshBtn').disabled = false;
   syncNewsPillWidths();
 }
@@ -4033,7 +4092,8 @@ function applySettings() {
   redditDigestLoaded = false;
   communitiesLoaded = false;
   loadAll();
-  const activeTab = document.querySelector('.tab-btn.active')?.id?.replace('tab-', '');
+  const activeTab = getActiveTabName();
+  if (!shouldRunAuxiliaryTabs()) return;
   if (activeTab === 'reddit') {
     redditDigestLoaded = true;
     loadRedditDigest();
@@ -4297,15 +4357,17 @@ function settingsAddCustomSub() {
   document.getElementById('pill-all')?.addEventListener('click', selectAllSources);
   document.getElementById('cardMoreBtn')?.addEventListener('click', showMoreCards);
   document.getElementById('searchInput')?.addEventListener('input', debouncedRenderCards);
-  document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
-    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
-  });
   document.querySelectorAll('#panel-news .filter-btn[data-category]').forEach(btn => {
     btn.addEventListener('click', () => setCategory(btn.dataset.category, btn));
   });
-  document.querySelectorAll('#toolsFilterBar .tool-filter-btn[data-tool-filter]').forEach(btn => {
-    btn.addEventListener('click', () => setToolFilter(btn.dataset.toolFilter, btn));
-  });
+  if (shouldRunAuxiliaryTabs()) {
+    document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
+      btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+    });
+    document.querySelectorAll('#toolsFilterBar .tool-filter-btn[data-tool-filter]').forEach(btn => {
+      btn.addEventListener('click', () => setToolFilter(btn.dataset.toolFilter, btn));
+    });
+  }
   document.getElementById('settingsCloseBtn')?.addEventListener('click', closeSettings);
   document.querySelectorAll('.settings-tab[data-settings-tab]').forEach(btn => {
     btn.addEventListener('click', () => switchSettingsTab(btn.dataset.settingsTab));
