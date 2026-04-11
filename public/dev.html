@@ -276,7 +276,7 @@
 
     .card-desc {
       font-size: 13px; color: var(--subtext); line-height: 1.55;
-      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+      display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical;
       overflow: hidden;
     }
     .card.card-no-desc {
@@ -1004,7 +1004,10 @@
       }
       .card { padding: 14px 16px; }
       .card-title { font-size: 14px; }
-      .card-desc { font-size: 12px; }
+      .card-desc {
+        font-size: 12px;
+        -webkit-line-clamp: 5;
+      }
 
       /* Churning two-panel: collapse to single column on mobile */
       .digest-layout { display: block; }
@@ -1552,7 +1555,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.69-dev';
+const VERSION = '1.6.70-dev';
 const MAX_ACTIVE_NEWS_SOURCES = 9;
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
