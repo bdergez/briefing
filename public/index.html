@@ -276,7 +276,7 @@
 
     .card-desc {
       font-size: 13px; color: var(--subtext); line-height: 1.55;
-      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+      display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical;
       overflow: hidden;
     }
     .card.card-no-desc {
@@ -949,11 +949,17 @@
 
       .news-fixed-chrome { padding-bottom: 0; }
 
-      /* Tabs: fill full width, bigger tap targets */
-      .tab-bar { gap: 0; }
+      /* Mobile uses a focused news-only layout */
+      .tab-bar { display: none; }
       .tab-btn {
         flex: 1; text-align: center;
         padding: 12px 4px; font-size: 12px;
+      }
+
+      #panel-tools,
+      #panel-reddit,
+      #panel-communities {
+        display: none !important;
       }
 
       /* Source pills: equal-width 3-column grid */
@@ -999,7 +1005,10 @@
       }
       .card { padding: 14px 16px; }
       .card-title { font-size: 14px; }
-      .card-desc { font-size: 12px; }
+      .card-desc {
+        font-size: 12px;
+        -webkit-line-clamp: 5;
+      }
 
       /* Churning two-panel: collapse to single column on mobile */
       .digest-layout { display: block; }
@@ -1532,7 +1541,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.6.68';
+const VERSION = '1.7.0';
 const MAX_ACTIVE_NEWS_SOURCES = 9;
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
@@ -2304,8 +2313,12 @@ async function loadAll() {
   syncNewsPillWidths();
 }
 
-function getActiveTabName() {
+function getRawActiveTabName() {
   return document.querySelector('.tab-btn.active')?.id?.replace('tab-', '') || 'news';
+}
+
+function getActiveTabName() {
+  return isMobileNewsOnlyMode() ? 'news' : getRawActiveTabName();
 }
 
 async function refreshCurrentTab() {
@@ -2676,7 +2689,18 @@ function fmtDate(d) {
 }
 
 // ─── TAB SWITCHING ───────────────────────────────────────────────────────
+function isMobileNewsOnlyMode() {
+  return !isDesktop();
+}
+
+function enforceMobileNewsMode() {
+  if (isMobileNewsOnlyMode() && getRawActiveTabName() !== 'news') {
+    switchTab('news');
+  }
+}
+
 function switchTab(name) {
+  if (isMobileNewsOnlyMode() && name !== 'news') name = 'news';
   ['news','tools','reddit','communities'].forEach(t => {
     document.getElementById(`panel-${t}`).style.display = name === t ? '' : 'none';
     document.getElementById(`tab-${t}`).classList.toggle('active', name === t);
@@ -4264,6 +4288,7 @@ function settingsAddCustomSub() {
   window.addEventListener('resize', () => {
     if (resizeSyncTimer) clearTimeout(resizeSyncTimer);
     resizeSyncTimer = setTimeout(() => {
+      enforceMobileNewsMode();
       syncNewsPillWidths();
       if (!allArticles.length && document.querySelector('#cardGrid .skeleton-wrap')) renderNewsSkeletons();
     }, 100);
@@ -4276,6 +4301,7 @@ function settingsAddCustomSub() {
     }
   });
   window.addEventListener('beforeunload', clearCommunitiesRefresh);
+  enforceMobileNewsMode();
   renderNewsSkeletons();
   loadAll();
   scheduleAutoRefresh();
