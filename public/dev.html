@@ -264,20 +264,41 @@
     .card-title { font-size: 15px; font-weight: 700; line-height: 1.4; }
     .card-title a { color: var(--text); text-decoration: none; transition: color 0.15s; }
     .card-title a:hover { color: var(--accent); }
-    #cardGrid .card {
+    #cardGrid .news-card {
       height: 251px;
     }
-    #cardGrid .card-title {
+    #cardGrid .news-card .card-title {
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
+    }
+    .news-card {
+      gap: 12px;
+    }
+    .news-card-meta {
+      row-gap: 6px;
+    }
+    .news-card-source {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      opacity: 0.72;
+    }
+    .news-card .card-title {
+      line-height: 1.45;
+      letter-spacing: -0.01em;
     }
 
     .card-desc {
       font-size: 13px; color: var(--subtext); line-height: 1.55;
       display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical;
       overflow: hidden;
+    }
+    .news-card .card-desc {
+      color: var(--text);
+      opacity: 0.76;
+      line-height: 1.6;
     }
     .card.card-no-desc {
       gap: 8px;
@@ -290,11 +311,17 @@
       display: flex; align-items: center; justify-content: space-between;
       margin-top: auto; padding-top: 6px;
     }
+    .news-card-footer {
+      padding-top: 4px;
+    }
     .card-actions {
       display: inline-flex;
       align-items: center;
       gap: 8px;
       flex-wrap: wrap;
+    }
+    .news-card-footer .card-actions {
+      gap: 12px;
     }
     .card-action-btn {
       background: transparent;
@@ -312,6 +339,9 @@
     .read-link {
       font-size: 12px; font-weight: 600; color: var(--accent);
       text-decoration: none;
+    }
+    .news-card .read-link {
+      font-weight: 700;
     }
     .read-link:hover { text-decoration: underline; }
     /* LOADING */
@@ -1002,12 +1032,14 @@
         overflow: visible;
         padding-right: 0;
       }
-      .card { padding: 14px 16px; }
-      .card-title { font-size: 14px; }
-      .card-desc {
+      .news-card { padding: 15px 16px; gap: 11px; }
+      .news-card .card-title { font-size: 15px; }
+      .news-card-source { font-size: 11px; }
+      .news-card .card-desc {
         font-size: 12px;
         -webkit-line-clamp: 5;
       }
+      .news-card-footer .card-actions { gap: 10px 14px; }
 
       /* Churning two-panel: collapse to single column on mobile */
       .digest-layout { display: block; }
@@ -1555,7 +1587,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.7.5-dev';
+const VERSION = '1.7.6-dev';
 const MAX_ACTIVE_NEWS_SOURCES = 9;
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
@@ -3984,24 +4016,25 @@ function renderCards() {
     const isNew = a.date && a.date.getTime() > lastVisitTime;
     const catLabel = a.category === 'news' ? '📰 News' : (CATEGORIES[a.category]?.label || a.category);
     const dateStr  = a.date ? fmtDate(a.date) : '';
+    const categoryTag = a.category === 'news' ? '' : `<span class="category-tag">${catLabel}</span>`;
     const desc     = a.desc ? `<div class="card-desc">${esc(a.desc)}</div>` : '';
     return `
-    <div class="card">
-      <div class="card-meta">
+    <div class="card news-card${a.desc ? '' : ' card-no-desc'}">
+      <div class="card-meta news-card-meta">
         <span class="source-badge" style="background:${a.sourceColor}">${a.sourceShort}</span>
-        <span class="category-tag">${catLabel}</span>
+        <span class="news-card-source">${esc(a.sourceName)}</span>
+        ${categoryTag}
         ${isNew ? '<span class="new-badge">New</span>' : ''}
         <span class="card-date">${dateStr}</span>
       </div>
       <div class="card-title"><a href="${safeUrl(a.url)}" target="_blank" rel="noopener noreferrer">${esc(a.title)}</a></div>
       ${desc}
-      <div class="card-footer">
+      <div class="card-footer news-card-footer">
         <div class="card-actions">
           <a class="read-link" href="${safeUrl(a.url)}" target="_blank" rel="noopener noreferrer">Read article →</a>
           <button class="card-action-btn" onclick="hideArticle('${esc(escapeInlineArg(a.url))}')">Hide</button>
           <button class="card-action-btn" onclick="muteSourceToday('${esc(a.sourceId)}')">Mute today</button>
         </div>
-        <span style="font-size:11px;color:var(--subtext)">${esc(a.sourceName)}</span>
       </div>
     </div>`;
   }).join('');
