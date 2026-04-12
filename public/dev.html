@@ -301,13 +301,6 @@
       opacity: 0.76;
       line-height: 1.6;
     }
-    .card-desc-more {
-      display: inline;
-      font-size: inherit;
-      font-weight: 600;
-      color: var(--subtext);
-      letter-spacing: 0.01em;
-    }
     .card.card-no-desc {
       gap: 8px;
     }
@@ -1595,7 +1588,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.7.11-dev';
+const VERSION = '1.7.12-dev';
 const MAX_ACTIVE_NEWS_SOURCES = 9;
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
@@ -4025,8 +4018,7 @@ function renderCards() {
     const catLabel = a.category === 'news' ? '📰 News' : (CATEGORIES[a.category]?.label || a.category);
     const dateStr  = a.date ? fmtDate(a.date) : '';
     const categoryTag = a.category === 'news' ? '' : `<span class="category-tag">${catLabel}</span>`;
-    const hasLongDesc = (a.desc || '').trim().length > 180;
-    const desc     = a.desc ? `<div class="card-desc">${esc(a.desc)}${hasLongDesc ? ' <span class="card-desc-more">[...]</span>' : ''}</div>` : '';
+    const desc     = a.desc ? `<div class="card-desc">${esc(a.desc)}</div>` : '';
     return `
     <div class="card news-card${a.desc ? '' : ' card-no-desc'}">
       <div class="card-meta news-card-meta">
