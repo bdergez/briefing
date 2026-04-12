@@ -265,7 +265,8 @@
     .card-title a { color: var(--text); text-decoration: none; transition: color 0.15s; }
     .card-title a:hover { color: var(--accent); }
     #cardGrid .news-card {
-      height: 251px;
+      min-height: 251px;
+      height: auto;
     }
     #cardGrid .news-card .card-title {
       display: -webkit-box;
@@ -1587,7 +1588,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.7.6-dev';
+const VERSION = '1.7.7-dev';
 const MAX_ACTIVE_NEWS_SOURCES = 9;
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
