@@ -300,6 +300,17 @@
       color: var(--text);
       opacity: 0.76;
       line-height: 1.6;
+      position: relative;
+      padding-right: 18px;
+    }
+    .news-card .card-desc::after {
+      content: '...';
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      padding-left: 10px;
+      color: var(--text);
+      background: linear-gradient(90deg, rgba(255,255,255,0), var(--card-bg) 48%);
     }
     .card.card-no-desc {
       gap: 8px;
@@ -1574,7 +1585,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.7.7';
+const VERSION = '1.7.8';
 const MAX_ACTIVE_NEWS_SOURCES = 9;
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
