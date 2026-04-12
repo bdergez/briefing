@@ -1610,7 +1610,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.7.16-dev';
+const VERSION = '1.7.17-dev';
 const MAX_ACTIVE_NEWS_SOURCES = 9;
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
@@ -3978,7 +3978,7 @@ function renderCards() {
     const isNew = a.date && a.date.getTime() > lastVisitTime;
     const catLabel = a.category === 'news' ? '📰 News' : (CATEGORIES[a.category]?.label || a.category);
     const dateStr  = a.date ? fmtDate(a.date) : '';
-    const categoryTag = a.category === 'news' ? '' : `<span class="category-tag">${catLabel}</span>`;
+    const categoryTag = `<span class="category-tag">${catLabel}</span>`;
     const hasLongDesc = (a.desc || '').trim().length > 180;
     const descClass = hasLongDesc ? 'card-desc card-desc-faded' : 'card-desc';
     const desc     = a.desc ? `<div class="${descClass}">${esc(a.desc)}</div>` : '';
