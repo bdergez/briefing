@@ -300,17 +300,17 @@
       color: var(--text);
       opacity: 0.76;
       line-height: 1.6;
-      position: relative;
-      padding-right: 18px;
     }
-    .news-card .card-desc::after {
-      content: '...';
-      position: absolute;
-      right: 0;
-      bottom: 0;
-      padding-left: 10px;
-      color: var(--text);
-      background: linear-gradient(90deg, rgba(255,255,255,0), var(--card-bg) 48%);
+    .card-desc-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .card-desc-more {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--subtext);
+      letter-spacing: 0.01em;
     }
     .card.card-no-desc {
       gap: 8px;
@@ -1599,7 +1599,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.7.8-dev';
+const VERSION = '1.7.9-dev';
 const MAX_ACTIVE_NEWS_SOURCES = 9;
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
@@ -4029,7 +4029,8 @@ function renderCards() {
     const catLabel = a.category === 'news' ? '📰 News' : (CATEGORIES[a.category]?.label || a.category);
     const dateStr  = a.date ? fmtDate(a.date) : '';
     const categoryTag = a.category === 'news' ? '' : `<span class="category-tag">${catLabel}</span>`;
-    const desc     = a.desc ? `<div class="card-desc">${esc(a.desc)}</div>` : '';
+    const hasLongDesc = (a.desc || '').trim().length > 180;
+    const desc     = a.desc ? `<div class="card-desc-wrap"><div class="card-desc">${esc(a.desc)}</div>${hasLongDesc ? '<div class="card-desc-more">Continue reading…</div>' : ''}</div>` : '';
     return `
     <div class="card news-card${a.desc ? '' : ' card-no-desc'}">
       <div class="card-meta news-card-meta">
