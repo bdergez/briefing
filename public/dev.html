@@ -300,6 +300,17 @@
       color: var(--text);
       opacity: 0.76;
       line-height: 1.6;
+      position: relative;
+    }
+    .news-card .card-desc.card-desc-faded::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 1.8em;
+      pointer-events: none;
+      background: linear-gradient(180deg, rgba(255,255,255,0), var(--card-bg) 88%);
     }
     .card.card-no-desc {
       gap: 8px;
@@ -1588,7 +1599,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.7.12-dev';
+const VERSION = '1.7.13-dev';
 const MAX_ACTIVE_NEWS_SOURCES = 9;
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
@@ -4018,7 +4029,9 @@ function renderCards() {
     const catLabel = a.category === 'news' ? '📰 News' : (CATEGORIES[a.category]?.label || a.category);
     const dateStr  = a.date ? fmtDate(a.date) : '';
     const categoryTag = a.category === 'news' ? '' : `<span class="category-tag">${catLabel}</span>`;
-    const desc     = a.desc ? `<div class="card-desc">${esc(a.desc)}</div>` : '';
+    const hasLongDesc = (a.desc || '').trim().length > 180;
+    const descClass = hasLongDesc ? 'card-desc card-desc-faded' : 'card-desc';
+    const desc     = a.desc ? `<div class="${descClass}">${esc(a.desc)}</div>` : '';
     return `
     <div class="card news-card${a.desc ? '' : ' card-no-desc'}">
       <div class="card-meta news-card-meta">
