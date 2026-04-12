@@ -909,7 +909,7 @@
     .tli-title { font-size: 12px; font-weight: 600; color: var(--text); line-height: 1.4; }
 
     /* ── MOBILE ─────────────────────────────────────────────────── */
-    @media (max-width: 640px) {
+    @media (max-width: 640px), (hover: none) and (pointer: coarse) and (max-height: 500px) {
 
       /* Header: compact, no tagline */
       header {
@@ -1541,7 +1541,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.7.4';
+const VERSION = '1.7.5';
 const MAX_ACTIVE_NEWS_SOURCES = 9;
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
@@ -2773,8 +2773,14 @@ function fmtDate(d) {
 }
 
 // ─── TAB SWITCHING ───────────────────────────────────────────────────────
+function isPhoneLikeViewport() {
+  const narrowViewport = window.matchMedia('(max-width: 640px)').matches;
+  const shortCoarseViewport = window.matchMedia('(hover: none) and (pointer: coarse) and (max-height: 500px)').matches;
+  return narrowViewport || shortCoarseViewport;
+}
+
 function isMobileNewsOnlyMode() {
-  return !isDesktop();
+  return isPhoneLikeViewport();
 }
 
 function shouldRunAuxiliaryTabs() {
@@ -2882,7 +2888,7 @@ function sleep(ms) {
 
 // ─── REDDIT DAILY DIGEST ─────────────────────────────────────────────────
 
-function isDesktop() { return window.matchMedia('(min-width: 641px)').matches; }
+function isDesktop() { return !isPhoneLikeViewport(); }
 
 function showMoreTopics(postId) {
   const container = document.getElementById(`digest-post-${postId}`);
