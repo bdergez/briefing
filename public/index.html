@@ -227,6 +227,16 @@
 
     #cardGrid {
       align-content: start;
+      transition: opacity 0.18s ease;
+    }
+    #cardGrid.refreshing-content {
+      opacity: 0.84;
+    }
+    #offersStrip {
+      transition: opacity 0.18s ease;
+    }
+    #offersStrip.refreshing-content {
+      opacity: 0.78;
     }
 
     #panel-tools,
@@ -1585,7 +1595,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.7.13';
+const VERSION = '1.7.14';
 const MAX_ACTIVE_NEWS_SOURCES = 9;
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
@@ -2343,6 +2353,13 @@ function updateRefreshTime(loadingMore = false, refreshing = false) {
     : `v${VERSION} · Updated ${new Date().toLocaleTimeString()}`;
 }
 
+function setNewsRefreshState(isRefreshing) {
+  const cardGrid = document.getElementById('cardGrid');
+  const offersStrip = document.getElementById('offersStrip');
+  cardGrid?.classList.toggle('refreshing-content', isRefreshing);
+  if (offersArticles.length > 0) offersStrip?.classList.toggle('refreshing-content', isRefreshing);
+}
+
 function getMobileSourceLoadBatches(sources) {
   const originalOrder = new Map(sources.map((source, index) => [source.id, index]));
   const priorityOrder = new Map(MOBILE_PRIORITY_SOURCE_IDS.map((id, index) => [id, index]));
@@ -2379,7 +2396,8 @@ async function loadAll(options = {}) {
   const keepExisting = preserveExisting && allArticles.length > 0;
   let nextArticles = [];
   let nextOffers = [];
-  visibleArticleCount = ARTICLE_BATCH_SIZE + 12;
+  const baseVisibleCount = ARTICLE_BATCH_SIZE + 12;
+  visibleArticleCount = keepExisting ? Math.max(visibleArticleCount, baseVisibleCount) : baseVisibleCount;
   document.getElementById('refreshBtn').disabled = true;
   updateRefreshTime(false, true);
   if (!keepExisting) {
@@ -2387,6 +2405,9 @@ async function loadAll(options = {}) {
     offersArticles = [];
     document.getElementById('offersStrip').style.display = 'none';
     renderNewsSkeletons();
+    setNewsRefreshState(false);
+  } else {
+    setNewsRefreshState(true);
   }
 
   buildPills();
@@ -2405,6 +2426,7 @@ async function loadAll(options = {}) {
     sortAllArticles();
     renderCards();
     renderOffers();
+    setNewsRefreshState(false);
     updateRefreshTime(deferred.length > 0);
     document.getElementById('refreshBtn').disabled = false;
     syncNewsPillWidths();
@@ -2419,6 +2441,7 @@ async function loadAll(options = {}) {
         sortAllArticles();
         renderCards();
         renderOffers();
+        setNewsRefreshState(false);
         updateRefreshTime(false);
         syncNewsPillWidths();
       });
@@ -2436,6 +2459,7 @@ async function loadAll(options = {}) {
   sortAllArticles();
   renderCards();
   renderOffers();
+  setNewsRefreshState(false);
   updateRefreshTime(false);
   document.getElementById('refreshBtn').disabled = false;
   syncNewsPillWidths();
