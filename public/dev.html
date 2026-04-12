@@ -1555,7 +1555,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.7.3-dev';
+const VERSION = '1.7.4-dev';
 const MAX_ACTIVE_NEWS_SOURCES = 9;
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
@@ -2303,10 +2303,12 @@ function sortAllArticles() {
   });
 }
 
-function updateRefreshTime(loadingMore = false) {
+function updateRefreshTime(loadingMore = false, refreshing = false) {
   const refreshTime = document.getElementById('refreshTime');
   if (!refreshTime) return;
-  refreshTime.textContent = loadingMore
+  refreshTime.textContent = refreshing
+    ? `v${VERSION} · Refreshing…`
+    : loadingMore
     ? `v${VERSION} · Updated ${new Date().toLocaleTimeString()} · Loading more…`
     : `v${VERSION} · Updated ${new Date().toLocaleTimeString()}`;
 }
@@ -2327,39 +2329,52 @@ function getMobileSourceLoadBatches(sources) {
 }
 
 async function loadSourceBatch(sources, loadToken) {
+  const articles = [];
+  const offers = [];
   await Promise.allSettled(sources.map(async source => {
-    const articles = await fetchSource(source, loadToken);
+    const sourceArticles = await fetchSource(source, loadToken);
     if (loadToken !== newsLoadToken) return;
     if (source.isOffers) {
-      offersArticles.push(...articles);
-      renderOffers();
+      offers.push(...sourceArticles);
       return;
     }
-    allArticles.push(...articles);
+    articles.push(...sourceArticles);
   }));
-  return loadToken === newsLoadToken;
+  return loadToken === newsLoadToken ? { articles, offers } : null;
 }
 
-async function loadAll() {
+async function loadAll(options = {}) {
+  const { preserveExisting = false } = options;
   const loadToken = ++newsLoadToken;
-  allArticles = [];
+  const keepExisting = preserveExisting && allArticles.length > 0;
+  let nextArticles = [];
+  let nextOffers = [];
   visibleArticleCount = ARTICLE_BATCH_SIZE + 12;
-  offersArticles = [];
   document.getElementById('refreshBtn').disabled = true;
-  document.getElementById('refreshTime').textContent = 'Loading…';
-  document.getElementById('offersStrip').style.display = 'none';
-  renderNewsSkeletons();
+  updateRefreshTime(false, true);
+  if (!keepExisting) {
+    allArticles = [];
+    offersArticles = [];
+    document.getElementById('offersStrip').style.display = 'none';
+    renderNewsSkeletons();
+  }
 
   buildPills();
 
   const sources = getEffectiveSources();
   if (isMobileNewsOnlyMode()) {
     const { initial, deferred } = getMobileSourceLoadBatches(sources);
-    await loadSourceBatch(initial, loadToken);
-    if (loadToken !== newsLoadToken) return;
+    const initialBatch = await loadSourceBatch(initial, loadToken);
+    if (!initialBatch) return;
 
+    nextArticles.push(...initialBatch.articles);
+    nextOffers.push(...initialBatch.offers);
+
+    allArticles = nextArticles;
+    offersArticles = nextOffers;
     sortAllArticles();
     renderCards();
+    renderOffers();
     updateRefreshTime(deferred.length > 0);
     document.getElementById('refreshBtn').disabled = false;
     syncNewsPillWidths();
@@ -2367,8 +2382,13 @@ async function loadAll() {
     if (deferred.length > 0) {
       loadSourceBatch(deferred, loadToken).then(stillCurrent => {
         if (!stillCurrent) return;
+        nextArticles.push(...stillCurrent.articles);
+        nextOffers.push(...stillCurrent.offers);
+        allArticles = nextArticles;
+        offersArticles = nextOffers;
         sortAllArticles();
         renderCards();
+        renderOffers();
         updateRefreshTime(false);
         syncNewsPillWidths();
       });
@@ -2376,11 +2396,16 @@ async function loadAll() {
     return;
   }
 
-  await loadSourceBatch(sources, loadToken);
-  if (loadToken !== newsLoadToken) return;
+  const fullBatch = await loadSourceBatch(sources, loadToken);
+  if (!fullBatch) return;
 
+  nextArticles = fullBatch.articles;
+  nextOffers = fullBatch.offers;
+  allArticles = nextArticles;
+  offersArticles = nextOffers;
   sortAllArticles();
   renderCards();
+  renderOffers();
   updateRefreshTime(false);
   document.getElementById('refreshBtn').disabled = false;
   syncNewsPillWidths();
@@ -2397,7 +2422,7 @@ function getActiveTabName() {
 async function refreshCurrentTab() {
   const activeTab = getActiveTabName();
   if (activeTab === 'news') {
-    await loadAll();
+    await loadAll({ preserveExisting: true });
     return;
   }
 
