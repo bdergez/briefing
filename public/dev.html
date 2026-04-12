@@ -290,12 +290,6 @@
     .news-card-meta {
       row-gap: 6px;
     }
-    .news-card-source {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text);
-      opacity: 0.72;
-    }
     .news-card .card-title {
       line-height: 1.45;
       letter-spacing: -0.01em;
@@ -344,6 +338,13 @@
     }
     .news-card-footer .card-actions {
       gap: 12px;
+    }
+    .news-card-footer .news-card-source {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--subtext);
+      white-space: nowrap;
+      margin-left: 12px;
     }
     .card-action-btn {
       background: transparent;
@@ -1056,7 +1057,7 @@
       }
       .news-card { padding: 15px 16px; gap: 11px; }
       .news-card .card-title { font-size: 15px; }
-      .news-card-source { font-size: 11px; }
+      .news-card-footer .news-card-source { font-size: 10px; }
       .news-card .card-desc {
         font-size: 12px;
         -webkit-line-clamp: 5;
@@ -1609,7 +1610,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.7.15-dev';
+const VERSION = '1.7.16-dev';
 const MAX_ACTIVE_NEWS_SOURCES = 9;
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
@@ -3985,7 +3986,6 @@ function renderCards() {
     <div class="card news-card${a.desc ? '' : ' card-no-desc'}">
       <div class="card-meta news-card-meta">
         <span class="source-badge" style="background:${a.sourceColor}">${a.sourceShort}</span>
-        <span class="news-card-source">${esc(a.sourceName)}</span>
         ${categoryTag}
         ${isNew ? '<span class="new-badge">New</span>' : ''}
         <span class="card-date">${dateStr}</span>
@@ -3996,6 +3996,7 @@ function renderCards() {
         <div class="card-actions">
           <a class="read-link" href="${safeUrl(a.url)}" target="_blank" rel="noopener noreferrer">Read article →</a>
         </div>
+        <span class="news-card-source">${esc(a.sourceName)}</span>
       </div>
     </div>`;
   }).join('');
