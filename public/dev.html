@@ -1599,7 +1599,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.7.9-dev';
+const VERSION = '1.7.10-dev';
 const MAX_ACTIVE_NEWS_SOURCES = 9;
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
@@ -4030,7 +4030,7 @@ function renderCards() {
     const dateStr  = a.date ? fmtDate(a.date) : '';
     const categoryTag = a.category === 'news' ? '' : `<span class="category-tag">${catLabel}</span>`;
     const hasLongDesc = (a.desc || '').trim().length > 180;
-    const desc     = a.desc ? `<div class="card-desc-wrap"><div class="card-desc">${esc(a.desc)}</div>${hasLongDesc ? '<div class="card-desc-more">Continue reading…</div>' : ''}</div>` : '';
+    const desc     = a.desc ? `<div class="card-desc-wrap"><div class="card-desc">${esc(a.desc)}</div>${hasLongDesc ? '<div class="card-desc-more">[...]</div>' : ''}</div>` : '';
     return `
     <div class="card news-card${a.desc ? '' : ' card-no-desc'}">
       <div class="card-meta news-card-meta">
