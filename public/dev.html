@@ -1609,7 +1609,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.7.14-dev';
+const VERSION = '1.7.15-dev';
 const MAX_ACTIVE_NEWS_SOURCES = 9;
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
@@ -1964,9 +1964,6 @@ let activeSources = new Set(); // initialized after loadSettings() in init()
 let sourceState = {}; // { id: 'loading'|'ok'|'error' }
 let sourceArticlesCache = {}; // in-session fallback cache for flaky sources
 let activeToolFilter = 'all';
-let hiddenArticleUrls = new Set();
-let hiddenArticlesMeta = {};
-let mutedSourcesUntil = {};
 let newsLoadToken = 0;
 
 // ── Churning two-panel state ──────────────────────────────────────────────
@@ -3925,75 +3922,6 @@ function updateNewBadge() {
   if (filterNew) filterNew.textContent = count > 0 ? `🆕 New (${count})` : '🆕 New';
 }
 
-function getTodayKey() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-const HIDDEN_ARTICLE_RETENTION_DAYS = 30;
-
-function loadArticleControls() {
-  try {
-    const hidden = localStorage.getItem('pmDashHiddenArticles');
-    if (hidden) {
-      const parsed = JSON.parse(hidden);
-      const cutoff = Date.now() - (HIDDEN_ARTICLE_RETENTION_DAYS * 86400 * 1000);
-      hiddenArticlesMeta = {};
-      if (Array.isArray(parsed)) {
-        parsed.forEach(entry => {
-          if (typeof entry === 'string') {
-            hiddenArticlesMeta[entry] = Date.now();
-          } else if (entry && typeof entry.url === 'string') {
-            const hiddenAt = Number(entry.hiddenAt) || Date.now();
-            if (hiddenAt >= cutoff) hiddenArticlesMeta[entry.url] = hiddenAt;
-          }
-        });
-      }
-      hiddenArticleUrls = new Set(Object.keys(hiddenArticlesMeta));
-    }
-    const muted = localStorage.getItem('pmDashMutedSourcesUntil');
-    if (muted) mutedSourcesUntil = JSON.parse(muted);
-    const today = getTodayKey();
-    Object.keys(mutedSourcesUntil).forEach(id => {
-      if (mutedSourcesUntil[id] < today) delete mutedSourcesUntil[id];
-    });
-  } catch {}
-}
-
-function saveArticleControls() {
-  try {
-    localStorage.setItem('pmDashHiddenArticles', JSON.stringify(
-      Object.entries(hiddenArticlesMeta).map(([url, hiddenAt]) => ({ url, hiddenAt }))
-    ));
-    localStorage.setItem('pmDashMutedSourcesUntil', JSON.stringify(mutedSourcesUntil));
-  } catch {}
-}
-
-function hideArticle(url) {
-  hiddenArticleUrls.add(url);
-  hiddenArticlesMeta[url] = Date.now();
-  saveArticleControls();
-  renderCards();
-}
-
-function muteSourceToday(sourceId) {
-  mutedSourcesUntil[sourceId] = getTodayKey();
-  saveArticleControls();
-  renderCards();
-}
-
-function resetHiddenArticles() {
-  hiddenArticleUrls = new Set();
-  hiddenArticlesMeta = {};
-  saveArticleControls();
-  renderCards();
-}
-
-function clearMutedSources() {
-  mutedSourcesUntil = {};
-  saveArticleControls();
-  renderCards();
-}
-
 // ─── AUTO-REFRESH ─────────────────────────────────────────────────────────
 let autoRefreshTimer = null;
 let searchRenderTimer = null;
@@ -4024,11 +3952,8 @@ function renderCards() {
   const grid = document.getElementById('cardGrid');
   const moreWrap = document.getElementById('cardMoreWrap');
   const moreBtn = document.getElementById('cardMoreBtn');
-  const today = getTodayKey();
 
   const filtered = allArticles.filter(a => {
-    if (hiddenArticleUrls.has(a.url)) return false;
-    if (mutedSourcesUntil[a.sourceId] === today) return false;
     if (!activeSources.has(a.sourceId)) return false;
     if (activeCategory === 'new') return a.date && a.date.getTime() > lastVisitTime;
     if (activeCategory !== 'all' && a.category !== activeCategory) return false;
@@ -4070,8 +3995,6 @@ function renderCards() {
       <div class="card-footer news-card-footer">
         <div class="card-actions">
           <a class="read-link" href="${safeUrl(a.url)}" target="_blank" rel="noopener noreferrer">Read article →</a>
-          <button class="card-action-btn" onclick="hideArticle('${esc(escapeInlineArg(a.url))}')">Hide</button>
-          <button class="card-action-btn" onclick="muteSourceToday('${esc(a.sourceId)}')">Mute today</button>
         </div>
       </div>
     </div>`;
@@ -4233,11 +4156,6 @@ function renderSettingsNewsTab() {
     <div class="settings-section-title">Presets</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
       ${SOURCE_PRESETS.map(preset => `<button class="settings-add-inline" onclick="applySourcePreset('${preset.id}')">${esc(preset.label)} (${preset.ids.length})</button>`).join('')}
-    </div>
-    <div class="settings-section-title">Feed Controls</div>
-    <div class="settings-utility-actions">
-      <button class="settings-utility-btn" onclick="resetHiddenArticles()">Reset hidden articles</button>
-      <button class="settings-utility-btn" onclick="clearMutedSources()">Clear muted sources</button>
     </div>`;
   allSrcs.forEach(src => {
     const isOn = !settingsDraft.disabledSources.has(src.id);
@@ -4440,7 +4358,6 @@ function settingsAddCustomSub() {
 (async function init() {
   // 1. Load settings (must happen before loadAll so getEffectiveSources() is correct)
   loadSettings();
-  loadArticleControls();
   activeSources = new Set(getEffectiveNewsSources().map(s => s.id));
   updateThemeButton();
 
