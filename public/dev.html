@@ -92,6 +92,7 @@
     }
     .logo { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
     .logo span { color: #818cf8; }
+    .logo-mobile { display: none; }
     .tagline { font-size: 12px; opacity: 0.5; margin-top: 2px; }
     .header-right { display: flex; align-items: center; gap: 12px; }
     header > * { position: relative; z-index: 1; }
@@ -979,6 +980,8 @@
         background-position: 31px 28px;
       }
       .logo { font-size: 18px; }
+      .logo-full { display: none; }
+      .logo-mobile { display: inline; }
       .tagline { display: none; }
       .refresh-time { display: none; }
       .btn { padding: 7px 12px; font-size: 12px; }
@@ -1315,7 +1318,7 @@
 
 <header>
   <div>
-    <div class="logo">Points &amp; Miles <span>Dash</span></div>
+    <div class="logo"><span class="logo-full">Points &amp; Miles <span>Dash</span></span><span class="logo-mobile">PM<span>Dash</span></span></div>
     <div class="tagline">Your personalized rewards &amp; travel news hub</div>
   </div>
   <div class="header-right">
