@@ -1616,7 +1616,7 @@
 
 <script>
 // ─── VERSION ─────────────────────────────────────────────────────────────
-const VERSION = '1.7.18-dev';
+const VERSION = '1.8.0-dev';
 const MAX_ACTIVE_NEWS_SOURCES = 9;
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────
@@ -1938,10 +1938,10 @@ const SUGGESTED_SOURCES = [
     ], maxAgeDays: 30 },
 ];
 
-// CORS proxies — tried in order until one works
+// Same-origin Worker relay first; public proxies are emergency fallbacks.
 const PROXIES = [
+  url => `/api/fetch?url=${encodeURIComponent(url)}`,
   url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
-  url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
   url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
 ];
 
@@ -2022,7 +2022,7 @@ async function fetchWithProxy(rssUrl) {
         const json = JSON.parse(text);
         xmlText = json.contents || json.data || text;
       } catch {
-        xmlText = text; // plain XML (corsproxy.io, codetabs)
+        xmlText = text; // plain XML (same-origin relay or CodeTabs)
       }
 
       if (xmlText && xmlText.includes('<item')) return xmlText;
@@ -2034,7 +2034,7 @@ async function fetchWithProxy(rssUrl) {
 }
 
 async function fetchTextWithProxy(url) {
-  for (const makeProxy of [PROXIES[2], PROXIES[0], PROXIES[1]]) {
+  for (const makeProxy of PROXIES) {
     try {
       const proxyUrl = makeProxy(url);
       const res = await fetchWithTimeout(proxyUrl, {}, 15000);

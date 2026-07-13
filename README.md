@@ -14,5 +14,6 @@ Main sections:
 
 Repository notes:
 - deployable app assets live in `public/`
-- Cloudflare serves the app directly from the `public/` asset tree
+- a small Cloudflare Worker endpoint in `src/` retrieves allowlisted news feeds
+- Cloudflare serves the UI as static assets and routes news requests through the same-origin feed endpoint
 - internal workflow notes are kept out of the public repo and deployed site

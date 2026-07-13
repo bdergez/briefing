@@ -1,4 +1,4 @@
-const CACHE = 'pmd-v3';
+const CACHE = 'pmd-v4';
 const SHELL = [
   '/',
   '/index.html',
@@ -26,6 +26,11 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   // Only handle same-origin requests for the app shell
   if (!e.request.url.startsWith(self.location.origin)) return;
+  const url = new URL(e.request.url);
+  if (url.pathname.startsWith('/api/')) {
+    e.respondWith(fetch(e.request));
+    return;
+  }
   e.respondWith(
     fetch(e.request)
       .then(res => {
